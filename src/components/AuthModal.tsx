@@ -41,25 +41,37 @@ export default function AuthModal() {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeAuthModal} />
-      <div className="relative w-full max-w-md rounded-2xl border border-outline-variant bg-surface shadow-xl animate-fade-in">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={closeAuthModal} />
+
+      {/* 弹窗背景光晕 */}
+      <div className="absolute pointer-events-none w-[400px] h-[400px] rounded-full bg-[rgba(139,92,246,0.12)] blur-[80px]" />
+
+      <div className="relative w-full max-w-md rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(13,20,40,0.92)] backdrop-blur-xl shadow-[0_24px_64px_rgba(0,0,0,0.6)] animate-fade-in overflow-hidden">
+        {/* 顶部渐变光带 */}
+        <div className="absolute inset-x-0 top-0 h-px gradient-genesis" />
+
         <button
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-xl text-on-surface-variant hover:bg-[rgba(255,255,255,0.08)] transition-colors z-10"
           type="button"
           onClick={closeAuthModal}
         >
-          <X size={16} />
+          <X size={15} />
         </button>
 
-        <div className="flex border-b border-outline-variant">
+        {/* Logo + 标题 */}
+        <div className="px-6 pt-8 pb-4 text-center">
+          <p className="text-sm font-semibold text-gradient-genesis font-display tracking-tight">AetherGenix</p>
+        </div>
+
+        <div className="flex border-b border-[rgba(255,255,255,0.08)] mx-6">
           {(['login', 'register'] as const).map((t_) => (
             <button
               key={t_}
               type="button"
               onClick={() => openAuthModal(t_, pendingPath)}
-              className={`flex-1 py-4 text-sm font-medium transition-colors ${
+              className={`flex-1 py-3 text-sm font-medium transition-all duration-200 ${
                 tab === t_
-                  ? 'text-primary border-b-2 border-primary'
+                  ? 'text-[#00D4F0] border-b-2 border-[#00D4F0]'
                   : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
@@ -68,7 +80,7 @@ export default function AuthModal() {
           ))}
         </div>
 
-        <div className="p-6">
+        <div className="px-6 py-5">
           {tab === 'login' ? (
             <LoginForm settings={settings} onSuccess={handleSuccess} />
           ) : (
@@ -253,5 +265,5 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-const inputCls = 'h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50';
-const submitCls = 'w-full h-11 rounded-lg bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-2';
+const inputCls = 'h-10 w-full rounded-xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.05)] px-3 text-sm text-on-surface outline-none focus:border-[rgba(0,212,240,0.5)] focus:shadow-[0_0_0_3px_rgba(0,212,240,0.1)] transition-all placeholder:text-on-surface-variant/40';
+const submitCls = 'w-full h-11 rounded-full gradient-genesis text-white font-semibold text-sm hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2 shadow-[0_0_16px_rgba(0,212,240,0.2)]';

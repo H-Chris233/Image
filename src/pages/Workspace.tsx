@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Heart, RotateCcw, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Download, RotateCcw, Loader2, AlertCircle } from 'lucide-react';
 import { getImageTask, ImageTask, HistoryItem } from '../api';
-import { useSite } from '../site';
 import RetryImage from '../components/RetryImage';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 
@@ -19,7 +18,6 @@ const POLL_INTERVAL = 1500;
 export default function Workspace() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const { t } = useSite();
   const [task, setTask] = useState<ImageTask | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('quick');
@@ -52,43 +50,51 @@ export default function Workspace() {
   const isFailed = task?.status === 'failed';
   const images: HistoryItem[] = task?.items ?? [];
 
-  function openPreview(images: HistoryItem[], index: number) {
-    setPreviewImages(images.map((img) => ({ id: img.id, url: img.image_url ?? '', prompt: img.prompt ?? '' })));
+  function openPreview(imgs: HistoryItem[], index: number) {
+    setPreviewImages(imgs.map((img) => ({ id: img.id, url: img.image_url ?? '', prompt: img.prompt ?? '' })));
     setPreviewIndex(index);
   }
 
   return (
     <div className="min-h-screen">
       <div className="max-w-5xl mx-auto px-4 py-6">
+
         {/* 返回 */}
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors mb-6"
+          className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-[#00D4F0] transition-colors mb-6"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={15} />
           返回
         </button>
 
+        {/* 错误提示 */}
+        {error && (
+          <div className="rounded-2xl border border-error/30 bg-error-container p-4 mb-6 flex items-center gap-2 text-sm text-on-error-container">
+            <AlertCircle size={16} />
+            {error}
+          </div>
+        )}
+
         {/* 等待中 */}
         {isLoading && (
-          <div className="rounded-2xl border border-outline-variant bg-surface-container p-8 mb-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Loader2 className="animate-spin text-primary" size={20} />
+          <div className="rounded-2xl border border-[rgba(0,212,240,0.15)] bg-[rgba(13,20,40,0.8)] backdrop-blur-sm p-8 mb-6">
+            <div className="flex items-center gap-3 mb-5">
+              <Loader2 className="animate-spin text-[#00D4F0]" size={20} />
               <span className="text-sm font-medium text-on-surface">
                 {task?.status === 'queued' ? '任务排队中…' : '正在生成图片…'}
               </span>
             </div>
-            <div className="h-1.5 rounded-full bg-surface-container-high overflow-hidden">
-              <div className="h-full bg-primary rounded-full animate-pulse w-1/3" />
+            <div className="h-1 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
+              <div className="h-full gradient-genesis rounded-full animate-pulse w-1/3" />
             </div>
             {task?.prompt && (
-              <p className="mt-4 text-xs text-on-surface-variant line-clamp-2">{task.prompt}</p>
+              <p className="mt-4 text-xs text-on-surface-variant/60 line-clamp-2 italic">{task.prompt}</p>
             )}
-            {/* 骨架屏占位 */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="aspect-square rounded-xl bg-surface-container-high animate-skeleton" />
+                <div key={i} className="aspect-square rounded-2xl bg-[rgba(255,255,255,0.04)] animate-skeleton" />
               ))}
             </div>
           </div>
@@ -112,37 +118,40 @@ export default function Workspace() {
               {images.map((img, idx) => (
                 <div
                   key={img.id}
-                  className="relative rounded-xl overflow-hidden cursor-pointer group aspect-square"
+                  className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square transition-all duration-300 hover:-translate-y-1"
+                  style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.35)' }}
                   onClick={() => openPreview(images, idx)}
                 >
                   <RetryImage
                     src={img.image_url ?? ''}
                     alt={img.prompt ?? task?.prompt ?? ''}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                   />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <span className="text-white text-xs font-medium bg-black/40 rounded-full px-2 py-1">查看大图</span>
+                  <div className="absolute inset-x-0 top-0 h-0.5 gradient-genesis opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-end p-3 opacity-0 group-hover:opacity-100">
+                    <span className="text-white text-[11px] font-medium bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1">
+                      查看大图
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* 操作按钮 */}
             <div className="flex items-center gap-2 mt-4">
               <a
                 href={`/api/tasks/${taskId}/download`}
                 download
-                className="flex items-center gap-1.5 rounded-full border border-outline-variant px-4 py-2 text-sm text-on-surface hover:bg-surface-container transition-colors"
+                className="flex items-center gap-1.5 rounded-full border border-[rgba(0,212,240,0.3)] text-[#00D4F0] px-4 py-2 text-sm hover:bg-[rgba(0,212,240,0.08)] transition-colors"
               >
-                <Download size={14} />
+                <Download size={13} />
                 下载全部
               </a>
               <button
                 type="button"
                 onClick={() => navigate('/create')}
-                className="flex items-center gap-1.5 rounded-full border border-outline-variant px-4 py-2 text-sm text-on-surface hover:bg-surface-container transition-colors"
+                className="flex items-center gap-1.5 rounded-full border border-outline-variant/50 px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container/50 transition-colors"
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={13} />
                 重新生成
               </button>
             </div>
@@ -151,18 +160,17 @@ export default function Workspace() {
 
         {/* 操作台子功能 Segment Control */}
         {!isLoading && (
-          <div className="rounded-2xl border border-outline-variant bg-surface overflow-hidden">
-            {/* Tab 切换 */}
-            <div className="flex border-b border-outline-variant">
+          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(13,20,40,0.7)] backdrop-blur-sm overflow-hidden">
+            <div className="flex border-b border-[rgba(255,255,255,0.08)]">
               {(Object.keys(TAB_LABELS) as WorkspaceTab[]).map((tab) => (
                 <button
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-1 py-3.5 text-sm font-medium transition-colors ${
+                  className={`flex-1 py-3.5 text-sm font-medium transition-all duration-200 ${
                     activeTab === tab
-                      ? 'text-primary border-b-2 border-primary bg-primary-container/20'
-                      : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container/50'
+                      ? 'text-[#00D4F0] border-b-2 border-[#00D4F0] bg-[rgba(0,212,240,0.06)]'
+                      : 'text-on-surface-variant hover:text-on-surface hover:bg-[rgba(255,255,255,0.04)]'
                   }`}
                 >
                   {TAB_LABELS[tab]}
@@ -170,7 +178,6 @@ export default function Workspace() {
               ))}
             </div>
 
-            {/* Tab 内容 */}
             <div className="p-6">
               {activeTab === 'quick' && <QuickCreateTab prompt={task?.prompt ?? ''} />}
               {activeTab === 'advanced' && <AdvancedCreateTab prompt={task?.prompt ?? ''} />}
@@ -180,7 +187,6 @@ export default function Workspace() {
         )}
       </div>
 
-      {/* 图片预览 Modal */}
       {previewImages && (
         <ImagePreviewModal
           images={previewImages}
@@ -196,12 +202,12 @@ function QuickCreateTab({ prompt }: { prompt: string }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-on-surface-variant">上传图片，选择平台模板快速生成变体。</p>
-      <div className="rounded-xl border-2 border-dashed border-outline-variant flex items-center justify-center h-32 text-sm text-on-surface-variant hover:border-primary hover:text-primary transition-colors cursor-pointer">
+      <div className="rounded-2xl border-2 border-dashed border-[rgba(255,255,255,0.1)] flex items-center justify-center h-32 text-sm text-on-surface-variant hover:border-[rgba(0,212,240,0.4)] hover:text-[#00D4F0] transition-colors cursor-pointer">
         点击或拖拽上传参考图
       </div>
       {prompt && (
-        <div className="text-xs text-on-surface-variant bg-surface-container rounded-lg p-3">
-          <span className="font-medium">当前提示词：</span>{prompt}
+        <div className="text-xs text-on-surface-variant/70 bg-[rgba(255,255,255,0.04)] rounded-xl p-3 border border-[rgba(255,255,255,0.06)]">
+          <span className="text-on-surface-variant font-medium">当前提示词：</span>{prompt}
         </div>
       )}
     </div>
@@ -218,7 +224,7 @@ function AdvancedCreateTab({ prompt }: { prompt: string }) {
           window.sessionStorage.setItem('aethergenix_pending_prompt', prompt);
           window.location.href = '/create';
         }}
-        className="rounded-full bg-primary text-on-primary px-6 py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors"
+        className="rounded-full gradient-genesis text-white px-6 py-2.5 text-sm font-semibold hover:brightness-110 transition-all shadow-[0_0_16px_rgba(0,212,240,0.2)]"
       >
         用当前提示词去创作页
       </button>
@@ -231,7 +237,7 @@ function MarketingTab({ images }: { images: HistoryItem[] }) {
     <div className="space-y-4">
       <p className="text-sm text-on-surface-variant">选择一张生成图，AI 自动分析商品并生成配套营销文案和排版。</p>
       {images.length === 0 ? (
-        <p className="text-xs text-on-surface-variant">请先完成图片生成</p>
+        <p className="text-xs text-on-surface-variant/60">请先完成图片生成</p>
       ) : (
         <div className="flex gap-2 flex-wrap">
           {images.map((img) => (
@@ -239,7 +245,7 @@ function MarketingTab({ images }: { images: HistoryItem[] }) {
               key={img.id}
               src={img.image_url ?? ''}
               alt=""
-              className="h-16 w-16 rounded-lg object-cover cursor-pointer border-2 border-transparent hover:border-primary transition-colors"
+              className="h-16 w-16 rounded-xl object-cover cursor-pointer border-2 border-transparent hover:border-[#00D4F0] transition-colors"
             />
           ))}
         </div>
@@ -247,7 +253,7 @@ function MarketingTab({ images }: { images: HistoryItem[] }) {
       <button
         type="button"
         disabled={images.length === 0}
-        className="rounded-full bg-secondary text-on-secondary px-6 py-2.5 text-sm font-medium hover:bg-secondary/90 transition-colors disabled:opacity-40"
+        className="rounded-full gradient-genesis text-white px-6 py-2.5 text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-40 shadow-[0_0_16px_rgba(139,92,246,0.2)]"
       >
         生成营销文案
       </button>
