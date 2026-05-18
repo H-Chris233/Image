@@ -44,11 +44,9 @@ export default function AuthModal() {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={closeAuthModal} />
 
       {/* 弹窗背景光晕 */}
-      <div className="absolute pointer-events-none w-[400px] h-[400px] rounded-full bg-[rgba(139,92,246,0.12)] blur-[80px]" />
-
-      <div className="relative w-full max-w-md rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(30,28,25,0.96)] backdrop-blur-xl shadow-[0_24px_64px_rgba(0,0,0,0.6)] animate-fade-in overflow-hidden">
-        {/* 顶部渐变光带 */}
-        <div className="absolute inset-x-0 top-0 h-px gradient-genesis" />
+      <div className="relative w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#1a1917] shadow-[0_24px_64px_rgba(0,0,0,0.7)] animate-fade-in overflow-hidden">
+        {/* 顶部电石灰光带 */}
+        <div className="absolute inset-x-0 top-0 h-px bg-[#E3FF74] opacity-60" />
 
         <button
           className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-xl text-on-surface-variant hover:bg-[rgba(255,255,255,0.08)] transition-colors z-10"
@@ -71,8 +69,8 @@ export default function AuthModal() {
               onClick={() => openAuthModal(t_, pendingPath)}
               className={`flex-1 py-3 text-sm font-medium transition-all duration-200 ${
                 tab === t_
-                  ? 'text-[#00D4F0] border-b-2 border-[#00D4F0]'
-                  : 'text-on-surface-variant hover:text-on-surface'
+                  ? 'text-[#E3FF74] border-b-2 border-[#E3FF74]'
+                  : 'text-[#8a8680] hover:text-[#f0ede8]'
               }`}
             >
               {t_ === 'login' ? t('login_submit') : t('top_register')}
@@ -265,5 +263,5 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-const inputCls = 'h-10 w-full rounded-xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.05)] px-3 text-sm text-on-surface outline-none focus:border-[rgba(0,212,240,0.5)] focus:shadow-[0_0_0_3px_rgba(0,212,240,0.1)] transition-all placeholder:text-on-surface-variant/40';
-const submitCls = 'w-full h-11 rounded-full gradient-genesis text-white font-semibold text-sm hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2 shadow-[0_0_16px_rgba(0,212,240,0.2)]';
+const inputCls = 'h-10 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-[#f0ede8] outline-none focus:border-[#E3FF74]/40 focus:bg-white/[0.06] transition-all placeholder:text-[#4a4844]';
+const submitCls = 'w-full h-11 rounded-full bg-[#f0ede8] text-[#1a1917] font-semibold text-sm hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-2';

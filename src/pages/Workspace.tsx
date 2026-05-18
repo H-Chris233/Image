@@ -63,7 +63,7 @@ export default function Workspace() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-[#00D4F0] transition-colors mb-6"
+          className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-[#E3FF74] transition-colors mb-6"
         >
           <ArrowLeft size={15} />
           返回
@@ -79,9 +79,9 @@ export default function Workspace() {
 
         {/* 等待中 */}
         {isLoading && (
-          <div className="rounded-2xl border border-[rgba(0,212,240,0.15)] bg-[rgba(30,28,25,0.85)] backdrop-blur-sm p-8 mb-6">
+          <div className="rounded-2xl border border-white/[0.07] bg-[#1a1917] backdrop-blur-sm p-8 mb-6">
             <div className="flex items-center gap-3 mb-5">
-              <Loader2 className="animate-spin text-[#00D4F0]" size={20} />
+              <Loader2 className="animate-spin text-[#E3FF74]" size={20} />
               <span className="text-sm font-medium text-on-surface">
                 {task?.status === 'queued' ? '任务排队中…' : '正在生成图片…'}
               </span>
@@ -141,7 +141,7 @@ export default function Workspace() {
               <a
                 href={`/api/tasks/${taskId}/download`}
                 download
-                className="flex items-center gap-1.5 rounded-full border border-[rgba(0,212,240,0.3)] text-[#00D4F0] px-4 py-2 text-sm hover:bg-[rgba(0,212,240,0.08)] transition-colors"
+                className="flex items-center gap-1.5 rounded-full border border-[#E3FF74]/30 text-[#E3FF74] px-4 py-2 text-sm hover:bg-[#E3FF74]/[0.06] transition-colors"
               >
                 <Download size={13} />
                 下载全部
@@ -160,7 +160,7 @@ export default function Workspace() {
 
         {/* 操作台子功能 Segment Control */}
         {!isLoading && (
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(30,28,25,0.75)] backdrop-blur-sm overflow-hidden">
+          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[#1a1917] backdrop-blur-sm overflow-hidden">
             <div className="flex border-b border-[rgba(255,255,255,0.08)]">
               {(Object.keys(TAB_LABELS) as WorkspaceTab[]).map((tab) => (
                 <button
@@ -169,8 +169,8 @@ export default function Workspace() {
                   onClick={() => setActiveTab(tab)}
                   className={`flex-1 py-3.5 text-sm font-medium transition-all duration-200 ${
                     activeTab === tab
-                      ? 'text-[#00D4F0] border-b-2 border-[#00D4F0] bg-[rgba(0,212,240,0.06)]'
-                      : 'text-on-surface-variant hover:text-on-surface hover:bg-[rgba(255,255,255,0.04)]'
+                      ? 'text-[#E3FF74] border-b-2 border-[#E3FF74] bg-[rgba(227,255,116,0.06)]'
+                      : 'text-on-surface-variant hover:text-on-surface hover:bg-white/[0.04]'
                   }`}
                 >
                   {TAB_LABELS[tab]}
@@ -202,7 +202,7 @@ function QuickCreateTab({ prompt }: { prompt: string }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-on-surface-variant">上传图片，选择平台模板快速生成变体。</p>
-      <div className="rounded-2xl border-2 border-dashed border-[rgba(255,255,255,0.1)] flex items-center justify-center h-32 text-sm text-on-surface-variant hover:border-[rgba(0,212,240,0.4)] hover:text-[#00D4F0] transition-colors cursor-pointer">
+      <div className="rounded-2xl border-2 border-dashed border-[rgba(255,255,255,0.1)] flex items-center justify-center h-32 text-sm text-on-surface-variant hover:border-[rgba(0,212,240,0.4)] hover:text-[#E3FF74] transition-colors cursor-pointer">
         点击或拖拽上传参考图
       </div>
       {prompt && (
@@ -224,7 +224,7 @@ function AdvancedCreateTab({ prompt }: { prompt: string }) {
           window.sessionStorage.setItem('aethergenix_pending_prompt', prompt);
           window.location.href = '/create';
         }}
-        className="rounded-full gradient-genesis text-white px-6 py-2.5 text-sm font-semibold hover:brightness-110 transition-all shadow-[0_0_16px_rgba(0,212,240,0.2)]"
+        className="rounded-full bg-[#f0ede8] text-[#1a1917] px-6 py-2.5 text-sm font-semibold hover:brightness-110 transition-all shadow-[0_0_16px_rgba(0,212,240,0.2)]"
       >
         用当前提示词去创作页
       </button>
@@ -253,7 +253,7 @@ function MarketingTab({ images }: { images: HistoryItem[] }) {
       <button
         type="button"
         disabled={images.length === 0}
-        className="rounded-full gradient-genesis text-white px-6 py-2.5 text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-40 shadow-[0_0_16px_rgba(139,92,246,0.2)]"
+        className="rounded-full bg-[#f0ede8] text-[#1a1917] px-6 py-2.5 text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-40 shadow-[0_0_16px_rgba(139,92,246,0.2)]"
       >
         生成营销文案
       </button>

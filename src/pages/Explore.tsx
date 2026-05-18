@@ -68,7 +68,7 @@ export default function Explore() {
   return (
     <div className="min-h-screen px-4 py-6 max-w-screen-2xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold font-display text-gradient-genesis tracking-tight">{t('home_title')}</h1>
+        <h1 className="text-3xl font-bold font-display text-[#f0ede8] tracking-tight">{t('home_title')}</h1>
         <p className="text-sm text-on-surface-variant mt-2">{t('explore_desc')}</p>
       </div>
 
@@ -121,9 +121,9 @@ function ExploreCard({
         className="w-full block object-cover transition-transform duration-500 group-hover:scale-[1.03]"
       />
 
-      {/* 顶部渐变光带（悬停时出现） */}
+      {/* 顶部电石灰高亮（悬停时出现） */}
       {hovered && (
-        <div className="absolute inset-x-0 top-0 h-0.5 gradient-genesis animate-fade-in" />
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-[#E3FF74] animate-fade-in opacity-80" />
       )}
 
       {hovered && (
@@ -136,7 +136,7 @@ function ExploreCard({
               <button
                 type="button"
                 onClick={() => onReusePrompt(item)}
-                className="flex items-center gap-1.5 rounded-full gradient-genesis px-3 py-1.5 text-white text-xs font-semibold transition-all hover:brightness-110 shadow-[0_0_12px_rgba(0,212,240,0.3)]"
+                className="flex items-center gap-1.5 rounded-full bg-[#f0ede8] text-[#1a1917] px-3 py-1.5 text-xs font-semibold transition-all hover:bg-white"
               >
                 <PenLine size={12} />
                 复用提示词创作

@@ -1,126 +1,130 @@
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
+/* ─── Light 模式 Surface ─── */
 @theme {
-  /* ── Surface 层级（浅色模式）── */
   --color-surface: #ffffff;
   --color-surface-dim: #f5f4f2;
   --color-surface-bright: #ffffff;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #faf9f7;
-  --color-surface-container: #f0ede8;
-  --color-surface-container-high: #e5e0d8;
-  --color-surface-container-highest: #d8d0c4;
-  --color-on-surface: #1a1816;
-  --color-on-surface-variant: #6b6560;
-  --color-inverse-surface: #28251f;
-  --color-inverse-on-surface: #f5f0e8;
-  --color-outline: #a09a8e;
-  --color-outline-variant: #e5e0d8;
-  --color-surface-tint: #00D4F0;
+  --color-surface-container-low: #f9f8f6;
+  --color-surface-container: #f2f0ed;
+  --color-surface-container-high: #e8e5e0;
+  --color-surface-container-highest: #dbd8d2;
+  --color-on-surface: #1a1917;
+  --color-on-surface-variant: #6b6660;
+  --color-inverse-surface: #1a1917;
+  --color-inverse-on-surface: #f5f4f0;
+  --color-outline: #a09e98;
+  --color-outline-variant: #e2dfd9;
+  --color-surface-tint: #1a1917;
 
-  /* ── 品牌色 ── */
-  --color-primary: #0891b2;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #cffafe;
-  --color-on-primary-container: #164e63;
+  /* 品牌色 */
+  --color-primary: #1a1917;
+  --color-on-primary: #f5f4f0;
+  --color-primary-container: #f0ede8;
+  --color-on-primary-container: #1a1917;
 
-  --color-secondary: #6366f1;
+  --color-secondary: #fe6e00;
   --color-on-secondary: #ffffff;
-  --color-secondary-container: #e0e7ff;
-  --color-on-secondary-container: #312e81;
+  --color-secondary-container: #fff0e6;
+  --color-on-secondary-container: #7c2c00;
 
-  --color-tertiary: #059669;
+  --color-tertiary: #2d7a45;
   --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #d1fae5;
-  --color-on-tertiary-container: #064e3b;
+  --color-tertiary-container: #d1f5de;
+  --color-on-tertiary-container: #0d3d20;
 
-  --color-error: #dc2626;
+  --color-error: #c93b2b;
   --color-on-error: #ffffff;
-  --color-error-container: #fef2f2;
-  --color-on-error-container: #991b1b;
+  --color-error-container: #fde8e5;
+  --color-on-error-container: #6b1208;
 
-  --color-background: #faf9f7;
-  --color-on-background: #1a1816;
+  --color-background: #f9f8f6;
+  --color-on-background: #1a1917;
 
-  /* ── 字体 ── */
+  /* 字体 */
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Bricolage Grotesque', 'Inter', ui-sans-serif, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* ── Aether Fruit 品牌色 ── */
-  --color-ag-cyan:   #00D4F0;
-  --color-ag-violet: #8B5CF6;
-  --color-ag-amber:  #F59E0B;
-  --color-ag-lime:   #D9F20A;
+  /* Lovart 签名色 */
+  --color-lime: #E3FF74;
+  --color-lime-dim: #c8e84a;
+  --color-on-lime: #1a1917;
 
-  /* ── Lovart 暖炭黑背景层级（暗色专用）── */
-  --color-void:   #0e0d0b;
-  --color-deep:   #141210;
-  --color-cosmic: #1e1c19;
-  --color-nebula: #28251f;
-  --color-stellar:#332f27;
+  /* 暖炭黑层级（暗色专用） */
+  --color-charcoal-950: #0d0d0b;
+  --color-charcoal-900: #111110;
+  --color-charcoal-800: #1a1917;
+  --color-charcoal-700: #242220;
+  --color-charcoal-600: #2e2c29;
+  --color-charcoal-500: #3a3835;
+  --color-charcoal-400: #504d49;
+  --color-charcoal-300: #6b6660;
 }
 
-/* ── 暗色模式：Lovart 暖炭黑风格 ── */
+/* ─── Dark 模式：暖炭黑 Lovart 路线 ─── */
 .dark {
-  /* 背景层级：暖棕调，而非冷蓝调 */
-  --color-surface: #1e1c19;
-  --color-surface-dim: #141210;
-  --color-surface-bright: #28251f;
-  --color-surface-container-lowest: #0e0d0b;
-  --color-surface-container-low: #1e1c19;
-  --color-surface-container: #28251f;
-  --color-surface-container-high: #332f27;
-  --color-surface-container-highest: #3e3a30;
-  /* 文字：暖米白而非冷白 */
-  --color-on-surface: #f0ece4;
-  --color-on-surface-variant: #a09a8e;
-  --color-inverse-surface: #f0ece4;
-  --color-inverse-on-surface: #1e1c19;
-  /* 边框：暖调 */
-  --color-outline: #4a4540;
-  --color-outline-variant: #332f27;
-  --color-surface-tint: #00D4F0;
+  --color-surface: #1a1917;
+  --color-surface-dim: #111110;
+  --color-surface-bright: #242220;
+  --color-surface-container-lowest: #0d0d0b;
+  --color-surface-container-low: #1a1917;
+  --color-surface-container: #242220;
+  --color-surface-container-high: #2e2c29;
+  --color-surface-container-highest: #3a3835;
+  --color-on-surface: #f0ede8;
+  --color-on-surface-variant: #8a8680;
+  --color-inverse-surface: #f0ede8;
+  --color-inverse-on-surface: #1a1917;
+  --color-outline: #4a4844;
+  --color-outline-variant: #2e2c29;
+  --color-surface-tint: #E3FF74;
 
-  /* 主色在暗色模式下保持鲜艳 */
-  --color-primary: #00D4F0;
-  --color-on-primary: #003340;
-  --color-primary-container: #004D5E;
-  --color-on-primary-container: #A8F0FA;
+  /* Primary 在暗色 = 白色（白色胶囊按钮） */
+  --color-primary: #f0ede8;
+  --color-on-primary: #1a1917;
+  --color-primary-container: rgba(240,237,232,0.1);
+  --color-on-primary-container: #f0ede8;
 
-  --color-secondary: #A78BFA;
-  --color-on-secondary: #2E1065;
-  --color-secondary-container: #4C1D95;
-  --color-on-secondary-container: #DDD6FE;
+  /* Secondary = 热橙（辅助 CTA） */
+  --color-secondary: #fe6e00;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: rgba(254,110,0,0.12);
+  --color-on-secondary-container: #fe9e55;
 
-  --color-tertiary: #34d399;
-  --color-on-tertiary: #064e3b;
-  --color-tertiary-container: #065f46;
-  --color-on-tertiary-container: #d1fae5;
+  --color-tertiary: #4ade80;
+  --color-on-tertiary: #1a1917;
+  --color-tertiary-container: rgba(74,222,128,0.1);
+  --color-on-tertiary-container: #4ade80;
 
-  --color-error: #fca5a5;
-  --color-on-error: #7f1d1d;
-  --color-error-container: #991b1b;
-  --color-on-error-container: #fecaca;
+  --color-error: #ff6b6b;
+  --color-on-error: #1a1917;
+  --color-error-container: rgba(255,107,107,0.12);
+  --color-on-error-container: #ff9e9e;
 
-  --color-background: #141210;
-  --color-on-background: #f0ece4;
+  --color-background: #111110;
+  --color-on-background: #f0ede8;
 }
 
-/* ── 全局 CSS 变量 ── */
+/* ─── 全局变量 ─── */
 :root {
+  --ag-lime: #E3FF74;
+  --ag-lime-dim: #c8e84a;
+  --ag-orange: #fe6e00;
+  --ag-charcoal: #1a1917;
   --ag-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ag-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ag-glow-cyan:   0 0 20px rgba(0,212,240,0.35), 0 0 60px rgba(0,212,240,0.12);
-  --ag-glow-violet: 0 0 20px rgba(139,92,246,0.35), 0 0 60px rgba(139,92,246,0.12);
-  --ag-glow-soft:   0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.06);
+  --ag-glow-lime:   0 0 16px rgba(227,255,116,0.3), 0 0 48px rgba(227,255,116,0.1);
+  --ag-glow-orange: 0 0 16px rgba(254,110,0,0.35), 0 0 48px rgba(254,110,0,0.12);
+  --ag-glow-soft:   0 8px 32px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.06);
 }
 
-/* ── 动画 ── */
+/* ─── 动画 ─── */
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.7; }
+  50% { opacity: 0.6; }
 }
 
 @keyframes fade-in {
@@ -129,75 +133,111 @@
 }
 
 @keyframes glow-breathe {
-  0%, 100% { opacity: 0.6; }
+  0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
 
-/* ── Utility 层 ── */
+/* ─── Utilities ─── */
 @layer utilities {
   .animate-skeleton {
     animation: skeleton-pulse 1.5s ease-in-out infinite;
   }
   .animate-fade-in {
-    animation: fade-in 0.3s var(--ag-ease-out);
+    animation: fade-in 0.25s var(--ag-ease-out);
   }
   .animate-glow-breathe {
     animation: glow-breathe 3s ease-in-out infinite;
   }
 
-  /* 渐变背景 */
-  .gradient-genesis {
-    background: linear-gradient(135deg, #00D4F0 0%, #8B5CF6 100%);
+  /* ── 白色胶囊主按钮（Lovart 风格）── */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 2.5rem;
+    padding: 0 1.25rem;
+    border-radius: 9999px;
+    background-color: #f0ede8;
+    color: #1a1917;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.15s var(--ag-ease-out);
   }
-  .gradient-aether {
-    background: linear-gradient(135deg, #00D4F0 0%, #8B5CF6 55%, #EC4899 100%);
+  .btn-primary:hover { background-color: #ffffff; }
+  .btn-primary:disabled { opacity: 0.4; pointer-events: none; }
+
+  /* ── 描边次级按钮 ── */
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 2.5rem;
+    padding: 0 1rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(240,237,232,0.8);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s var(--ag-ease-out);
   }
-  .gradient-fruit {
-    background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
-  }
-  /* Lovart 风格暖炭渐变（用于底层背景光晕）*/
-  .gradient-warm-void {
-    background: radial-gradient(ellipse at 30% 40%, #2c2820 0%, #0e0d0b 65%);
+  .btn-ghost:hover {
+    background-color: rgba(255,255,255,0.07);
+    color: #f0ede8;
   }
 
-  /* 渐变文字 */
-  .text-gradient-genesis {
-    background: linear-gradient(135deg, #00D4F0, #8B5CF6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  /* ── 电石灰高亮（稀用，签名点缀）── */
+  .btn-lime {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 2.5rem;
+    padding: 0 1.25rem;
+    border-radius: 9999px;
+    background-color: #E3FF74;
+    color: #1a1917;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: all 0.15s var(--ag-ease-out);
+    box-shadow: var(--ag-glow-lime);
   }
-  .text-gradient-aether {
-    background: linear-gradient(135deg, #00D4F0, #8B5CF6, #EC4899);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  /* Lovart 签名高亮色（电石灰）*/
-  .text-lime { color: #D9F20A; }
+  .btn-lime:hover { background-color: #f0ff9c; }
 
-  /* 玻璃态：暖色调 */
-  .glass-card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
-    border: 1px solid rgba(255,255,255,0.08);
+  /* ── 暖炭底卡片 ── */
+  .card-warm {
+    background-color: var(--color-surface-container);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: 1rem;
+  }
+  .card-warm-glass {
+    background-color: rgba(26,25,23,0.7);
+    border: 1px solid rgba(255,255,255,0.07);
     backdrop-filter: blur(12px);
+    border-radius: 1rem;
   }
-  /* Lovart nav 风格：暖炭底+毛玻璃 */
-  .glass-nav {
-    background: rgba(20,18,16,0.82);
+
+  /* ── 暖炭导航背景 ── */
+  .nav-warm {
+    background-color: rgba(17,17,16,0.8);
     backdrop-filter: blur(20px) saturate(1.4);
   }
 
-  /* Glow */
-  .glow-cyan   { box-shadow: var(--ag-glow-cyan); }
-  .glow-violet { box-shadow: var(--ag-glow-violet); }
-  .glow-soft   { box-shadow: var(--ag-glow-soft); }
+  /* ── 签名灰黄文字 ── */
+  .text-lime { color: #E3FF74; }
+  .bg-lime { background-color: #E3FF74; }
 
-  /* 字体 */
+  /* ── 字体 ── */
   .font-display { font-family: var(--font-display); }
+
+  /* ── Glow ── */
+  .glow-lime   { box-shadow: var(--ag-glow-lime); }
+  .glow-orange { box-shadow: var(--ag-glow-orange); }
+  .glow-soft   { box-shadow: var(--ag-glow-soft); }
 }
 
-/* ── Scrollbar ── */
+/* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -206,13 +246,7 @@
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-outline); }
 
-/* ── 全局选中高亮：Lovart 签名电石灰 ── */
-::selection {
-  background: #D9F20A;
-  color: #1a1816;
-}
-
-/* ── Body ── */
+/* ─── Body ─── */
 body {
   background-color: var(--color-background);
   color: var(--color-on-background);
@@ -220,4 +254,10 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Lovart 签名选中色 */
+::selection {
+  background-color: rgba(227,255,116,0.25);
+  color: #E3FF74;
 }

@@ -421,6 +421,7 @@ def create_app(
         except ProviderError as exc:
             raise HTTPException(status_code=exc.status_code, detail=_provider_error_message(exc)) from exc
 
+    @app.get("/api/session", include_in_schema=False)
     @app.get("/api/auth/session")
     async def auth_session(
         viewer: ViewerContext = Depends(_viewer),

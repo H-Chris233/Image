@@ -524,6 +524,17 @@ def make_client(
     return TestClient(make_app(tmp_path, auth_client=auth_client, provider=provider))
 
 
+def test_session_alias_returns_guest_session(tmp_path: Path) -> None:
+    with make_client(tmp_path) as client:
+        response = client.get("/api/session")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["authenticated"] is False
+        assert data["user"] is None
+        assert data["guest_id"]
+
+
 def login_demo_user(client: TestClient) -> dict[str, Any]:
     response = client.post("/api/auth/login", json={"email": "demo@example.com", "password": "secret123"})
     assert response.status_code == 200
