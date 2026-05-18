@@ -601,7 +601,7 @@ export default function Config() {
 
               {isAdmin ? (
                 <button
-                  className="w-full bg-secondary text-white font-bold px-6 py-3 uppercase tracking-widest hover:bg-white hover:text-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-xs"
+                  className="w-full bg-secondary text-white font-bold px-6 py-3 uppercase tracking-widest transition-opacity hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 text-xs"
                   type="button"
                   onClick={handleSaveSiteSettings}
                   disabled={siteSaving}
