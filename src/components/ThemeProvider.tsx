@@ -9,26 +9,15 @@ type ThemeContextValue = {
   setTheme: (theme: Theme) => void;
 };
 
-const THEME_STORAGE_KEY = 'aethergenix_theme';
 const DARK_CLASS = 'dark';
 
 function getInitialTheme(): Theme {
-  try {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark') return stored;
-  } catch {
-    // localStorage unavailable
-  }
   return 'dark';
 }
 
-function applyTheme(theme: Theme) {
+function applyTheme() {
   const root = document.documentElement;
-  if (theme === 'dark') {
-    root.classList.add(DARK_CLASS);
-  } else {
-    root.classList.remove(DARK_CLASS);
-  }
+  root.classList.add(DARK_CLASS);
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -37,20 +26,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
-    applyTheme(theme);
-    try {
-      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch {
-      // localStorage unavailable
-    }
-  }, [theme]);
-
-  const toggleTheme = useCallback(() => {
-    setThemeState((current) => (current === 'dark' ? 'light' : 'dark'));
+    applyTheme();
   }, []);
 
-  const setTheme = useCallback((next: Theme) => {
-    setThemeState(next);
+  const toggleTheme = useCallback(() => {
+    setThemeState('dark');
+  }, []);
+
+  const setTheme = useCallback((_next: Theme) => {
+    setThemeState('dark');
   }, []);
 
   const value = useMemo<ThemeContextValue>(() => ({ theme, toggleTheme, setTheme }), [theme, toggleTheme, setTheme]);

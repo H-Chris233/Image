@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ImageIcon, PenLine } from 'lucide-react';
+import { AlertCircle, ImageIcon, PenLine, RefreshCw } from 'lucide-react';
 import { getInspirations, InspirationItem } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
@@ -37,6 +37,13 @@ function getExploreEstimatedHeight(item: InspirationItem, index: number) {
   return 320 / ratio;
 }
 
+function getExploreErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return null;
+}
+
 export default function Explore() {
   const { viewer } = useAuth();
   const { openAuthModal } = useAuthModal();
@@ -44,10 +51,14 @@ export default function Explore() {
   const { t } = useSite();
   const reusePromptLabel = `${t('home_clone_prompt')} ${t('side_create')}`;
   const [items, setItems] = useState<InspirationItem[]>([]);
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [loadErrorMessage, setLoadErrorMessage] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const nextOffsetRef = useRef(0);
+  const hasMoreRef = useRef(true);
+  const loadErrorRef = useRef(false);
+  const inFlightOffsetRef = useRef<number | null>(null);
   const skeletonItems = useMemo<SkeletonItem[]>(
     () => Array.from({ length: SKELETON_COUNT }, (_, index) => ({
       id: `initial-${index}`,
@@ -63,33 +74,64 @@ export default function Explore() {
     [],
   );
 
-  const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+  const loadMore = useCallback(async (options: { force?: boolean } = {}) => {
+    if (inFlightOffsetRef.current !== null) return;
+    if (!hasMoreRef.current && !options.force) return;
+    if (loadErrorRef.current && !options.force) return;
+
+    const requestedOffset = nextOffsetRef.current;
+    inFlightOffsetRef.current = requestedOffset;
     setLoading(true);
+    setLoadError(false);
+    setLoadErrorMessage(null);
+    loadErrorRef.current = false;
+
     try {
-      const res = await getInspirations({ limit: PAGE_SIZE, offset });
+      const res = await getInspirations({ limit: PAGE_SIZE, offset: requestedOffset });
+      const responseItems = res.items || [];
+
+      if (nextOffsetRef.current !== requestedOffset) return;
+
       setItems((prev) => {
         const existingIds = new Set(prev.map((i) => i.id));
-        return [...prev, ...res.items.filter((i) => !existingIds.has(i.id))];
+        const nextItems = requestedOffset === 0 ? [] : [...prev];
+
+        responseItems.forEach((item) => {
+          if (!existingIds.has(item.id)) {
+            existingIds.add(item.id);
+            nextItems.push(item);
+          }
+        });
+
+        return nextItems;
       });
-      setOffset((o) => o + res.items.length);
-      setHasMore(res.items.length === PAGE_SIZE);
-    } catch {
-      setHasMore(false);
+
+      const nextOffset = requestedOffset + responseItems.length;
+      const total = Number.isFinite(res.total) ? res.total : null;
+      const nextHasMore = responseItems.length === PAGE_SIZE && (total === null || nextOffset < total);
+      nextOffsetRef.current = nextOffset;
+      hasMoreRef.current = nextHasMore;
+    } catch (error) {
+      loadErrorRef.current = true;
+      setLoadError(true);
+      setLoadErrorMessage(getExploreErrorMessage(error));
     } finally {
-      setLoading(false);
+      if (inFlightOffsetRef.current === requestedOffset) {
+        inFlightOffsetRef.current = null;
+        setLoading(false);
+      }
     }
-  }, [loading, hasMore, offset]);
+  }, []);
 
   useEffect(() => {
-    loadMore();
-  }, []);
+    loadMore().catch(() => undefined);
+  }, [loadMore]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      (entries) => { if (entries[0].isIntersecting) loadMore().catch(() => undefined); },
       { rootMargin: '400px' },
     );
     observer.observe(sentinel);
@@ -120,6 +162,29 @@ export default function Explore() {
           getEstimatedHeight={(item) => 320 / item.ratio}
           renderItem={(item, index) => <ExploreSkeletonCard ratio={item.ratio} loadingLabel={index === 0 ? t('home_loading_feed') : undefined} />}
         />
+      ) : items.length === 0 && loadError ? (
+        <ExploreStatePanel
+          accent="error"
+          action={(
+            <button
+              type="button"
+              onClick={() => loadMore({ force: true }).catch(() => undefined)}
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E3FF74]/30 bg-[#E3FF74] px-4 text-sm font-semibold text-[#1a1917] transition-colors hover:bg-white"
+            >
+              <RefreshCw size={16} />
+              {t('history_retry')}
+            </button>
+          )}
+          description={loadErrorMessage || t('toast_error')}
+          icon={<AlertCircle size={24} />}
+          title={t('toast_error')}
+        />
+      ) : items.length === 0 ? (
+        <ExploreStatePanel
+          description={t('explore_desc')}
+          icon={<ImageIcon size={24} />}
+          title={t('home_empty_feed')}
+        />
       ) : (
         <MasonryGrid<InspirationItem>
           items={items}
@@ -142,7 +207,58 @@ export default function Explore() {
         </div>
       )}
 
+      {items.length > 0 && loadError && (
+        <div className="mt-8 flex justify-center">
+          <div className="flex w-full max-w-xl flex-col items-center gap-3 rounded-2xl border border-error/25 bg-error/10 px-5 py-4 text-center sm:flex-row sm:justify-between sm:text-left">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-error">{t('toast_error')}</div>
+              <div className="mt-1 break-words text-xs leading-5 text-on-surface-variant">{loadErrorMessage || t('toast_error')}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => loadMore({ force: true }).catch(() => undefined)}
+              className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-error/30 px-3 text-xs font-semibold text-error transition-colors hover:bg-error/15"
+            >
+              <RefreshCw size={14} />
+              {t('history_retry')}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div ref={sentinelRef} className="h-4" />
+    </div>
+  );
+}
+
+function ExploreStatePanel({
+  accent = 'primary',
+  action,
+  description,
+  icon,
+  title,
+}: {
+  accent?: 'primary' | 'error';
+  action?: ReactNode;
+  description: string;
+  icon: ReactNode;
+  title: string;
+}) {
+  const accentClasses = {
+    primary: 'border-[#E3FF74]/25 bg-[#E3FF74]/10 text-[#E3FF74] shadow-[#E3FF74]/10',
+    error: 'border-error/25 bg-error/10 text-error shadow-error/10',
+  }[accent];
+
+  return (
+    <div className="flex min-h-[340px] items-center justify-center rounded-2xl border border-[#f0ede8]/10 bg-[#14120f]/80 px-6 py-12 text-center shadow-[0_24px_80px_rgba(0,0,0,0.22)]">
+      <div className="mx-auto flex max-w-md flex-col items-center">
+        <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border ${accentClasses}`}>
+          {icon}
+        </div>
+        <h2 className="text-xl font-bold tracking-tight text-[#f0ede8]">{title}</h2>
+        <p className="mt-2 break-words text-sm leading-6 text-on-surface-variant">{description}</p>
+        {action ? <div className="mt-6 flex flex-wrap justify-center gap-3">{action}</div> : null}
+      </div>
     </div>
   );
 }

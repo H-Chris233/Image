@@ -75,6 +75,7 @@ export default function Create() {
   const [optimizingPrompt, setOptimizingPromptState] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const referenceFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const pending = window.sessionStorage.getItem(PROMPT_TRANSFER_KEY);
@@ -160,6 +161,10 @@ export default function Create() {
       : [];
     setSelectedReferences((prev) => [...prev, ...files.map((f) => createReferenceEntry(f))].slice(0, 8));
     event.target.value = '';
+  }
+
+  function openReferenceFilePicker() {
+    referenceFileInputRef.current?.click();
   }
 
   const modes = Object.entries(MODE_LABEL_KEYS) as [CreateMode, (typeof MODE_LABEL_KEYS)[CreateMode]][];
@@ -249,6 +254,14 @@ export default function Create() {
             </div>
 
             <div className="border-b border-white/[0.06] p-4">
+              <input
+                ref={referenceFileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleRefImageChange}
+              />
               {selectedReferences.length > 0 ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {selectedReferencePreviews.map((ref) => (
@@ -296,20 +309,29 @@ export default function Create() {
                   ))}
                 </div>
               ) : (
-                <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.12] bg-white/[0.025] px-4 py-5 text-center transition-colors hover:border-[rgba(227,255,116,0.28)] hover:bg-[rgba(227,255,116,0.04)]">
+                <button
+                  type="button"
+                  className="flex min-h-24 w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.12] bg-white/[0.025] px-4 py-5 text-center transition-colors hover:border-[rgba(227,255,116,0.28)] hover:bg-[rgba(227,255,116,0.04)] focus-visible:border-[rgba(227,255,116,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/30"
+                  onClick={openReferenceFilePicker}
+                  aria-label={t('create_reference_upload_title')}
+                >
                   <UploadCloud size={20} className="text-[#E3FF74]" />
                   <span className="mt-2 text-sm font-medium text-[#f0ede8]">{t('create_reference_upload_title')}</span>
                   <span className="mt-1 text-xs leading-5 text-[#8a8680]">{t('create_reference_upload_desc')}</span>
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={handleRefImageChange} />
-                </label>
+                </button>
               )}
             </div>
 
             <div className="flex gap-3 p-4">
-              <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] transition-colors hover:bg-white/[0.07]" title={t('create_add_reference')}>
+              <button
+                type="button"
+                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] transition-colors hover:bg-white/[0.07] focus-visible:border-[rgba(227,255,116,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/30"
+                title={t('create_add_reference')}
+                aria-label={t('create_add_reference')}
+                onClick={openReferenceFilePicker}
+              >
                 <ImagePlus size={17} className="text-[#8a8680]" />
-                <input type="file" accept="image/*" multiple className="hidden" onChange={handleRefImageChange} />
-              </label>
+              </button>
               <textarea
                 ref={textareaRef}
                 className="min-h-[118px] flex-1 resize-none bg-transparent text-sm leading-relaxed text-[#f0ede8] outline-none placeholder:text-[#4a4844]"

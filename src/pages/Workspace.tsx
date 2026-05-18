@@ -4,6 +4,7 @@ import { ArrowLeft, Download, RotateCcw, Loader2, AlertCircle } from 'lucide-rea
 import { getImageTask, ImageTask, HistoryItem } from '../api';
 import RetryImage from '../components/RetryImage';
 import ImagePreviewModal from '../components/ImagePreviewModal';
+import { useSite } from '../site';
 
 type WorkspaceTab = 'quick' | 'advanced' | 'marketing';
 
@@ -18,6 +19,7 @@ const POLL_INTERVAL = 1500;
 export default function Workspace() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
+  const { t } = useSite();
   const [task, setTask] = useState<ImageTask | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('quick');
@@ -116,11 +118,14 @@ export default function Workspace() {
           <div className="mb-8">
             <div className={`grid gap-3 ${images.length === 1 ? 'grid-cols-1 max-w-md' : 'grid-cols-2 sm:grid-cols-4'}`}>
               {images.map((img, idx) => (
-                <div
+                <button
                   key={img.id}
-                  className="relative rounded-2xl overflow-hidden cursor-pointer group aspect-square transition-all duration-300 hover:-translate-y-1"
+                  type="button"
+                  className="relative aspect-square w-full cursor-pointer overflow-hidden rounded-2xl border-0 bg-transparent p-0 text-left group transition-all duration-300 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0e0c]"
                   style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.35)' }}
                   onClick={() => openPreview(images, idx)}
+                  aria-label={`${t('history_preview')} ${idx + 1}`}
+                  title={`${t('history_preview')} ${idx + 1}`}
                 >
                   <RetryImage
                     src={img.image_url ?? ''}
@@ -130,10 +135,10 @@ export default function Workspace() {
                   <div className="absolute inset-x-0 top-0 h-0.5 gradient-genesis opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-end p-3 opacity-0 group-hover:opacity-100">
                     <span className="text-white text-[11px] font-medium bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1">
-                      查看大图
+                      {t('history_preview')}
                     </span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
 

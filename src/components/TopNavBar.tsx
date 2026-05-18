@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Bell, ListTodo, LogOut, Moon, Sun } from 'lucide-react';
+import { Bell, ListTodo, LogOut } from 'lucide-react';
 import { AccountInfo, formatBalance, getAccount, logoutAccount } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
-import { useTheme } from './ThemeProvider';
 import aethergenixLogo from '../../aethergenix.svg';
 
 export default function TopNavBar() {
@@ -13,7 +12,6 @@ export default function TopNavBar() {
   const { openAuthModal } = useAuthModal();
   const { siteSettings, openAnnouncement, t } = useSite();
   const { activeCount, openDrawer } = useTasks();
-  const { theme, toggleTheme } = useTheme();
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -60,17 +58,6 @@ export default function TopNavBar() {
 
       {/* 右侧 */}
       <div className="flex items-center gap-1">
-
-        {/* 主题 */}
-        <button
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-[#8a8680] hover:text-[#f0ede8] hover:bg-white/5 transition-colors"
-          type="button"
-          aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-          onClick={toggleTheme}
-        >
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
-
         {/* 任务 */}
         <button
           className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#8a8680] hover:text-[#f0ede8] hover:bg-white/5 transition-colors"
