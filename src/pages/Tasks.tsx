@@ -16,10 +16,10 @@ function statusLabel(status: 'queued' | 'running' | 'succeeded' | 'failed', t: R
 }
 
 function statusIcon(status: 'queued' | 'running' | 'succeeded' | 'failed') {
-  if (status === 'queued') return <Clock3 size={14} className="text-on-surface-variant" />;
-  if (status === 'running') return <Loader2 size={14} className="animate-spin text-primary" />;
-  if (status === 'succeeded') return <CheckCircle2 size={14} className="text-tertiary" />;
-  return <XCircle size={14} className="text-error" />;
+  if (status === 'queued') return <Clock3 size={14} className="text-[#8a8680]" />;
+  if (status === 'running') return <Loader2 size={14} className="animate-spin text-[#E3FF74]" />;
+  if (status === 'succeeded') return <CheckCircle2 size={14} className="text-[#4ade80]" />;
+  return <XCircle size={14} className="text-[#ff6b6b]" />;
 }
 
 export default function Tasks() {
@@ -40,14 +40,17 @@ export default function Tasks() {
   }, [filter, tasks]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto px-4 py-6 text-[#f0ede8]">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-on-surface">{t('tasks_title')}</h1>
-        <p className="mt-1 text-sm text-on-surface-variant">{t('tasks_subtitle')}</p>
+        <h1 className="font-display text-2xl font-bold text-[#f0ede8]">
+          {t('tasks_title')}
+          <span className="ml-2 text-[#E3FF74]">·</span>
+        </h1>
+        <p className="mt-1 text-sm text-[#8a8680]">{t('tasks_subtitle')}</p>
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <div className="text-sm text-on-surface-variant">
+        <div className="text-sm text-[#8a8680]">
           {activeCount > 0 ? t('tasks_active', { value: activeCount }) : t('tasks_idle')}
         </div>
       </div>
@@ -63,8 +66,8 @@ export default function Tasks() {
             key={key}
             className={`rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
               filter === key
-                ? 'bg-primary-container text-on-primary-container'
-                : 'text-on-surface-variant hover:bg-surface-container'
+                ? 'border border-[rgba(227,255,116,0.15)] bg-[rgba(227,255,116,0.1)] text-[#E3FF74]'
+                : 'border border-transparent text-[#8a8680] hover:bg-white/[0.04] hover:text-[#f0ede8]'
             }`}
             type="button"
             onClick={() => setFilter(key as FilterKey)}
@@ -75,7 +78,7 @@ export default function Tasks() {
       </div>
 
       {visibleTasks.length === 0 ? (
-        <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-outline-variant bg-surface-container-low px-6 text-sm text-on-surface-variant">
+        <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-white/[0.1] bg-white/[0.03] px-6 text-sm text-[#8a8680]">
           {t('tasks_empty')}
         </div>
       ) : (
@@ -87,24 +90,24 @@ export default function Tasks() {
               .map((item) => ({ id: item.id, url: item.image_url || '', prompt: item.prompt }));
             const previewImage = previewImages[0]?.url || null;
             return (
-              <div key={task.id} className="rounded-xl border border-outline-variant bg-surface p-4">
+              <div key={task.id} className="rounded-xl border border-white/[0.07] bg-[#1a1917] p-4">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
                     {statusIcon(task.status)}
                     <div className="min-w-0">
-                      <div className="text-sm font-medium text-on-surface">
+                      <div className="text-sm font-medium text-[#f0ede8]">
                         {task.mode === 'edit' ? t('home_mode_edit') : t('home_mode_generate')}
                       </div>
-                      <div className="text-xs text-on-surface-variant">{formatDate(task.created_at)}</div>
+                      <div className="text-xs text-[#8a8680]">{formatDate(task.created_at)}</div>
                     </div>
                   </div>
-                  <div className="rounded-lg bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
+                  <div className="rounded-lg bg-white/[0.03] px-2.5 py-1 text-xs font-medium text-[#8a8680]">
                     {statusLabel(task.status, t)}
                   </div>
                 </div>
 
                 <div className="flex gap-3">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/[0.07] bg-white/[0.03]">
                     {previewImages.length > 1 ? (
                       <div className="grid h-full w-full grid-cols-2 gap-0.5 p-0.5">
                         {previewImages.slice(0, 4).map((image, imageIndex) => (
@@ -138,22 +141,22 @@ export default function Tasks() {
                         <RetryImage alt={task.prompt} className="h-full w-full object-contain" src={previewImage} />
                       </button>
                     ) : (
-                      <ImageIcon size={18} className="text-on-surface-variant" />
+                      <ImageIcon size={18} className="text-[#8a8680]" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="line-clamp-3 text-sm text-on-surface">{task.prompt}</p>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-on-surface-variant">
+                    <p className="line-clamp-3 text-sm text-[#f0ede8]">{task.prompt}</p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-[#8a8680]">
                       <span>{task.model}</span>
                       <span>{task.size}</span>
                       {task.aspect_ratio ? <span>{task.aspect_ratio}</span> : null}
                       <span>{task.quality}</span>
                       {previewImages.length > 1 ? <span>x{previewImages.length}</span> : null}
                     </div>
-                    {task.error ? <div className="mt-2 text-sm text-error">{task.error}</div> : null}
+                    {task.error ? <div className="mt-2 text-sm text-[#ff6b6b]">{task.error}</div> : null}
                     {previewImages.length > 1 ? (
                       <a
-                        className="mt-3 inline-flex h-8 items-center gap-2 rounded-lg border border-outline-variant px-3 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
+                        className="mt-3 inline-flex h-8 items-center gap-2 rounded-lg border border-white/[0.08] px-3 text-xs font-medium text-[#8a8680] transition-colors hover:bg-white/[0.04] hover:text-[#f0ede8]"
                         href={taskDownloadUrl(task.id)}
                         title={t('history_download_zip')}
                       >
