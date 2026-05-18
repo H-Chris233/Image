@@ -1,4 +1,4 @@
-import { Archive, CheckCircle2, Clock3, ImageIcon, Loader2, X, XCircle } from 'lucide-react';
+import { Archive, CheckCircle2, Clock3, ImageIcon, ListFilter, Loader2, Sparkles, X, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { formatDate, taskDownloadUrl } from '../api';
@@ -43,6 +43,7 @@ export default function TaskDrawer() {
     }
     return tasks.filter((task) => task.status === filter);
   }, [filter, tasks]);
+  const hasFilter = filter !== 'all';
 
   return (
     <>
@@ -53,9 +54,11 @@ export default function TaskDrawer() {
         onClick={closeDrawer}
       />
       <aside
+        aria-hidden={!drawerOpen}
         className={`fixed right-0 top-0 z-[130] h-full w-full max-w-[420px] bg-[#111110] shadow-xl transition-transform duration-300 ${
           drawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        inert={drawerOpen ? undefined : ''}
       >
         <div className="flex h-full flex-col">
           <div className="flex items-start justify-between border-b border-white/[0.07] px-6 py-5">
@@ -112,8 +115,37 @@ export default function TaskDrawer() {
 
           <div className="flex-1 overflow-y-auto px-4 py-4">
             {visibleTasks.length === 0 ? (
-              <div className="flex h-full min-h-[240px] items-center justify-center rounded-xl border border-dashed border-white/[0.1] bg-white/[0.03] px-6 text-sm text-[#8a8680]">
-                {t('tasks_empty')}
+              <div className="flex h-full min-h-[260px] items-center justify-center rounded-2xl border border-outline-variant/70 bg-surface/70 px-5 py-8 text-center">
+                <div className="mx-auto flex max-w-xs flex-col items-center">
+                  <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border ${
+                    hasFilter ? 'border-secondary/25 bg-secondary/10 text-secondary' : 'border-primary/25 bg-primary/10 text-primary'
+                  }`}
+                  >
+                    {hasFilter ? <ListFilter size={22} /> : <Sparkles size={22} />}
+                  </div>
+                  <h3 className="text-base font-semibold text-on-surface">
+                    {hasFilter ? t('tasks_filter_empty_title') : t('tasks_empty_title')}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+                    {hasFilter ? t('tasks_filter_empty_desc') : t('tasks_empty_desc')}
+                  </p>
+                  <div className="mt-5 flex flex-wrap justify-center gap-2">
+                    {hasFilter ? (
+                      <button
+                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-variant px-3 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"
+                        type="button"
+                        onClick={() => setFilter('all')}
+                      >
+                        <ListFilter size={14} />
+                        {t('tasks_clear_filter')}
+                      </button>
+                    ) : null}
+                    <Link className="btn-primary h-9 px-3 text-xs" to="/create" onClick={closeDrawer}>
+                      <Sparkles size={14} />
+                      {t('tasks_create_action')}
+                    </Link>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -187,7 +219,7 @@ export default function TaskDrawer() {
                             <span>{task.quality}</span>
                             {previewImages.length > 1 ? <span>x{previewImages.length}</span> : null}
                           </div>
-                          {task.error ? <div className="mt-2 text-sm text-[#ff6b6b]">{task.error}</div> : null}
+                          {task.error ? <div className="mt-2 break-words text-sm text-[#ff6b6b]">{task.error}</div> : null}
                           {previewImages.length > 1 ? (
                             <a
                               className="mt-3 inline-flex h-8 items-center gap-2 rounded-lg border border-white/[0.08] px-3 text-xs font-medium text-[#8a8680] transition-colors hover:bg-white/[0.04] hover:text-[#f0ede8]"

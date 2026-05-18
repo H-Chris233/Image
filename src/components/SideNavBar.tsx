@@ -53,7 +53,7 @@ export default function SideNavBar() {
         <div className="my-4 border-t border-white/[0.05]" />
 
         <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-[#4a4844]">
-          账户
+          {t('side_account')}
         </p>
         <div className="flex flex-col gap-0.5">
           {accountItems.map((item) => renderNavItem(item, location.pathname === item.path))}

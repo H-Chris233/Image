@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, ListTodo, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
+import { Bell, ListTodo, LogOut, Moon, Sun } from 'lucide-react';
 import { AccountInfo, formatBalance, getAccount, logoutAccount } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
@@ -15,7 +15,6 @@ export default function TopNavBar() {
   const { activeCount, openDrawer } = useTasks();
   const { theme, toggleTheme } = useTheme();
   const [account, setAccount] = useState<AccountInfo | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -139,56 +138,7 @@ export default function TopNavBar() {
             </div>
           )}
         </div>
-
-        {/* 移动端汉堡 */}
-        <button
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-[#8a8680] hover:text-[#f0ede8] hover:bg-white/5 lg:hidden"
-          type="button"
-          aria-label={mobileMenuOpen ? t('mobile_menu_close') : t('mobile_menu_open')}
-          onClick={() => setMobileMenuOpen((v) => !v)}
-        >
-          {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
-        </button>
       </div>
-
-      {/* 移动端菜单 */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-x-0 top-16 z-50 border-b border-white/[0.06] bg-[rgba(17,17,16,0.97)] backdrop-blur-xl px-4 py-4 lg:hidden animate-fade-in">
-          <div className="mb-4 rounded-2xl bg-white/[0.04] border border-white/[0.06] p-4">
-            <div className="text-[11px] text-[#8a8680]">{t('top_owner')}</div>
-            <div className="mt-1 text-sm font-semibold text-[#f0ede8]">{viewerLabel}</div>
-            {viewer?.authenticated && (
-              <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
-                <span className="text-xs text-[#8a8680]">{t('top_credits')}</span>
-                <span className="text-sm font-bold text-[#E3FF74]">{formatBalance(account?.balance)}</span>
-              </div>
-            )}
-          </div>
-
-          {viewer?.authenticated ? (
-            <button
-              className="btn-ghost w-full h-11 justify-center"
-              type="button"
-              onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-              disabled={loggingOut}
-            >
-              <LogOut size={16} />
-              {t('top_logout')}
-            </button>
-          ) : (
-            <div className="flex gap-2">
-              <button className="btn-ghost flex-1 h-11 justify-center" type="button"
-                onClick={() => { openAuthModal('login'); setMobileMenuOpen(false); }}>
-                {t('top_login')}
-              </button>
-              <button className="btn-primary flex-1 h-11 justify-center" type="button"
-                onClick={() => { openAuthModal('register'); setMobileMenuOpen(false); }}>
-                {t('top_register')}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
     </header>
   );
 }

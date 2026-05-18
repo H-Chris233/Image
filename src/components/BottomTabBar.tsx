@@ -1,14 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CreditCard, Heart, History, MoreHorizontal, PenLine, Settings, UserCircle, Wallet, X } from 'lucide-react';
+import { CreditCard, Heart, History, LogOut, MoreHorizontal, PenLine, Settings, UserCircle, Wallet, X } from 'lucide-react';
+import { AccountInfo, formatBalance, getAccount, logoutAccount } from '../api';
 import { useAuth } from '../auth';
+import { useAuthModal } from '../authModal';
 import { useSite } from '../site';
 
 export default function BottomTabBar() {
   const location = useLocation();
-  const { viewer } = useAuth();
+  const { viewer, refresh } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const { t } = useSite();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [account, setAccount] = useState<AccountInfo | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  useEffect(() => {
+    getAccount().then(setAccount).catch(() => setAccount(null));
+  }, [viewer?.owner_id]);
+
+  async function handleLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try { await logoutAccount(); }
+    finally {
+      await refresh();
+      setAccount(await getAccount().catch(() => null));
+      setMoreOpen(false);
+      window.location.href = '/';
+    }
+  }
+
+  const viewerLabel = viewer?.authenticated
+    ? (viewer.user?.username || viewer.user?.email || 'USER')
+    : t('home_guest', { value: viewer?.guest_id?.slice(0, 8) || '--' });
 
   const mainTabs = [
     { name: t('side_create'), path: '/create', icon: PenLine },
@@ -50,6 +75,7 @@ export default function BottomTabBar() {
             isMoreActive || moreOpen ? 'text-[#E3FF74]' : 'text-[#8a8680]'
           }`}
           type="button"
+          aria-label={moreOpen ? t('mobile_menu_close') : t('top_more')}
           onClick={() => setMoreOpen((v) => !v)}
         >
           {moreOpen ? <X size={20} /> : <MoreHorizontal size={20} />}
@@ -58,8 +84,19 @@ export default function BottomTabBar() {
       </nav>
 
       {moreOpen && (
-        <div className="lg:hidden fixed inset-0 top-16 z-40 bg-[#111110]/95 backdrop-blur-sm animate-fade-in">
-          <div className="flex flex-col gap-2 p-4 pt-6">
+        <div className="fixed inset-x-0 bottom-0 top-16 z-40 overflow-y-auto bg-[#111110]/95 pb-24 backdrop-blur-sm animate-fade-in lg:hidden">
+          <div className="flex min-h-full flex-col gap-2 p-4 pt-6">
+            <div className="mb-2 rounded-2xl border border-white/[0.06] bg-white/[0.04] p-4">
+              <div className="text-[11px] text-[#8a8680]">{t('top_owner')}</div>
+              <div className="mt-1 truncate text-sm font-semibold text-[#f0ede8]">{viewerLabel}</div>
+              {viewer?.authenticated && (
+                <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
+                  <span className="text-xs text-[#8a8680]">{t('top_credits')}</span>
+                  <span className="text-sm font-bold text-[#E3FF74]">{formatBalance(account?.balance)}</span>
+                </div>
+              )}
+            </div>
+
             {moreItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
@@ -79,6 +116,37 @@ export default function BottomTabBar() {
                 </Link>
               );
             })}
+
+            <div className="mt-2 border-t border-white/[0.06] pt-4">
+              {viewer?.authenticated ? (
+                <button
+                  className="btn-ghost h-11 w-full justify-center"
+                  type="button"
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                >
+                  <LogOut size={16} />
+                  {t('top_logout')}
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    className="btn-ghost h-11 flex-1 justify-center"
+                    type="button"
+                    onClick={() => { openAuthModal('login'); setMoreOpen(false); }}
+                  >
+                    {t('top_login')}
+                  </button>
+                  <button
+                    className="btn-primary h-11 flex-1 justify-center"
+                    type="button"
+                    onClick={() => { openAuthModal('register'); setMoreOpen(false); }}
+                  >
+                    {t('top_register')}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

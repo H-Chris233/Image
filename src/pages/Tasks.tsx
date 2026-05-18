@@ -1,5 +1,6 @@
-import { Archive, CheckCircle2, Clock3, ImageIcon, Loader2, XCircle } from 'lucide-react';
+import { Archive, CheckCircle2, Clock3, ImageIcon, ListFilter, Loader2, Sparkles, XCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { formatDate, taskDownloadUrl } from '../api';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import RetryImage from '../components/RetryImage';
@@ -38,6 +39,7 @@ export default function Tasks() {
     if (filter === 'active') return tasks.filter((task) => task.status === 'queued' || task.status === 'running');
     return tasks.filter((task) => task.status === filter);
   }, [filter, tasks]);
+  const hasFilter = filter !== 'all';
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 text-[#f0ede8]">
@@ -78,8 +80,37 @@ export default function Tasks() {
       </div>
 
       {visibleTasks.length === 0 ? (
-        <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-white/[0.1] bg-white/[0.03] px-6 text-sm text-[#8a8680]">
-          {t('tasks_empty')}
+        <div className="flex min-h-[280px] items-center justify-center rounded-2xl border border-outline-variant/70 bg-surface/70 px-6 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+          <div className="mx-auto flex max-w-sm flex-col items-center">
+            <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border ${
+              hasFilter ? 'border-secondary/25 bg-secondary/10 text-secondary' : 'border-primary/25 bg-primary/10 text-primary'
+            }`}
+            >
+              {hasFilter ? <ListFilter size={24} /> : <Sparkles size={24} />}
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-on-surface">
+              {hasFilter ? t('tasks_filter_empty_title') : t('tasks_empty_title')}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+              {hasFilter ? t('tasks_filter_empty_desc') : t('tasks_empty_desc')}
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {hasFilter ? (
+                <button
+                  className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
+                  type="button"
+                  onClick={() => setFilter('all')}
+                >
+                  <ListFilter size={16} />
+                  {t('tasks_clear_filter')}
+                </button>
+              ) : null}
+              <Link className="btn-primary" to="/create">
+                <Sparkles size={16} />
+                {t('tasks_create_action')}
+              </Link>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-3">

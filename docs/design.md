@@ -1,617 +1,637 @@
-# AetherGenix Design System
-> 版本 v1.0 · 2026-05-18
-> 设计语言代号：**Aether Fruit** — 宇宙深处熟透的果实
+# AetherGenix 设计系统
+
+> 版本：v2.0 / 2026-05-18
+> 当前标准：Warm Charcoal UI
+> 适用范围：AetherGenix Image 前端 UI、后续 UI agents、截图验收与文档审查
 
 ---
 
-## 一、品牌定位 & 设计哲学
+## 1. 设计方向
 
-AetherGenix 是一个 AI 图像生成平台。「Aether」是古典宇宙元素中的以太——渗透万物的发光能量；「Genix」是创生与起源。这两个词合在一起，意味着**从以太中召唤视觉**。
+AetherGenix 是面向商家与创作者的 AI 图像生成平台。当前 live UI 已从早期的 cyan / violet cosmic 方向，收敛到更克制、更像生产工具的 **warm charcoal / cream / lime / orange** 方向。
 
-**设计哲学三句话**：
-1. **以太质感**：界面本身就是生成物——光从内部透出，表面带有湿润的光泽感，像一颗刚被摘下的果实。
-2. **宇宙里的鲜果**：用深空背景衬托高饱和的色彩，对比创造张力，黑色越深，颜色越响亮。
-3. **克制的丰盛**：「果味」不是把所有颜色倒进一个碗。是一个精准的爆发点，其余保持深沉。
+核心感受：
 
-**核心灵感来源**：Lovart.ai 的产品设计输出风格——饱和渐变、有机形态、色光叠加。
+- 深色优先，但不是冷蓝宇宙背景，而是带暖度的炭黑界面。
+- 主要动作不靠蓝紫渐变抢眼，而靠 cream 色 pill button 建立清晰入口。
+- lime 是签名高亮，只用于选中、运行中、通知点、细线光带、余额等关键状态。
+- orange 是商业和补充动作色，适合充值、购买、促销、提醒，不作为全站主色。
+- 图片内容本身是视觉主角，UI 负责安静承托。
 
----
+历史说明：
 
-## 二、色彩系统
-
-### 2.1 品牌调色板（设计 Token）
-
-「果味」进化：在现有青蓝×靛紫的基础上，引入暖琥珀和电石灰作为「果肉色」。
-
-```css
-/* ─── 核心品牌色 ─── */
---ag-cyan:        #00D4F0;   /* 电青，比原 #0891b2 更饱和 */
---ag-violet:      #8B5CF6;   /* 活力紫，比原 #6366f1 更暖 */
---ag-amber:       #F59E0B;   /* 琥珀金，「果肉」暖色 */
---ag-lime:        #D9F20A;   /* 电石灰，Lovart 签名高亮 #E3FF74 的 AetherGenix 版 */
-
-/* ─── 深空背景色 ─── */
---ag-bg-void:     #050810;   /* 最深：宇宙黑 */
---ag-bg-deep:     #080D1A;   /* 深空：主背景 dark */
---ag-bg-cosmic:   #0D1428;   /* 宇宙蓝：surface 容器 */
---ag-bg-nebula:   #151E38;   /* 星云：card 背景 */
-
-/* ─── 亮色模式背景 ─── */
---ag-bg-light:    #F8FAFC;   /* 主背景 light（保留原值） */
---ag-bg-mist:     #EFF4FF;   /* 带蓝气息的浅面 */
---ag-bg-frost:    #FFFFFF;   /* 纯白 */
-
-/* ─── 文字色 ─── */
---ag-text-primary:   #F0F4FF;    /* dark 主文字：微冷白 */
---ag-text-secondary: #8899BB;    /* dark 次级：星光蓝灰 */
---ag-text-muted:     #4A5980;    /* dark 弱：深宇宙蓝 */
---ag-text-ink:       #0F172A;    /* light 主文字 */
---ag-text-ink-2:     #475569;    /* light 次级 */
-```
-
-### 2.2 渐变配方（Gradient Recipes）
-
-「果味」的精髓在于渐变的**温度感**和**层次数**。
-
-```css
-/* ── 品牌 Hero 渐变（3色，以太色谱）─── */
---ag-gradient-aether:
-  linear-gradient(135deg, #00D4F0 0%, #8B5CF6 55%, #EC4899 100%);
-
-/* ── 生成渐变（2色，最常用）─── */
---ag-gradient-genesis:
-  linear-gradient(135deg, #00D4F0 0%, #8B5CF6 100%);
-
-/* ── 暖果渐变（CTA 用，有温度）─── */
---ag-gradient-fruit:
-  linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
-
-/* ── 电石高亮（稀用，最「果味」的一笔）─── */
---ag-gradient-spark:
-  linear-gradient(90deg, #D9F20A 0%, #A3E635 100%);
-
-/* ── 深空背景渐变（页面底色）─── */
---ag-gradient-void:
-  radial-gradient(ellipse at 20% 50%, #1E1B4B 0%, #050810 60%);
-
-/* ── 玻璃卡片渐变（内部填充）─── */
---ag-gradient-glass:
-  linear-gradient(135deg, rgba(0,212,240,0.08) 0%, rgba(139,92,246,0.05) 100%);
-```
-
-**渐变使用规范**：
-- `aether`：Hero section、Splash 区域（页面只能出现 1 次）
-- `genesis`：主 CTA 按钮、焦点元素
-- `fruit`：次级 CTA、充值/购买相关元素
-- `spark`：悬停高亮、选中状态、徽章（点缀，非大面积）
-- `void`：暗色页面底层背景
-- `glass`：卡片内部微渐变，与深色底叠合
-
-### 2.3 暗色模式（Dark First）
-
-**AetherGenix 以深色为主要模式**，浅色为辅助选项。
-
-```
-深色主题层级：
-  Void   #050810  ← 最底层背景
-  Deep   #080D1A  ← 页面主背景
-  Cosmic #0D1428  ← 主要 surface（nav、sidebar）
-  Nebula #151E38  ← 卡片、浮层
-  Stellar #1E2A4A  ← hover 状态、输入框
-  Frost  rgba(255,255,255,0.06)  ← 玻璃面最高层
-```
-
-```
-浅色主题层级：
-  Background  #F8FAFC
-  Surface     #FFFFFF
-  Container   #EFF4FF
-  High        #E2E8F0
-```
-
-### 2.4 色光系统（Glow & Aura）
-
-「果味」重要组成：发光效果，像果实在光下的反光。
-
-```css
-/* 主色光（青） */
---ag-glow-cyan:   0 0 20px rgba(0,212,240,0.35), 0 0 60px rgba(0,212,240,0.12);
-/* 紫光 */
---ag-glow-violet: 0 0 20px rgba(139,92,246,0.35), 0 0 60px rgba(139,92,246,0.12);
-/* 金光（CTA） */
---ag-glow-amber:  0 0 20px rgba(245,158,11,0.40), 0 0 60px rgba(245,158,11,0.15);
-/* 微光（通用卡片悬停）*/
---ag-glow-soft:   0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.08);
-```
+早期文档中的 “Aether Fruit / cyan-violet cosmic / glass nebula” 是已发生过的设计探索。它解释了品牌曾经追求“发光、生成感、深色科技感”的来源，但 **不再作为新 UI 的执行标准**。后续新增页面和组件必须优先匹配 live UI 的 warm charcoal 方向。
 
 ---
 
-## 三、字体排版
+## 2. 产品与路由语义
 
-### 3.1 字体栈
+参考 `CONTEXT.md` 和 ADR：
 
-Lovart 使用专属展示字体（FeatureDisplay）+ 优质 Grotesque（GT Standard）。AetherGenix 采用公开可用的同级替代：
+- `/create`：已登录用户默认落地页。承载通用生成与电商生成两个模式，输入提示词、参考图、参数并发起任务。
+- `/explore`：未登录用户默认落地页。公开灵感图库，主路径是浏览图片并复用提示词。
+- `/workspace/:taskId`：单次任务完成后的专属工作台，展示结果、重新生成、后续创作与营销文案入口。
+- `/history`：历史任务列表，点击后进入对应 workspace。
+- `/favorites`：已登录用户的收藏入口。
+- `/recharge`、`/billing`、`/account`、`/config`：账户与配置相关页面。
 
-```css
-/* Display / 大标题：Bricolage Grotesque —— 有机感的变宽几何无衬线 */
---ag-font-display: 'Bricolage Grotesque', 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+导航决策：
 
-/* Body / UI：Inter —— 保留现有（工程化，信息密度高）*/
---ag-font-sans:    'Inter', ui-sans-serif, system-ui, sans-serif;
-
-/* Mono：JetBrains Mono —— 保留现有 */
---ag-font-mono:    'JetBrains Mono', ui-monospace, monospace;
-```
-
-> **实施说明**：在 `index.html` 的 `<head>` 追加：
-> ```html
-> <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-> ```
-
-### 3.2 排版层级
-
-| Token | 字体 | 尺寸 | 字重 | 行高 | 用途 |
-|---|---|---|---|---|---|
-| `ag-display-xl` | Display | 60px / 3.75rem | 700 | 1.1 | Hero 主标题 |
-| `ag-display-lg` | Display | 48px / 3rem | 700 | 1.15 | 区块标题 |
-| `ag-display-md` | Display | 36px / 2.25rem | 600 | 1.2 | 页面标题 |
-| `ag-heading-xl` | Display | 28px / 1.75rem | 600 | 1.25 | 卡片组标题 |
-| `ag-heading-lg` | Sans | 22px / 1.375rem | 600 | 1.35 | 页面二级标题 |
-| `ag-heading-md` | Sans | 18px / 1.125rem | 600 | 1.4 | 组件标题 |
-| `ag-heading-sm` | Sans | 16px / 1rem | 500 | 1.5 | 小标题 |
-| `ag-body-lg` | Sans | 16px / 1rem | 400 | 1.6 | 正文大 |
-| `ag-body-md` | Sans | 14px / 0.875rem | 400 | 1.55 | 正文 |
-| `ag-body-sm` | Sans | 13px / 0.8125rem | 400 | 1.5 | 辅助文字 |
-| `ag-label` | Sans | 12px / 0.75rem | 500 | 1.4 | 标签、说明 |
-| `ag-mono` | Mono | 13px / 0.8125rem | 400 | 1.6 | 代码、API |
-
-**字间距（Letter Spacing）**：
-- Display 字体：`-0.02em`（略收，现代感）
-- Heading：`-0.01em`
-- Body/Label：`0`（不额外调整）
-- 全大写标签：`0.08em`（展开）
-
-### 3.3 中文排版
-
-- 中英混排时 Display 字体 fallback 到 `Noto Sans SC`
-- 中文正文行高取 `1.8`（比英文更宽松）
-- 不使用衬线体（与平台科技感不符）
+- 桌面端：顶部导航 + 左侧导航。
+- 移动端：顶部导航 + 底部 tab bar + “更多”全屏面板。
+- `/` 只做分流：已登录进入 `/create`，未登录进入 `/explore`。
+- `/ecommerce` 是兼容旧路径，应重定向到 `/create`，电商生成作为 create 内部模式存在。
 
 ---
 
-## 四、空间系统
+## 3. 颜色系统
 
-基于 **4px 基准**，与现有 Tailwind 保持一致，补充大号间距。
+### 3.1 当前 live tokens
 
-```
-2px   → 极紧（图标内边距）
-4px   → xs
-8px   → sm
-12px  → md
-16px  → lg       ← 默认卡片内边距
-20px  → xl
-24px  → 2xl
-32px  → 3xl
-40px  → 4xl
-48px  → 5xl
-64px  → 6xl
-80px  → 7xl      ← section 间距
-96px  → 8xl
-128px → 9xl      ← Hero 区域垂直内边距
+以下颜色来自 `src/index.css` 与主要组件，是后续 UI 的事实标准。
+
+```css
+/* Warm charcoal base */
+--ag-charcoal-950: #0d0d0b; /* 最深底层 */
+--ag-charcoal-900: #111110; /* 页面背景、导航背景 */
+--ag-charcoal-800: #1a1917; /* 主 surface、卡片、弹窗 */
+--ag-charcoal-700: #242220; /* 次级 surface */
+--ag-charcoal-600: #2e2c29; /* hover / raised surface */
+--ag-charcoal-500: #3a3835; /* 控件局部、关闭按钮背景 */
+--ag-charcoal-400: #504d49; /* 弱边框 */
+--ag-charcoal-300: #6b6660; /* 次级浅色文本 */
+
+/* Text and cream */
+--ag-cream: #f0ede8;        /* dark mode 主文字、主按钮背景 */
+--ag-cream-hover: #ffffff;  /* 主按钮 hover */
+--ag-muted: #8a8680;        /* 次级文字、图标默认 */
+--ag-muted-low: #4a4844;    /* placeholder、分组标题 */
+
+/* Signature accents */
+--ag-lime: #E3FF74;         /* 选中、运行中、状态点、细线高亮 */
+--ag-lime-dim: #c8e84a;     /* lime 的低亮度变体 */
+--ag-orange: #fe6e00;       /* 充值、购买、商业 CTA */
+--ag-green: #4ade80;        /* 成功状态 */
+--ag-red: #ff6b6b;          /* 失败/错误状态 */
 ```
 
-**圆角系统**（「果味」偏大圆角，有机感）：
-```
-4px   → 细节圆角（输入框内部角标）
-8px   → sm（徽章、tag）
-12px  → md（输入框、小卡片）
-16px  → lg（标准卡片）
-20px  → xl（大卡片、弹窗）
-24px  → 2xl（面板）
-9999px → pill（按钮、胶囊标签）
-```
+当前 dark mode 主题层级：
+
+| 角色 | 色值 | 用途 |
+|---|---:|---|
+| `background` | `#111110` | 页面底色、导航底色、drawer 底色 |
+| `surface` | `#1a1917` | 主卡片、输入容器、弹窗、任务卡 |
+| `surface-container` | `#242220` | 次级容器、浅层 raised area |
+| `surface-container-high` | `#2e2c29` | hover 或更高层 surface |
+| `on-surface` | `#f0ede8` | 主文字 |
+| `on-surface-variant` | `#8a8680` | 次级文字、默认图标 |
+| `outline-variant` | `#2e2c29` 或 `rgba(255,255,255,0.06-0.08)` | 控件边框 |
+| `primary` | `#f0ede8` | 主按钮背景 |
+| `on-primary` | `#1a1917` | 主按钮文字 |
+| `surface-tint` | `#E3FF74` | 选中和关键状态 |
+
+当前 light mode 是辅助模式，必须可用，但不作为品牌主展示。light mode 应保持 warm neutral，不要回到冷蓝 SaaS 主题：
+
+| 角色 | 色值 | 用途 |
+|---|---:|---|
+| `background` | `#f9f8f6` | 浅色页面底色 |
+| `surface` | `#ffffff` | 浅色卡片 |
+| `surface-container` | `#f2f0ed` | 浅色容器 |
+| `on-surface` | `#1a1917` | 浅色主文字 |
+| `on-surface-variant` | `#6b6660` | 浅色次级文字 |
+| `secondary` | `#fe6e00` | 充值/购买/促销 |
+| `tertiary` | `#2d7a45` | 成功/正向状态 |
+
+### 3.2 颜色角色
+
+**Charcoal**
+
+- 用作页面底、导航、drawer、卡片底。
+- 允许使用 `#111110`、`#1a1917`、`#242220`、`#2e2c29` 形成层级。
+- 不要使用纯黑 `#000000` 作为大面积背景。遮罩可以使用 `bg-black/40-70`，但主体 surface 不用纯黑。
+
+**Cream**
+
+- 主按钮、主文字、强标题、重要数值。
+- 主按钮通常是 cream 背景 + charcoal 文字。
+- hover 可升到白色，但不要让白色成为大面积背景。
+
+**Lime**
+
+- 只用于关键状态和小面积强调：active nav、tab active、任务运行中、通知点、顶部 1px 光带、计数 badge、余额、focus ring。
+- lime 适合做细线、点、文字、极少量背景，如 `rgba(227,255,116,0.08-0.12)`。
+- 避免大面积 lime 面板。大面积使用会压过图片内容。
+
+**Orange**
+
+- 用于商业动作：充值、购买、套餐、促销、需要强调的付费路径。
+- 可以用于 warning-adjacent 提醒，但错误仍用 red。
+- 不要把 orange 和 lime 同时做主按钮竞争。
+
+**Cyan / Violet**
+
+- 已降级为历史遗留色。
+- 不再用于新页面主按钮、logo 文字、导航 active、输入 focus、卡片 hover。
+- 允许短期存在于旧代码残留或等待统一清理的细节中，例如现有 `gradient-genesis`、少量 hover border、旧阴影值。
+- 新代码如果确实需要“生成中进度”渐变，优先用 lime/cream/charcoal 或低饱和 warm 方案；不要新增 cyan/violet 品牌渐变。
 
 ---
 
-## 五、组件风格
+## 4. 字体与排版
 
-### 5.1 按钮（Button）
-
-「果味」按钮的核心：胶囊形状 + 色彩渐变 + 光晕。
-
-#### Primary（主行动按钮）
-```
-形状：rounded-full（pill）
-背景：linear-gradient(135deg, #00D4F0, #8B5CF6)
-悬停：brightness + box-shadow: var(--ag-glow-cyan)
-文字：白色 font-medium
-高度：h-10（40px）标准 / h-12（48px）大号
-内边距：px-6（24px）
-过渡：all 0.2s ease-out
-```
-
-#### Secondary（次级）
-```
-形状：rounded-full
-背景：透明
-边框：1px solid rgba(0,212,240,0.4)
-文字：--ag-cyan
-悬停：bg-[rgba(0,212,240,0.08)]
-```
-
-#### Ghost（幽灵）
-```
-形状：rounded-xl（非胶囊）
-背景：rgba(255,255,255,0.06)
-边框：1px solid rgba(255,255,255,0.1)
-文字：--ag-text-secondary
-悬停：bg-[rgba(255,255,255,0.1)]
-```
-
-#### Danger / CTA Warm
-```
-背景：linear-gradient(135deg, #F59E0B, #EF4444)（fruit 渐变）
-悬停：brightness(1.1) + --ag-glow-amber
-```
-
-#### 禁止状态
-```
-opacity: 0.4
-pointer-events: none
-不加灰色背景（保留原色只降透明度）
-```
-
-### 5.2 卡片（Card）
-
-「果味」卡片的核心：玻璃质感 + 内发光边框 + 悬停色光。
-
-#### 标准卡片（图片生成结果等）
-```css
-background: linear-gradient(135deg, rgba(0,212,240,0.06) 0%, rgba(139,92,246,0.04) 100%);
-border: 1px solid rgba(255,255,255,0.08);
-border-radius: 16px;
-backdrop-filter: blur(12px);
-
-/* 悬停 */
-&:hover {
-  border-color: rgba(0,212,240,0.25);
-  box-shadow: var(--ag-glow-soft), 0 0 0 1px rgba(0,212,240,0.15);
-  transform: translateY(-2px);
-}
-transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-```
-
-#### 精选/Featured 卡片
-```css
-/* 额外：顶部有渐变光带 */
-&::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--ag-gradient-genesis);
-  border-radius: 16px 16px 0 0;
-}
-```
-
-#### 信息卡片（文字为主）
-```css
-background: var(--ag-bg-nebula);
-border: 1px solid rgba(255,255,255,0.06);
-border-radius: 12px;
-padding: 20px;
-```
-
-### 5.3 输入框（Input）
+当前字体：
 
 ```css
-/* 默认 */
-background: rgba(255,255,255,0.04);
-border: 1px solid rgba(255,255,255,0.1);
-border-radius: 12px;
-color: var(--ag-text-primary);
-
-/* Focus */
-border-color: rgba(0,212,240,0.5);
-box-shadow: 0 0 0 3px rgba(0,212,240,0.12);
-outline: none;
-
-/* Prompt 输入（大型）*/
-border-radius: 16px;
-padding: 16px;
-min-height: 80px;
-font-size: 15px;
-line-height: 1.6;
+--font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+--font-display: 'Bricolage Grotesque', 'Inter', ui-sans-serif, sans-serif;
+--font-mono: 'JetBrains Mono', ui-monospace, monospace;
 ```
 
-### 5.4 徽章 / Tag（Badge）
+使用规则：
 
-```css
-/* 默认 */
-display: inline-flex; align-items: center; gap: 4px;
-padding: 3px 10px;
-border-radius: 9999px;
-font-size: 12px; font-weight: 500;
-letter-spacing: 0.02em;
+- `font-display` 用于品牌名、页面标题、重要卡片标题。
+- `font-sans` 用于正文、表单、按钮、导航。
+- `font-mono` 仅用于 ID、API、代码、调试信息。
+- 标题可以 `tracking-tight`，但不要继续新增负 letter spacing 到小字号 UI。
+- 正文与控件文本保持清晰密度，常用 `text-sm`、`text-xs`。
+- 中文界面需要足够行高：正文 `leading-6` 或 `leading-7`，按钮和 tab 避免换行挤压。
 
-/* 颜色变体 */
-.badge-cyan:   { background: rgba(0,212,240,0.15);  color: #00D4F0; border: 1px solid rgba(0,212,240,0.3) }
-.badge-violet: { background: rgba(139,92,246,0.15); color: #A78BFA; border: 1px solid rgba(139,92,246,0.3) }
-.badge-amber:  { background: rgba(245,158,11,0.15); color: #FCD34D; border: 1px solid rgba(245,158,11,0.3) }
-.badge-lime:   { background: rgba(217,242,10,0.15); color: #D9F20A; border: 1px solid rgba(217,242,10,0.3) }
-.badge-neutral:{ background: rgba(255,255,255,0.08); color: var(--ag-text-secondary); border: 1px solid rgba(255,255,255,0.12) }
-```
+建议字号：
 
-### 5.5 导航栏（TopNavBar）
-
-**现有布局保留，升级视觉**：
-```css
-/* 背景 */
-background: rgba(8,13,26,0.75);
-backdrop-filter: blur(20px) saturate(1.5);
-border-bottom: 1px solid rgba(255,255,255,0.06);
-
-/* 滚动后 */
-.scrolled {
-  background: rgba(8,13,26,0.92);
-  border-bottom-color: rgba(0,212,240,0.15);
-}
-```
-
-Logo 字样 `AetherGenix`：用 `font-display` + `font-bold`，加一个微渐变文字效果：
-```css
-background: var(--ag-gradient-genesis);
--webkit-background-clip: text;
--webkit-text-fill-color: transparent;
-```
-
-### 5.6 侧边导航（SideNavBar）
-
-```css
-background: var(--ag-bg-cosmic);
-border-right: 1px solid rgba(255,255,255,0.06);
-
-/* 激活菜单项 */
-.active {
-  background: rgba(0,212,240,0.1);
-  border-left: 2px solid var(--ag-cyan);
-  color: var(--ag-cyan);
-}
-```
-
-### 5.7 图片预览 & 瀑布流（Masonry）
-
-```css
-/* 图片卡片 */
-border-radius: 12px;
-overflow: hidden;
-transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-
-&:hover {
-  transform: scale(1.02);
-  box-shadow: var(--ag-glow-soft);
-}
-
-/* Overlay（悬停显示操作按钮）*/
-.overlay {
-  background: linear-gradient(to top, rgba(5,8,16,0.85) 0%, transparent 60%);
-}
-```
-
----
-
-## 六、动效原则
-
-### 6.1 时间曲线（Easing）
-
-「果味」动效：有弹性，有反馈感，不机械。
-
-```css
-/* 标准进入（元素出现）*/
---ag-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);   /* 快进慢出，果实落下感 */
-
-/* 退出/消失 */
---ag-ease-in:     cubic-bezier(0.4, 0, 1, 1);
-
-/* 交互反馈（微动效）*/
---ag-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* 轻微弹射，有生命感 */
-
-/* 颜色/透明度变化 */
---ag-ease-linear: linear;
-```
-
-### 6.2 持续时间（Duration）
-
-```
-即时反馈（hover 颜色变化）：100ms
-快速过渡（按钮、图标状态）：150-200ms
-标准动画（卡片展开、弹窗）：250-350ms
-页面级过渡（路由切换）：400-500ms
-背景慢动效（光晕漂移）：3000-8000ms（循环）
-```
-
-### 6.3 动效模式
-
-1. **Fade + Slide**：元素进入从 `opacity:0, translateY(8px)` → `opacity:1, translateY(0)`
-2. **Scale Pop**：弹窗、Tooltip 从 `scale(0.95)` → `scale(1)` + spring easing
-3. **Glow Pulse**：主要高亮元素有慢速光晕呼吸（3s cycle）
-4. **Shimmer**：骨架屏用斜向扫光而非透明度呼吸
-
-**不用动效的场景**：
-- 纯文字状态变化（直接 color transition 即可）
-- 超长列表项（`prefers-reduced-motion` 时关闭）
-
----
-
-## 七、图标 & 插图风格
-
-### 7.1 图标
-
-**当前使用 Lucide React**，保留。样式规范：
-- 尺寸：`16px`（内联）、`20px`（按钮/菜单）、`24px`（页面级）
-- 线条宽度：`stroke-width: 1.5`（更细腻，非 Lucide 默认 2）
-- 颜色：继承文字色，重点图标用 `--ag-cyan`
-
-### 7.2 品牌图标 / Favicon
-
-**四芒星 Sparkle**（已确定方向）：
-- 圆角矩形底（`rx=22`）+ 靛紫→青蓝渐变
-- 白色四芒星路径（smooth bezier）
-- 可用于 favicon、App Icon、徽标背景
-
-### 7.3 插图风格
-
-当图像内容需要占位或装饰插图时：
-- **风格**：抽象几何 + 光效 + 深空色调
-- **元素**：不规则多边形、流动渐变斑块、散点光晕
-- **禁止**：卡通人物、平面 icon 拼贴、照片素材
-- **推荐**：用生成图本身作为装饰（灵感图库的轮播作为 Hero 背景）
-
----
-
-## 八、实现规范（Tailwind CSS v4）
-
-### 8.1 更新 `src/index.css` 的 @theme
-
-```css
-/* 在现有 @theme 内追加以下变量 */
-@theme {
-  /* 品牌演化色 */
-  --color-ag-cyan:   #00D4F0;
-  --color-ag-violet: #8B5CF6;
-  --color-ag-amber:  #F59E0B;
-  --color-ag-lime:   #D9F20A;
-
-  /* 深空背景层级 */
-  --color-void:   #050810;
-  --color-deep:   #080D1A;
-  --color-cosmic: #0D1428;
-  --color-nebula: #151E38;
-  --color-stellar:#1E2A4A;
-
-  /* 字体 */
-  --font-display: 'Bricolage Grotesque', 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
-
-  /* 圆角扩展 */
-  --radius-pill: 9999px;
-}
-```
-
-### 8.2 渐变 Utility（追加到 @layer utilities）
-
-```css
-@layer utilities {
-  .gradient-aether {
-    background: linear-gradient(135deg, #00D4F0 0%, #8B5CF6 55%, #EC4899 100%);
-  }
-  .gradient-genesis {
-    background: linear-gradient(135deg, #00D4F0 0%, #8B5CF6 100%);
-  }
-  .gradient-fruit {
-    background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
-  }
-  .gradient-spark {
-    background: linear-gradient(90deg, #D9F20A 0%, #A3E635 100%);
-  }
-  .gradient-void {
-    background: radial-gradient(ellipse at 20% 50%, #1E1B4B 0%, #050810 60%);
-  }
-  .text-gradient-genesis {
-    background: linear-gradient(135deg, #00D4F0, #8B5CF6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .glow-cyan {
-    box-shadow: 0 0 20px rgba(0,212,240,0.35), 0 0 60px rgba(0,212,240,0.12);
-  }
-  .glow-violet {
-    box-shadow: 0 0 20px rgba(139,92,246,0.35), 0 0 60px rgba(139,92,246,0.12);
-  }
-  .glow-soft {
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.08);
-  }
-  .glass-card {
-    background: linear-gradient(135deg, rgba(0,212,240,0.06) 0%, rgba(139,92,246,0.04) 100%);
-    border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(12px);
-  }
-  .glass-nav {
-    background: rgba(8,13,26,0.75);
-    backdrop-filter: blur(20px) saturate(1.5);
-  }
-}
-```
-
-### 8.3 CSS 变量注入（追加到 :root 和 .dark）
-
-```css
-:root {
-  --ag-glow-cyan:   0 0 20px rgba(0,212,240,0.35), 0 0 60px rgba(0,212,240,0.12);
-  --ag-glow-violet: 0 0 20px rgba(139,92,246,0.35), 0 0 60px rgba(139,92,246,0.12);
-  --ag-glow-amber:  0 0 20px rgba(245,158,11,0.40), 0 0 60px rgba(245,158,11,0.15);
-  --ag-glow-soft:   0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.08);
-
-  --ag-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
-  --ag-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-```
-
-### 8.4 暗色模式默认策略
-
-当前已是系统跟随，建议改为**暗色优先**（匹配 Lovart 模式）：
-
-```ts
-/* src/components/ThemeProvider.tsx */
-/* 修改 getInitialTheme()：找不到存储值时默认 dark */
-function getInitialTheme(): Theme {
-  try {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark') return stored;
-  } catch {}
-  return 'dark'; // 改为默认 dark（原为跟随系统）
-}
-```
-
----
-
-## 九、「果味」设计 Dos & Don'ts
-
-### ✅ 要做的
-
-| 做什么 | 为什么 |
-|---|---|
-| 背景用深空色，不用纯黑 | 纯黑 `#000000` 是廉价感；宇宙深蓝有深度 |
-| 渐变按钮加发光阴影 | 光效让元素「发光」，像果实在阳光下 |
-| 卡片用玻璃态（毛玻璃+色彩叠加） | 层次感，表面像水果皮带有光泽 |
-| 全站最多出现 1 处 `aether` 三色渐变 | 稀缺性让它成为视觉锚点 |
-| 电石灰 `#D9F20A` 作精准点缀 | 这个颜色是「果味」的最强信号，但一定要克制 |
-| 字母间距负值用于 Display 字体 | 现代紧凑感，区别于普通 UI |
-
-### ❌ 不要做的
-
-| 不做什么 | 为什么 |
-|---|---|
-| 不要大面积浅色背景 + 蓝色按钮 | 这是 SaaS 平庸模板，失去「果味」 |
-| 不要用纯色（无渐变）作为主按钮 | 单色按钮在深色背景下失去层次 |
-| 不要所有元素都加发光 | 全场发光 = 没有发光，光晕要稀缺 |
-| 不要 card 圆角 < 12px | 小圆角在深色主题下显硬，与有机感冲突 |
-| 不要用橙色+蓝色（廉价撞色） | 琥珀金要配紫色/青蓝，不配扁平蓝 |
-| 不要用 emoji 当图标 | 破坏精心设计的视觉密度 |
-| 不要把 `lime` 用在文字高亮以外 | 电石灰过于强势，只适合极小点缀 |
-
----
-
-## 十、实施优先级
-
-| 优先级 | 项目 | 影响 |
+| 场景 | class / 尺寸 | 说明 |
 |---|---|---|
-| P0 | 暗色主题默认化 + 深空背景色系更新 | 整体气质转变最大 |
-| P0 | Primary 按钮改为渐变 + glow | 每个页面都有 |
-| P1 | 卡片升级为玻璃态（glass-card） | 图片瀑布流视觉提升明显 |
-| P1 | 导航栏更新（glass-nav + logo 渐变字） | First impression |
-| P1 | Display 字体引入（Bricolage Grotesque） | 大标题「果味」感来源 |
-| P2 | 徽章/Tag 色彩系统 | 细节品质感 |
-| P2 | 输入框 focus 状态 glow | 交互反馈升级 |
-| P3 | 电石灰 `#D9F20A` 高亮点缀（悬停、选中） | 「签名」点睛 |
-| P3 | Favicon / 四芒星图标更新 | 品牌完整性 |
+| 页面标题 | `text-2xl` 到 `text-3xl` + `font-display` | 当前 Explore / Tasks 风格 |
+| 弹窗标题 | `text-lg` 到 `text-xl` | 不做 hero 化 |
+| 卡片标题 | `text-sm` 到 `text-base` + `font-medium/semibold` | 信息密度优先 |
+| 表单标签 | `text-[10px]` 到 `text-xs` | 颜色用 muted |
+| 辅助说明 | `text-xs` 到 `text-sm` | 颜色用 muted |
+| 底部 tab label | `text-[10px]` | 必须截断不撑开 |
+
+---
+
+## 5. 空间、圆角、边框、阴影
+
+间距基准仍然是 4px。当前 live UI 的主要尺度：
+
+| 用途 | 推荐值 |
+|---|---:|
+| 图标按钮 | `h-9 w-9` |
+| 主按钮 | `h-9` 或 `h-10` |
+| 主要 CTA | `h-10` 到 `h-11` |
+| 输入框 | `h-9` 或 `h-10` |
+| 主卡片 padding | `p-4` 到 `p-6` |
+| 页面左右 padding | mobile `px-4`，desktop 由容器控制 |
+| 卡片间距 | `gap-3` 到 `gap-6` |
+
+圆角：
+
+| 用途 | 推荐值 |
+|---|---:|
+| 小输入、select、任务按钮 | `rounded-lg` |
+| 图标按钮、缩略图、nav item | `rounded-xl` |
+| 主卡片、弹窗、输入大容器 | `rounded-2xl` |
+| 主按钮、pill action | `rounded-full` |
+
+边框：
+
+- 常规暗色边框：`border-white/[0.05]` 到 `border-white/[0.08]`。
+- hover 边框：可以升到 `border-white/[0.1]` 或 lime 的 `rgba(227,255,116,0.12-0.15)`。
+- 空态和上传区可用 dashed border：`border-dashed border-white/[0.1]`。
+
+阴影：
+
+- 常规 elevated card：`0 8px 40px rgba(0,0,0,0.5)`。
+- 弹窗：`0 24px 64px rgba(0,0,0,0.7)`。
+- 图片 hover：`0 8px 32px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.06)`。
+- lime glow 只用于少数关键强调：`0 0 16px rgba(227,255,116,0.3), 0 0 48px rgba(227,255,116,0.1)`。
+
+---
+
+## 6. 按钮
+
+### 6.1 Primary
+
+当前主按钮是 cream pill，不是 cyan/violet gradient。
+
+```css
+.btn-primary {
+  height: 2.5rem;
+  padding: 0 1.25rem;
+  border-radius: 9999px;
+  background-color: #f0ede8;
+  color: #1a1917;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.btn-primary:hover {
+  background-color: #ffffff;
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+```
+
+使用场景：
+
+- 注册、生成图片、确认提交、登录弹窗提交。
+- 图标 + 文本按钮应保持 `gap-1.5` 或 `gap-2`，图标尺寸 `13-16px`。
+- 高度常用 `h-9`、`h-10`、`h-11`，同一工具栏内高度必须一致。
+
+### 6.2 Ghost / Secondary
+
+```css
+.btn-ghost {
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(240,237,232,0.8);
+}
+.btn-ghost:hover {
+  background-color: rgba(255,255,255,0.07);
+  color: #f0ede8;
+}
+```
+
+使用场景：
+
+- 登录、退出、重新生成、下载 zip、取消、次要操作。
+- 文字不应比 primary 更亮。
+- 图标按钮可以不用 pill，保持 `rounded-xl` 或 `rounded-lg`。
+
+### 6.3 Lime Button
+
+`.btn-lime` 是强强调按钮，必须少用。
+
+适合：
+
+- 特殊促销、极高优先级的付费动作。
+- 需要明确“当前运行/当前选择”的状态按钮。
+
+不适合：
+
+- 每个表单的默认 submit。
+- 大量列表项按钮。
+- 长文案按钮。
+
+### 6.4 Orange CTA
+
+orange 用在充值、购买、升级、套餐选择。它可以是实心按钮，也可以是 warm outline 或 small badge。
+
+规则：
+
+- 同一视口内不要同时出现多个同等级 orange CTA。
+- 如果页面已有 lime active 状态，orange CTA 要保持商业语义，不要变成导航状态色。
+- 橙色文字必须保证暗色背景上可读，优先 `#fe6e00` 或浅化变体。
+
+### 6.5 禁用与加载
+
+- 禁用：`opacity: 0.4-0.5`，保留原按钮形状，不改成灰色实心。
+- 加载：使用 `Loader2` + `animate-spin`，颜色继承按钮文本；运行中状态可用 lime 图标。
+- 不要在禁用状态加 hover glow。
+
+---
+
+## 7. 卡片、面板与图片
+
+### 7.1 标准卡片
+
+当前标准卡片：
+
+```css
+background: #1a1917;
+border: 1px solid rgba(255,255,255,0.07);
+border-radius: 1rem; /* 或 rounded-2xl */
+```
+
+使用场景：
+
+- 任务卡、表单主容器、弹窗、设置分组、账户模块。
+- 文本卡片 padding 通常 `p-4`，更完整的面板用 `p-6`。
+- 不要把卡片套卡片堆出厚重装饰。内层如果必须分组，用 `bg-white/[0.03]` 和细边框。
+
+### 7.2 生成输入主卡
+
+Create 页输入卡是当前最重要的标准：
+
+- 外层：`rounded-2xl border border-white/[0.07] bg-[#1a1917] shadow-[0_8px_40px_rgba(0,0,0,0.5)]`
+- hover：只做轻微 lime shadow，不能整卡发光。
+- 文本区：透明背景，主文字 cream，placeholder 用 `#4a4844`。
+- 底部参数栏：顶部细分隔线 `border-white/[0.06]`。
+
+### 7.3 图片卡
+
+Explore 和 Workspace 的图片卡规则：
+
+- 图片本身铺满容器，卡片 `rounded-2xl overflow-hidden`。
+- hover 可 `translateY(-1)` 或图片 `scale(1.03-1.04)`。
+- overlay 用黑色渐变承托文字：`from-black/85 via-black/30 to-transparent`。
+- hover 顶部细线可用 lime：`h-[2px] bg-[#E3FF74] opacity-80`。
+- 图片按钮文字使用 cream pill，不使用蓝紫渐变。
+- 图片 alt 必须来自 title/prompt 或当前任务 prompt。
+
+### 7.4 弹窗与 Drawer
+
+弹窗：
+
+- 遮罩：`bg-black/50-70` + `backdrop-blur-sm/md`。
+- surface：`bg-[#1a1917] border-white/[0.08] rounded-2xl`。
+- 顶部可用 1px lime 光带，但不要加多重渐变边框。
+
+Drawer：
+
+- 背景：`#111110`。
+- 最大宽度：当前任务 drawer 是 `max-w-[420px]`。
+- 右侧滑入动画保持 300ms 左右。
+- 空态、筛选、任务卡都应在 drawer 内形成清晰层级。
+
+---
+
+## 8. 输入、选择器与表单
+
+标准输入：
+
+```css
+height: 2.5rem;
+border-radius: 0.75rem;
+border: 1px solid rgba(255,255,255,0.08);
+background: rgba(255,255,255,0.04);
+color: #f0ede8;
+outline: none;
+```
+
+focus：
+
+```css
+border-color: rgba(227,255,116,0.4);
+background: rgba(255,255,255,0.06);
+```
+
+规则：
+
+- 表单 label 用 `text-xs` 或 `text-[10px]`，颜色 `on-surface-variant`。
+- placeholder 用 `#4a4844` 或 `on-surface-variant/50`。
+- select 和 compact input 保持 `h-9 rounded-lg`。
+- Prompt textarea 不需要边框，依附于外层主输入卡。
+- 上传入口是图标按钮：`h-10 w-10 rounded-xl border-white/[0.08] bg-white/[0.04]`。
+- 表单错误使用 red，不使用 orange 或 lime。
+
+---
+
+## 9. 导航
+
+### 9.1 TopNavBar
+
+当前顶部导航：
+
+- 固定顶部，`h-16`。
+- 背景：未滚动 `rgba(17,17,16,0.7)`，滚动后 `rgba(17,17,16,0.95)`。
+- blur：`backdrop-blur-[20px]`。
+- Logo：图标 `h-8 w-8 rounded-xl`，文字 `font-display text-[#f0ede8]`，桌面/平板显示，窄屏隐藏。
+- 右侧 icon button：`h-9 w-9 rounded-xl text-[#8a8680] hover:text-[#f0ede8] hover:bg-white/5`。
+- 任务计数和公告点用 lime。
+
+不要：
+
+- 顶部导航不要加 cyan/violet 品牌渐变文字。
+- 不要把 nav 高度改成 hero 或营销页样式。
+- 不要在移动端塞完整账户信息进顶部栏，使用移动菜单面板承载。
+
+### 9.2 SideNavBar
+
+当前桌面侧栏：
+
+- `w-60`，固定在 top nav 下方。
+- 背景 `#111110`，右边框 `border-white/[0.05]`。
+- nav item：`rounded-xl px-3 py-2.5 text-sm`。
+- active：`bg-[rgba(227,255,116,0.08)] text-[#E3FF74] border-[rgba(227,255,116,0.15)]`，左侧 2px lime 指示条。
+- inactive：muted 文本，hover 到 cream + `bg-white/[0.04]`。
+
+分组：
+
+- 主功能：创作、历史、收藏。
+- 账户功能：充值、账单、账户、配置。
+- Explore 不进已登录桌面主导航，未登录用户通过 `/explore` 落地。
+
+### 9.3 BottomTabBar
+
+当前移动底部导航：
+
+- `lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#111110] border-t border-white/[0.05]`。
+- 主 tabs：创作、历史、收藏。
+- “更多”承载充值、账单、账户、配置。
+- active 只改变文字/图标为 lime，不加复杂底座。
+- label `text-[10px]`，必须 truncate，不可撑开 tab。
+- 内容区 bottom padding 必须预留 `pb-16`，避免被 tab bar 遮挡。
+
+移动菜单：
+
+- 顶部菜单从 top nav 下方展开。
+- 使用 `bg-[rgba(17,17,16,0.97)] backdrop-blur-xl`。
+- 登录/注册按钮并排，保持 `h-11`。
+
+---
+
+## 10. Tabs、Segmented Controls 与状态筛选
+
+### 10.1 Create 模式切换
+
+当前 create 模式切换是 warm segmented control：
+
+- 外层：`rounded-2xl border border-white/[0.07] bg-[#171613] p-1.5`。
+- active：cream 背景 + charcoal 文字 + 轻阴影。
+- inactive：muted 文本，hover 到 cream。
+- 两个模式等宽，不使用普通 tab underline。
+
+### 10.2 Workspace Tabs
+
+workspace 内子功能使用 top border tabs：
+
+- active：lime 文字、`border-b-2 border-[#E3FF74]`、`bg-[rgba(227,255,116,0.06)]`。
+- inactive：muted 文本，hover 到 on-surface。
+- 不要使用 cyan/violet active border。
+
+### 10.3 任务筛选
+
+任务筛选按钮使用小 rounded-lg：
+
+- active：lime 边框 + lime 低透明背景 + lime 文字。
+- inactive：transparent border + muted 文本。
+- 数量较多时允许横向滚动或 wrap，但不能压缩文字重叠。
+
+---
+
+## 11. 状态、徽章与空态
+
+状态色：
+
+| 状态 | 颜色 | 用途 |
+|---|---:|---|
+| queued | `#8a8680` | 等待、低优先级状态 |
+| running | `#E3FF74` | 运行中 spinner、进度提示 |
+| succeeded | `#4ade80` | 成功状态 |
+| failed/error | `#ff6b6b` | 失败、错误消息 |
+| commercial | `#fe6e00` | 充值、购买、套餐 |
+
+徽章：
+
+- 数字 badge：lime 背景 + charcoal 文字，尺寸要小，如 `h-4 min-w-[16px] text-[9px]`。
+- 状态 pill：用低透明背景，不要大面积实心。
+- 分组标题：`text-[10px] uppercase tracking-widest text-[#4a4844]`。
+
+空态：
+
+- 容器：`min-h-[240px] rounded-xl border border-dashed border-white/[0.1] bg-white/[0.03]`。
+- 文本：`text-sm text-[#8a8680]`。
+- 空态不需要插画，不需要蓝紫 glow。
+- 如果有下一步动作，使用一个 cream primary 或 muted ghost button，不要同时堆多个 CTA。
+
+加载态：
+
+- 列表加载可使用 3 个小圆点，颜色跟 `bg-primary` 或 lime。
+- Skeleton 使用 `bg-white/[0.04]` + `animate-skeleton`。
+- 生成中主面板可显示 spinner + 状态文案 + 细进度条；进度条后续应改为 warm/lime 系，旧 `gradient-genesis` 属历史残留。
+
+---
+
+## 12. 图标与媒体
+
+图标：
+
+- 使用 Lucide React。
+- 工具栏/按钮内常用 `13-16px`。
+- 底部 tab 使用 `20px`。
+- 页面级图标或空态图标可用 `18-24px`。
+- 默认颜色继承文本，inactive 使用 muted，active 使用 lime。
+- 不使用 emoji 作为图标。
+
+媒体：
+
+- 真实生成图片是视觉主角。
+- 图片卡 overlay 文案不要遮挡过多画面，移动端可常显关键动作，桌面端可 hover 显示。
+- 上传预览缩略图使用 `h-16 w-16 rounded-xl object-cover`。
+- 图片 modal / preview 必须保持背景深色，不要切到浅色相册风格。
+
+---
+
+## 13. 动效
+
+当前全局动效：
+
+```css
+--ag-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+--ag-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+```
+
+使用规则：
+
+- hover 反馈：`150-200ms`。
+- drawer / modal：`250-300ms`。
+- 页面元素进入：`fade-in`，从 `opacity: 0; translateY(8px)` 到自然位置。
+- 图片 hover scale：`300-500ms`，不要过快闪动。
+- glow breathe 只用于极少数状态，不要全页面持续发光。
+- 尊重 `prefers-reduced-motion` 的后续实现空间，新增动画不要成为理解信息的唯一方式。
+
+---
+
+## 14. 旧 cyan/violet 指南的废弃与降级
+
+以下旧方向已废弃，不应在新 UI 中继续扩展：
+
+- `--ag-cyan: #00D4F0` 作为主品牌色。
+- `--ag-violet: #8B5CF6` 作为主品牌色。
+- cyan/violet 的主按钮渐变。
+- cyan/violet logo 文字渐变。
+- 冷蓝宇宙背景：`#050810`、`#080D1A`、`#0D1428`、`#151E38` 作为主层级。
+- 大面积 glass nebula card。
+- 所有卡片 hover 都发 cyan/violet glow。
+- 输入 focus 使用 cyan。
+- 侧边栏 active 使用 cyan 左边线。
+
+以下旧元素降级为历史兼容，可存在但不新增：
+
+- `gradient-genesis`、`text-gradient-genesis` 等旧 utility。
+- workspace 中少量 cyan/violet hover border 或 shadow。
+- 旧文档中的 “Aether Fruit” 叙事。
+- Favicon / 旧 logo 如果仍带蓝紫，可以暂时保留，直到专门的品牌资产任务处理。
+
+迁移原则：
+
+1. 新增组件全部使用 warm charcoal tokens。
+2. 修改旧组件时，如果触及相关样式，应顺手把 cyan/violet active/focus/CTA 改成 lime/cream/orange。
+3. 不做无关大扫除。多人并行工作时，只改当前任务相关文件。
+
+---
+
+## 15. 截图验收规则
+
+后续 UI agents 做页面或组件变更后，至少检查桌面与移动两个视口：
+
+- 桌面建议：`1440x900` 或 `1366x768`。
+- 移动建议：`390x844` 或 `375x812`。
+
+必须通过：
+
+- 页面背景第一眼是 warm charcoal，不是冷蓝宇宙或纯黑。
+- 主 CTA 是 cream pill，文字是 charcoal，hover 不丢对比度。
+- active nav / tab / running / notification 使用 lime，小面积明确可见。
+- orange 只出现在充值、购买、商业提醒等语义位置。
+- cyan/violet 不作为新增主视觉，不出现在新 active/focus/primary CTA。
+- 顶部导航固定且不遮挡内容，滚动后背景更实。
+- 桌面侧栏不遮挡主内容，`main` 保持 `lg:pl-60`。
+- 移动底部 tab 不遮挡页面底部内容，主内容有 `pb-16`。
+- 移动更多面板从 top nav 下方开始，不盖住顶部导航。
+- 文本不溢出按钮、tab、卡片和 bottom nav。
+- 图片卡 hover overlay 不遮挡过多图片；移动端关键动作仍可访问。
+- 空态有明确边界、说明文字和必要动作，不使用装饰性大渐变。
+- focus-visible 对键盘用户可见，优先 lime ring 或 border。
+- 弹窗和 drawer 的遮罩、层级、关闭按钮可见且可点击。
+- loading、empty、error、success 四类状态颜色语义一致。
+
+截图审查时，若看到以下现象，应退回修改：
+
+- 页面被单一紫蓝渐变支配。
+- 主按钮变成 cyan/violet gradient。
+- lime 大面积铺底导致刺眼。
+- card 套 card 形成厚重装饰。
+- 文字在 cream 按钮、lime badge 或图片 overlay 上不可读。
+- 移动端 tab label 被压缩、换行或相互重叠。
+
+---
+
+## 16. 实施优先级
+
+| 优先级 | 项目 | 判断标准 |
+|---|---|---|
+| P0 | 新增 UI 使用 warm charcoal tokens | 不新增 cyan/violet primary、focus、active |
+| P0 | 主操作按钮保持 cream pill | create、auth、workspace 等核心路径一致 |
+| P0 | 导航 active 使用 lime | Top / Side / Bottom / Drawer 语义一致 |
+| P1 | 表单 focus 使用 lime 或 cream | 不再使用 cyan focus |
+| P1 | 图片卡 overlay 与 hover 克制 | 图片是主角，UI 只承托 |
+| P1 | 空态和 loading 统一 | 任务、历史、收藏、drawer 一致 |
+| P2 | 清理旧 `gradient-genesis` 残留 | 仅在触及相关组件时做，不单独扩大范围 |
+| P2 | 品牌资产 warm 化 | Logo/favicon 另开任务处理 |
+
+---
+
+## 17. 给后续 UI agents 的简短准则
+
+做新界面前先问三件事：
+
+1. 这个元素是主动作、状态、商业动作，还是普通信息？
+2. 它应该用 cream、lime、orange，还是只用 charcoal 层级？
+3. 截图里图片内容是否仍然是主角？
+
+默认选择：
+
+- 页面底：`#111110`
+- 卡片底：`#1a1917`
+- 卡片边框：`rgba(255,255,255,0.07)`
+- 主文字：`#f0ede8`
+- 次文字：`#8a8680`
+- 主按钮：`#f0ede8` 背景 + `#1a1917` 文字
+- active / running / notify：`#E3FF74`
+- commercial CTA：`#fe6e00`
+
+不要从旧文档复制 cyan/violet cosmic recipes。它们现在是历史记录，不是执行规范。
