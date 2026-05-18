@@ -139,34 +139,36 @@ export default function Create() {
   const modes = Object.entries(MODE_LABELS) as [CreateMode, { title: string; sub: string }][];
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex flex-col items-center px-4 py-12">
+    <div className="min-h-[calc(100vh-64px)] flex flex-col items-center px-4 py-10 sm:py-14 lg:py-20">
 
       {/* 扇形叠层 Mode Tab */}
-      <div className="relative flex items-end justify-center mb-6 h-20 w-full max-w-2xl">
-        {modes.map(([m, label], idx) => {
+      <div className="mb-5 flex w-full max-w-3xl justify-center">
+        <div className="grid w-full max-w-md grid-cols-2 rounded-2xl border border-white/[0.07] bg-[#171613] p-1.5 shadow-[0_18px_60px_rgba(0,0,0,0.28)]">
+        {modes.map(([m, label]) => {
           const isActive = mode === m;
           return (
             <button
               key={m}
               type="button"
               onClick={() => setMode(m)}
-              style={{ zIndex: isActive ? 10 : 5 - idx, left: `calc(50% - 120px + ${idx * 100}px)` }}
-              className={`absolute bottom-0 w-[140px] rounded-t-2xl px-4 py-3 text-left transition-all duration-200 ${
+              className={`rounded-xl px-4 py-3 text-left transition-all duration-200 ${
                 isActive
-                  ? 'bg-[#f0ede8] text-[#1a1917] h-16'
-                  : 'bg-[#242220] text-[#8a8680] h-12 hover:bg-[#2e2c29] border border-white/[0.06]'
+                  ? 'bg-[#f0ede8] text-[#1a1917] shadow-[0_10px_28px_rgba(240,237,232,0.12)]'
+                  : 'text-[#8a8680] hover:bg-white/[0.05] hover:text-[#f0ede8]'
               }`}
+              aria-pressed={isActive}
             >
               <div className="text-sm font-semibold leading-tight font-display">{label.title}</div>
-              {isActive && <div className="text-xs opacity-60 mt-0.5">{label.sub}</div>}
+              <div className={`mt-0.5 text-xs leading-tight ${isActive ? 'opacity-60' : 'opacity-45'}`}>{label.sub}</div>
             </button>
           );
         })}
+        </div>
       </div>
 
       {/* 主输入卡片 */}
       <div
-        className="w-full max-w-2xl rounded-2xl border border-white/[0.07] bg-[#1a1917] shadow-[0_8px_40px_rgba(0,0,0,0.5)] transition-shadow hover:shadow-[0_8px_40px_rgba(227,255,116,0.06)]"
+        className="w-full max-w-3xl rounded-2xl border border-white/[0.07] bg-[#1a1917] shadow-[0_8px_40px_rgba(0,0,0,0.5)] transition-shadow hover:shadow-[0_8px_40px_rgba(227,255,116,0.06)]"
         onDrop={handleRefImageDrop}
         onDragOver={(e) => e.preventDefault()}
       >
@@ -211,7 +213,7 @@ export default function Create() {
         {/* 底部参数栏 */}
         <div className="flex flex-wrap items-center gap-2 border-t border-white/[0.06] px-4 py-3">
           <GenerationSelect
-            label={t('home_scale') || '模型'}
+            label={t('home_size')}
             value={imageScale}
             onChange={setImageScale}
             options={SIZE_OPTIONS}
@@ -225,7 +227,7 @@ export default function Create() {
             options={ASPECT_RATIO_OPTIONS}
           />
           <GenerationSelect
-            label={t('home_count') || '数量'}
+            label={t('home_image_count')}
             value={imageCount}
             onChange={setImageCount}
             options={IMAGE_COUNT_OPTIONS}

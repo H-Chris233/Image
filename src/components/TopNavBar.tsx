@@ -66,6 +66,7 @@ export default function TopNavBar() {
         <button
           className="flex h-9 w-9 items-center justify-center rounded-xl text-[#8a8680] hover:text-[#f0ede8] hover:bg-white/5 transition-colors"
           type="button"
+          aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
           onClick={toggleTheme}
         >
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
@@ -75,6 +76,7 @@ export default function TopNavBar() {
         <button
           className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#8a8680] hover:text-[#f0ede8] hover:bg-white/5 transition-colors"
           type="button"
+          aria-label={t('top_tasks')}
           onClick={openDrawer}
         >
           <ListTodo size={15} />
@@ -89,6 +91,7 @@ export default function TopNavBar() {
         <button
           className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#8a8680] hover:text-[#f0ede8] hover:bg-white/5 transition-colors"
           type="button"
+          aria-label={t('top_announcement')}
           onClick={openAnnouncement}
         >
           <Bell size={15} />
@@ -141,6 +144,7 @@ export default function TopNavBar() {
         <button
           className="flex h-9 w-9 items-center justify-center rounded-xl text-[#8a8680] hover:text-[#f0ede8] hover:bg-white/5 lg:hidden"
           type="button"
+          aria-label={mobileMenuOpen ? t('mobile_menu_close') : t('mobile_menu_open')}
           onClick={() => setMobileMenuOpen((v) => !v)}
         >
           {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}

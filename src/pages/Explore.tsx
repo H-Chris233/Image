@@ -106,14 +106,22 @@ function ExploreCard({
   item: InspirationItem;
   onReusePrompt: (item: InspirationItem) => void;
 }) {
-  const [hovered, setHovered] = useState(false);
+  const canReuse = Boolean(item.prompt);
 
   return (
     <div
-      className="relative rounded-2xl overflow-hidden cursor-pointer group transition-transform duration-300 hover:-translate-y-1"
-      style={{ boxShadow: hovered ? '0 8px 32px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.06)' : 'none' }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className="relative rounded-2xl overflow-hidden cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_1px_rgba(255,255,255,0.06)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/60"
+      role={canReuse ? 'button' : undefined}
+      tabIndex={canReuse ? 0 : undefined}
+      aria-label={canReuse ? '复用提示词创作' : undefined}
+      onClick={() => { if (canReuse) onReusePrompt(item); }}
+      onKeyDown={(event) => {
+        if (!canReuse) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onReusePrompt(item);
+        }
+      }}
     >
       <RetryImage
         src={item.image_url ?? ''}
@@ -122,27 +130,26 @@ function ExploreCard({
       />
 
       {/* 顶部电石灰高亮（悬停时出现） */}
-      {hovered && (
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-[#E3FF74] animate-fade-in opacity-80" />
-      )}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-[#E3FF74] opacity-0 transition-opacity duration-200 group-hover:opacity-80 group-focus-visible:opacity-80" />
 
-      {hovered && (
-        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/85 via-black/30 to-transparent animate-fade-in">
-          {item.prompt && (
-            <div className="p-4">
-              <p className="text-white/90 text-xs leading-relaxed line-clamp-2 mb-3">
+      {item.prompt && (
+        <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/85 via-black/30 to-transparent opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-visible:opacity-100">
+            <div className="p-3 sm:p-4">
+              <p className="mb-3 hidden text-xs leading-relaxed text-white/90 line-clamp-2 sm:block">
                 {item.prompt}
               </p>
               <button
                 type="button"
-                onClick={() => onReusePrompt(item)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onReusePrompt(item);
+                }}
                 className="flex items-center gap-1.5 rounded-full bg-[#f0ede8] text-[#1a1917] px-3 py-1.5 text-xs font-semibold transition-all hover:bg-white"
               >
                 <PenLine size={12} />
                 复用提示词创作
               </button>
             </div>
-          )}
         </div>
       )}
     </div>
