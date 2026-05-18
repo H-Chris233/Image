@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CreditCard, Heart, History, Home, ImagePlus, MoreHorizontal, Settings, UserCircle, Wallet, X } from 'lucide-react';
+import { CreditCard, Heart, History, MoreHorizontal, PenLine, Settings, UserCircle, Wallet, X } from 'lucide-react';
 import { useAuth } from '../auth';
 import { useSite } from '../site';
 
@@ -11,17 +11,16 @@ export default function BottomTabBar() {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const mainTabs = [
-    { name: t('home_tab_general'), path: '/', icon: Home },
-    { name: t('side_ecommerce'), path: '/ecommerce', icon: ImagePlus },
+    { name: t('side_create'), path: '/create', icon: PenLine },
     { name: t('side_history'), path: '/history', icon: History },
+    ...(viewer?.authenticated ? [{ name: t('side_favorites'), path: '/favorites', icon: Heart }] : []),
   ];
 
   const moreItems = [
-    ...(viewer?.authenticated ? [{ name: t('side_favorites'), path: '/favorites', icon: Heart }] : []),
+    { name: t('side_recharge'), path: '/recharge', icon: Wallet },
+    { name: t('side_billing'), path: '/billing', icon: CreditCard },
     { name: t('side_account'), path: '/account', icon: UserCircle },
     { name: t('side_config'), path: '/config', icon: Settings },
-    { name: t('side_billing'), path: '/billing', icon: CreditCard },
-    { name: t('side_recharge'), path: '/recharge', icon: Wallet },
   ];
 
   const isMoreActive = moreItems.some((item) => location.pathname === item.path);
@@ -35,7 +34,7 @@ export default function BottomTabBar() {
             <Link
               key={item.path}
               to={item.path}
-                aria-current={isActive ? 'page' : undefined}
+              aria-current={isActive ? 'page' : undefined}
               className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 min-w-0 transition-colors ${
                 isActive ? 'text-primary' : 'text-on-surface-variant'
               }`}
@@ -51,14 +50,14 @@ export default function BottomTabBar() {
             isMoreActive || moreOpen ? 'text-primary' : 'text-on-surface-variant'
           }`}
           type="button"
-          onClick={() => setMoreOpen((current) => !current)}
+          onClick={() => setMoreOpen((v) => !v)}
         >
           {moreOpen ? <X size={20} /> : <MoreHorizontal size={20} />}
           <span className="text-[10px] font-medium">{t('top_more')}</span>
         </button>
       </nav>
 
-      {moreOpen ? (
+      {moreOpen && (
         <div className="lg:hidden fixed inset-0 top-16 z-40 bg-surface/95 backdrop-blur-sm animate-fade-in">
           <div className="flex flex-col gap-2 p-4 pt-6">
             {moreItems.map((item) => {
@@ -67,7 +66,7 @@ export default function BottomTabBar() {
                 <Link
                   key={item.path}
                   to={item.path}
-                aria-current={isActive ? 'page' : undefined}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                     isActive
                       ? 'bg-primary-container text-on-primary-container'
@@ -82,7 +81,7 @@ export default function BottomTabBar() {
             })}
           </div>
         </div>
-      ) : null}
+      )}
     </>
   );
 }

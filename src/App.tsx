@@ -1,10 +1,11 @@
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Routes, Route } from 'react-router-dom';
 import TopNavBar from './components/TopNavBar';
 import SideNavBar from './components/SideNavBar';
 import BottomTabBar from './components/BottomTabBar';
 import { ThemeProvider } from './components/ThemeProvider';
-import Home from './pages/Home';
-import Ecommerce from './pages/Ecommerce';
+import Create from './pages/Create';
+import Explore from './pages/Explore';
+import Workspace from './pages/Workspace';
 import History from './pages/History';
 import Favorites from './pages/Favorites';
 import Config from './pages/Config';
@@ -12,11 +13,17 @@ import Account from './pages/Account';
 import Billing from './pages/Billing';
 import Recharge from './pages/Recharge';
 import Tasks from './pages/Tasks';
-import Login from './pages/Login';
-import Register from './pages/Register';
 import AnnouncementModal from './components/AnnouncementModal';
+import AuthModal from './components/AuthModal';
 import TaskDrawer from './components/TaskDrawer';
 import TaskToastStack from './components/TaskToastStack';
+import { useAuth } from './auth';
+
+function RootRedirect() {
+  const { viewer, loading } = useAuth();
+  if (loading) return null;
+  return <Navigate to={viewer?.authenticated ? '/create' : '/explore'} replace />;
+}
 
 export default function App() {
   return (
@@ -26,8 +33,10 @@ export default function App() {
         <SideNavBar />
         <main className="pt-16 lg:pl-60 pb-16 lg:pb-0">
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/ecommerce" element={<Ecommerce />} />
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/create" element={<Create />} />
+            <Route path="/workspace/:taskId" element={<Workspace />} />
             <Route path="/history" element={<History />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/config" element={<Config />} />
@@ -35,12 +44,15 @@ export default function App() {
             <Route path="/billing" element={<Billing />} />
             <Route path="/recharge" element={<Recharge />} />
             <Route path="/tasks" element={<Tasks />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* 旧路由兼容重定向 */}
+            <Route path="/login" element={<Navigate to="/explore" replace />} />
+            <Route path="/register" element={<Navigate to="/explore" replace />} />
+            <Route path="/ecommerce" element={<Navigate to="/create" replace />} />
           </Routes>
         </main>
         <BottomTabBar />
         <AnnouncementModal />
+        <AuthModal />
         <TaskDrawer />
         <TaskToastStack />
       </div>
