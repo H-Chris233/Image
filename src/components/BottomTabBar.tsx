@@ -27,7 +27,7 @@ export default function BottomTabBar() {
 
   return (
     <>
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around h-16 bg-surface border-t border-outline-variant px-2 pb-[env(safe-area-inset-bottom,0px)]">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around h-16 bg-[#111110] border-t border-white/[0.05] px-2 pb-[env(safe-area-inset-bottom,0px)]">
         {mainTabs.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -36,7 +36,7 @@ export default function BottomTabBar() {
               to={item.path}
               aria-current={isActive ? 'page' : undefined}
               className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 min-w-0 transition-colors ${
-                isActive ? 'text-primary' : 'text-on-surface-variant'
+                isActive ? 'text-[#E3FF74]' : 'text-[#8a8680]'
               }`}
             >
               <item.icon size={20} />
@@ -47,7 +47,7 @@ export default function BottomTabBar() {
 
         <button
           className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors ${
-            isMoreActive || moreOpen ? 'text-primary' : 'text-on-surface-variant'
+            isMoreActive || moreOpen ? 'text-[#E3FF74]' : 'text-[#8a8680]'
           }`}
           type="button"
           onClick={() => setMoreOpen((v) => !v)}
@@ -58,7 +58,7 @@ export default function BottomTabBar() {
       </nav>
 
       {moreOpen && (
-        <div className="lg:hidden fixed inset-0 top-16 z-40 bg-surface/95 backdrop-blur-sm animate-fade-in">
+        <div className="lg:hidden fixed inset-0 top-16 z-40 bg-[#111110]/95 backdrop-blur-sm animate-fade-in">
           <div className="flex flex-col gap-2 p-4 pt-6">
             {moreItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -69,8 +69,8 @@ export default function BottomTabBar() {
                   aria-current={isActive ? 'page' : undefined}
                   className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-primary-container text-on-primary-container'
-                      : 'text-on-surface-variant hover:bg-surface-container'
+                      ? 'border border-[rgba(227,255,116,0.12)] bg-[rgba(227,255,116,0.08)] text-[#E3FF74]'
+                      : 'border border-transparent text-[#8a8680] hover:bg-white/[0.04] hover:text-[#f0ede8]'
                   }`}
                   onClick={() => setMoreOpen(false)}
                 >
