@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ArrowDown, HeartOff, Loader2, Maximize2, RefreshCw, Search } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { AlertCircle, ArrowDown, HeartOff, Loader2, LogIn, Maximize2, RefreshCw, Search, Sparkles, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { formatDate, getFavoriteInspirations, InspirationItem, unfavoriteInspiration } from '../api';
 import { useAuth } from '../auth';
+import { useAuthModal } from '../authModal';
 import { copyTextToClipboard } from '../clipboard';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import MasonryGrid from '../components/MasonryGrid';
@@ -11,10 +13,51 @@ import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 
 const FAVORITE_PAGE_SIZE = 24;
-const PROMPT_TRANSFER_KEY = 'joko_pending_prompt';
+const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
+
+function WorkSurfaceState({
+  accent = 'primary',
+  action,
+  description,
+  icon,
+  secondaryAction,
+  title,
+}: {
+  accent?: 'primary' | 'secondary' | 'error';
+  action?: ReactNode;
+  description: string;
+  icon: ReactNode;
+  secondaryAction?: ReactNode;
+  title: string;
+}) {
+  const accentClasses = {
+    primary: 'border-primary/25 bg-primary/10 text-primary shadow-primary/10',
+    secondary: 'border-secondary/25 bg-secondary/10 text-secondary shadow-secondary/10',
+    error: 'border-error/25 bg-error/10 text-error shadow-error/10',
+  }[accent];
+
+  return (
+    <div className="flex min-h-[340px] items-center justify-center rounded-2xl border border-outline-variant/70 bg-surface/70 px-6 py-12 text-center shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-md flex-col items-center">
+        <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border ${accentClasses}`}>
+          {icon}
+        </div>
+        <h2 className="text-xl font-bold tracking-tight text-on-surface">{title}</h2>
+        <p className="mt-2 text-sm leading-6 text-on-surface-variant">{description}</p>
+        {(action || secondaryAction) ? (
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            {action}
+            {secondaryAction}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export default function Favorites() {
   const { viewer } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const { t } = useSite();
   const { notifyError, notifySuccess } = useNotifier();
   const navigate = useNavigate();
@@ -23,24 +66,28 @@ export default function Favorites() {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [removingIds, setRemovingIds] = useState<string[]>([]);
   const [previewItem, setPreviewItem] = useState<InspirationItem | null>(null);
 
-  async function load(nextOffset = 0, append = false) {
+  async function load(nextOffset = 0, append = false, searchQuery = query) {
     if (!viewer?.authenticated) {
+      setLoadError(false);
       return;
     }
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await getFavoriteInspirations({
         limit: FAVORITE_PAGE_SIZE,
         offset: nextOffset,
-        q: query.trim() || undefined,
+        q: searchQuery.trim() || undefined,
       });
       setItems((current) => (append ? [...current, ...data.items] : data.items));
       setOffset(nextOffset + data.items.length);
       setTotal(Number(data.total ?? data.items.length));
     } catch (err) {
+      setLoadError(true);
       notifyError(err);
     } finally {
       setLoading(false);
@@ -71,20 +118,30 @@ export default function Favorites() {
     navigate('/');
   }
 
+  function handleClearSearch() {
+    setQuery('');
+    load(0, false, '').catch(() => undefined);
+  }
+
   if (!viewer?.authenticated) {
     return (
-      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
-        <div className="border border-primary/20 bg-black/50 p-8 text-center">
-          <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">{t('favorites_tag')}</div>
-          <h1 className="mb-3 text-3xl font-black tracking-tight text-white">{t('favorites_title')}</h1>
-          <p className="mb-6 text-sm text-white/50">{t('favorites_login_required')}</p>
-          <Link
-            className="inline-flex h-11 items-center justify-center border border-primary/40 px-6 text-xs font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/10"
-            to="/login"
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
+        <WorkSurfaceState
+          accent="secondary"
+          description={t('favorites_login_desc')}
+          icon={<LogIn size={24} />}
+          title={t('favorites_login_title')}
+          action={(
+          <button
+            className="btn-primary"
+            type="button"
+            onClick={() => openAuthModal('login')}
           >
+              <LogIn size={16} />
             {t('top_login')}
-          </Link>
-        </div>
+          </button>
+          )}
+        />
       </div>
     );
   }
@@ -101,7 +158,7 @@ export default function Favorites() {
         </div>
 
         <div className="flex w-full gap-4 md:w-auto">
-          <label className="flex min-w-0 flex-1 items-center gap-3 border border-primary/20 bg-black px-3 py-2 text-primary focus-within:border-primary md:w-72">
+          <label className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 text-on-surface focus-within:border-secondary md:w-72">
             <Search className="shrink-0 text-primary/50" size={16} />
             <input
               value={query}
@@ -109,14 +166,14 @@ export default function Favorites() {
               onKeyDown={(event) => {
                 if (event.key === 'Enter') load(0, false).catch(() => undefined);
               }}
-              className="min-w-0 flex-1 bg-transparent text-xs text-primary outline-none placeholder:text-primary/20"
+              className="min-w-0 flex-1 bg-transparent text-sm text-on-surface outline-none placeholder:text-on-surface-variant/50"
               placeholder={t('favorites_search')}
               type="text"
             />
           </label>
           <button
             onClick={() => load(0, false)}
-            className="flex h-10 items-center justify-center border border-primary/20 bg-black px-4 text-xs font-bold uppercase tracking-widest text-primary transition-colors hover:border-primary hover:bg-primary/5"
+            className="flex h-10 items-center justify-center rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
             type="button"
           >
             {t('favorites_search_action')}
@@ -125,10 +182,25 @@ export default function Favorites() {
       </div>
 
       {loading && items.length === 0 ? (
-        <div className="flex min-h-[320px] items-center justify-center gap-3 border border-primary/20 bg-black/50 text-xs uppercase tracking-[0.3em] text-primary/70">
-          <Loader2 className="animate-spin" size={16} />
-          {t('favorites_loading')}
-        </div>
+        <WorkSurfaceState
+          accent="secondary"
+          description={t('favorites_subtitle')}
+          icon={<Loader2 className="animate-spin" size={24} />}
+          title={t('favorites_loading')}
+        />
+      ) : loadError && items.length === 0 ? (
+        <WorkSurfaceState
+          accent="error"
+          description={t('favorites_error_desc')}
+          icon={<AlertCircle size={24} />}
+          title={t('favorites_error_title')}
+          action={(
+            <button className="btn-primary" type="button" onClick={() => load(0, false).catch(() => undefined)}>
+              <RefreshCw size={16} />
+              {t('history_retry')}
+            </button>
+          )}
+        />
       ) : items.length > 0 ? (
         <>
           <MasonryGrid
@@ -179,7 +251,7 @@ export default function Favorites() {
                         {removing ? <Loader2 className="animate-spin" size={15} /> : <HeartOff size={15} />}
                       </button>
                       <button
-                        className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-xs font-semibold text-on-primary hover:bg-primary/90 transition-colors"
+                        className="btn-primary min-w-0 px-3 text-xs"
                         type="button"
                         onClick={() => handleClonePrompt(item).catch(() => undefined)}
                       >
@@ -210,9 +282,27 @@ export default function Favorites() {
           </div>
         </>
       ) : (
-        <div className="flex min-h-[320px] items-center justify-center border border-primary/20 bg-black/50 px-6 text-center text-sm text-white/50">
-          {t('favorites_empty')}
-        </div>
+        <WorkSurfaceState
+          accent={query.trim() ? 'secondary' : 'primary'}
+          description={query.trim() ? t('favorites_search_empty_desc') : t('favorites_empty_desc')}
+          icon={query.trim() ? <Search size={24} /> : <Sparkles size={24} />}
+          title={query.trim() ? t('favorites_search_empty_title') : t('favorites_empty_title')}
+          action={query.trim() ? (
+            <button
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
+              type="button"
+              onClick={handleClearSearch}
+            >
+              <X size={16} />
+              {t('history_clear_search')}
+            </button>
+          ) : (
+            <button className="btn-primary" type="button" onClick={() => navigate('/explore')}>
+              <Sparkles size={16} />
+              {t('favorites_explore_action')}
+            </button>
+          )}
+        />
       )}
 
       <ImagePreviewModal

@@ -18,6 +18,7 @@ import {
   updateSiteSettings,
 } from '../api';
 import { useAuth } from '../auth';
+import { useAuthModal } from '../authModal';
 import AvatarBadge from '../components/AvatarBadge';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
@@ -30,6 +31,7 @@ function normalizeLocale(locale: string | undefined): LocaleValue {
 
 export default function Config() {
   const { viewer } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const { setLocale, siteSettings, refreshSiteSettings, t } = useSite();
   const { notifyError, notifySuccess } = useNotifier();
   const isAdmin = Boolean(siteSettings?.viewer.is_admin);
@@ -254,12 +256,12 @@ export default function Config() {
         <div className="mb-6 border border-primary/20 bg-primary/5 p-4 text-xs text-white/60 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div>{t('config_guest_tip')}</div>
           <div className="flex gap-3">
-            <Link className="border border-primary/40 px-4 py-2 text-primary uppercase tracking-widest hover:bg-primary/10" to="/login">
+            <button className="btn-ghost" type="button" onClick={() => openAuthModal('login')}>
               {t('config_sign_in')}
-            </Link>
-            <Link className="border border-secondary/40 px-4 py-2 text-secondary uppercase tracking-widest hover:bg-secondary/10" to="/register">
+            </button>
+            <button className="btn-primary" type="button" onClick={() => openAuthModal('register')}>
               {t('config_register')}
-            </Link>
+            </button>
           </div>
         </div>
       )}
@@ -426,7 +428,7 @@ export default function Config() {
                 {t('config_test')}
               </button>
               <button
-                className="rounded-lg bg-primary text-on-primary font-semibold px-8 py-3 hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                className="btn-primary px-8 disabled:opacity-50"
                 type="submit"
                 disabled={saving}
               >
@@ -599,7 +601,7 @@ export default function Config() {
 
               {isAdmin ? (
                 <button
-                  className="w-full bg-secondary text-white font-bold px-6 py-3 uppercase tracking-widest hover:bg-white hover:text-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-xs"
+                  className="w-full bg-secondary text-white font-bold px-6 py-3 uppercase tracking-widest transition-opacity hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 text-xs"
                   type="button"
                   onClick={handleSaveSiteSettings}
                   disabled={siteSaving}

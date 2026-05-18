@@ -14,19 +14,12 @@ from .settings import DEFAULT_INSPIRATION_SOURCE_URLS, Settings
 
 LEGACY_OWNER_ID = "legacy:default"
 DEFAULT_SITE_LOCALE = "zh-CN"
-USER_GALLERY_SOURCE_URL = "joko-image://user-gallery"
+USER_GALLERY_SOURCE_URL = "aethergenix://user-gallery"
 USER_GALLERY_SECTION = "用户作品"
-DEFAULT_ANNOUNCEMENT_TITLE = "欢迎来到 JokoAI 图像系统"
-DEFAULT_ANNOUNCEMENT_BODY = """欢迎使用 JokoAI 图像生态系统。
+DEFAULT_ANNOUNCEMENT_TITLE = "欢迎来到 AetherGenix 图像平台"
+DEFAULT_ANNOUNCEMENT_BODY = """欢迎使用 AetherGenix AI 图像平台。
 
-站主联系方式：
-QQ：935764227
-Telegram：https://t.me/jokoacoount
-
-中转站 / 充值站点：
-https://ai.get-money.locker
-
-如需充值、额度支持或账号协助，请通过以上方式联系。"""
+如需充值、额度支持或账号协助，请联系站主。"""
 
 
 def default_inspiration_sources(settings: Settings | None = None) -> list[str]:

@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Search, Filter, Download, Trash2, RefreshCw, ArrowDown, Loader2, Maximize2, Globe2, Archive } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Search, Filter, Download, Trash2, RefreshCw, ArrowDown, Loader2, Maximize2, Globe2, Archive, AlertCircle, LogIn, Sparkles, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { deleteHistory, formatDate, generateImage, getHistory, HistoryItem, publishHistory, taskDownloadUrl, unpublishHistory } from '../api';
 import { useAuth } from '../auth';
+import { useAuthModal } from '../authModal';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import MasonryGrid from '../components/MasonryGrid';
 import RetryImage from '../components/RetryImage';
@@ -31,11 +34,55 @@ const getColorClasses = (colorMode: string) => {
   };
 };
 
+const HISTORY_PAGE_SIZE = 24;
+
+function WorkSurfaceState({
+  accent = 'primary',
+  action,
+  description,
+  icon,
+  secondaryAction,
+  title,
+}: {
+  accent?: 'primary' | 'secondary' | 'error';
+  action?: ReactNode;
+  description: string;
+  icon: ReactNode;
+  secondaryAction?: ReactNode;
+  title: string;
+}) {
+  const accentClasses = {
+    primary: 'border-primary/25 bg-primary/10 text-primary shadow-primary/10',
+    secondary: 'border-secondary/25 bg-secondary/10 text-secondary shadow-secondary/10',
+    error: 'border-error/25 bg-error/10 text-error shadow-error/10',
+  }[accent];
+
+  return (
+    <div className="flex min-h-[340px] items-center justify-center rounded-2xl border border-outline-variant/70 bg-surface/70 px-6 py-12 text-center shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-md flex-col items-center">
+        <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border ${accentClasses}`}>
+          {icon}
+        </div>
+        <h2 className="text-xl font-bold tracking-tight text-on-surface">{title}</h2>
+        <p className="mt-2 text-sm leading-6 text-on-surface-variant">{description}</p>
+        {(action || secondaryAction) ? (
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            {action}
+            {secondaryAction}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default function History() {
   const { viewer } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const { t } = useSite();
   const { addTask, openDrawer, taskHistoryItems } = useTasks();
   const { notifyError } = useNotifier();
+  const navigate = useNavigate();
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [query, setQuery] = useState('');
@@ -48,11 +95,21 @@ export default function History() {
   } | null>(null);
   const [publishingIds, setPublishingIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
 
-  async function load(nextOffset = 0, append = false) {
+  async function load(nextOffset = 0, append = false, searchQuery = query) {
+    if (!viewer?.authenticated) {
+      setItems([]);
+      setOffset(0);
+      setHasMore(false);
+      setLoadError(false);
+      return;
+    }
     setLoading(true);
+    setLoadError(false);
     try {
-      const data = await getHistory({ limit: 24, offset: nextOffset, q: query });
+      const data = await getHistory({ limit: HISTORY_PAGE_SIZE, offset: nextOffset, q: searchQuery.trim() || undefined });
       if (!append) {
         window.scrollTo({ top: 0, behavior: 'auto' });
       }
@@ -61,7 +118,10 @@ export default function History() {
         setRemovedIds([]);
       }
       setOffset(nextOffset + data.items.length);
+      setHasMore(data.items.length === HISTORY_PAGE_SIZE);
     } catch (err) {
+      setLoadError(true);
+      setHasMore(false);
       notifyError(err);
     } finally {
       setLoading(false);
@@ -133,6 +193,12 @@ export default function History() {
   const visibleGroups = groupHistoryItems(
     mergeHistoryItems([...taskHistoryItems, ...items]).filter((item) => !removedIds.includes(item.id)),
   );
+  const hasSearch = query.trim().length > 0;
+
+  function handleClearSearch() {
+    setQuery('');
+    load(0, false, '').catch(() => undefined);
+  }
 
   return (
     <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto">
@@ -159,16 +225,77 @@ export default function History() {
               type="text"
             />
           </div>
-          <button onClick={() => load(0, false)} className="bg-black border border-primary/20 p-2 hover:border-primary hover:bg-primary/5 transition-colors flex items-center justify-center">
+          <button
+            aria-label={t('history_apply_filter')}
+            onClick={() => load(0, false)}
+            className="flex h-10 items-center justify-center rounded-lg border border-outline-variant px-3 text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+            type="button"
+          >
             <Filter size={16} className="text-primary" />
           </button>
         </div>
       </div>
 
-      <MasonryGrid
-        items={visibleGroups}
-        getKey={(group) => group.key}
-        renderItem={(group, index) => {
+      {!viewer?.authenticated ? (
+        <WorkSurfaceState
+          accent="primary"
+          description={t('history_login_desc')}
+          icon={<LogIn size={24} />}
+          title={t('history_login_title')}
+          action={(
+            <button className="btn-primary" type="button" onClick={() => openAuthModal('login')}>
+              <LogIn size={16} />
+              {t('top_login')}
+            </button>
+          )}
+        />
+      ) : loadError && visibleGroups.length === 0 ? (
+        <WorkSurfaceState
+          accent="error"
+          description={t('history_error_desc')}
+          icon={<AlertCircle size={24} />}
+          title={t('history_error_title')}
+          action={(
+            <button className="btn-primary" type="button" onClick={() => load(0, false).catch(() => undefined)}>
+              <RefreshCw size={16} />
+              {t('history_retry')}
+            </button>
+          )}
+        />
+      ) : loading && visibleGroups.length === 0 ? (
+        <WorkSurfaceState
+          description={t('history_subtitle')}
+          icon={<Loader2 className="animate-spin" size={24} />}
+          title={t('history_loading')}
+        />
+      ) : visibleGroups.length === 0 ? (
+        <WorkSurfaceState
+          accent={hasSearch ? 'secondary' : 'primary'}
+          description={hasSearch ? t('history_search_empty_desc') : t('history_empty_desc')}
+          icon={hasSearch ? <Search size={24} /> : <Sparkles size={24} />}
+          title={hasSearch ? t('history_search_empty_title') : t('history_empty_title')}
+          action={hasSearch ? (
+            <button
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
+              type="button"
+              onClick={handleClearSearch}
+            >
+              <X size={16} />
+              {t('history_clear_search')}
+            </button>
+          ) : (
+            <button className="btn-primary" type="button" onClick={() => navigate('/create')}>
+              <Sparkles size={16} />
+              {t('history_create_action')}
+            </button>
+          )}
+        />
+      ) : (
+        <>
+          <MasonryGrid
+            items={visibleGroups}
+            getKey={(group) => group.key}
+            renderItem={(group, index) => {
           const item = group.first;
           const colors = getColorClasses(index % 2 === 0 ? 'primary' : 'secondary');
           const isBatch = group.images.length > 1;
@@ -301,7 +428,7 @@ export default function History() {
                 </button>
                 <button
                   onClick={() => handleRegenerate(group)}
-                  className={`col-span-4 flex h-10 min-w-0 items-center justify-center gap-2 px-3 text-xs font-black uppercase sm:col-span-1 ${colors.btnBg} ${colors.btnText} ${colors.btnShadow} shadow-white/40 transition-all duration-300 hover:bg-white hover:border-white`}
+                  className={`col-span-4 flex h-10 min-w-0 items-center justify-center gap-2 px-3 text-xs font-black uppercase sm:col-span-1 ${colors.btnBg} ${colors.btnText} ${colors.btnShadow} shadow-white/40 transition-all duration-300 hover:border-white/80 hover:brightness-110`}
                   type="button"
                 >
                   <RefreshCw size={14} />
@@ -311,19 +438,23 @@ export default function History() {
             </div>
           </div>
           );
-        }}
-      />
+            }}
+          />
 
-      <div className="mt-12 flex justify-center">
-        <button
-          onClick={() => load(offset, true)}
-          disabled={loading}
-          className="rounded-lg border border-outline-variant hover:bg-surface-container text-on-surface-variant px-8 py-3 transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="animate-spin" size={14} /> : <ArrowDown size={14} />}
-          {t('history_load_more')}
-        </button>
-      </div>
+          {hasMore ? (
+            <div className="mt-12 flex justify-center">
+              <button
+                onClick={() => load(offset, true)}
+                disabled={loading}
+                className="rounded-lg border border-outline-variant hover:bg-surface-container text-on-surface-variant px-8 py-3 transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="animate-spin" size={14} /> : <ArrowDown size={14} />}
+                {t('history_load_more')}
+              </button>
+            </div>
+          ) : null}
+        </>
+      )}
 
       <ImagePreviewModal
         imageUrl={previewItem?.imageUrl || null}

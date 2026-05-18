@@ -43,6 +43,57 @@ import { useTasks } from '../tasks';
 
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
+const STYLE_TEMPLATES = [
+  {
+    id: 'white_bg',
+    emoji: '⬜',
+    name: '纯白底图',
+    desc: '电商标准白底，主图必备',
+    style: '纯白色背景，产品居中，边缘干净，专业电商白底风格，无阴影',
+    scenarios: '电商平台商品主图，白底背景',
+  },
+  {
+    id: 'minimal_gradient',
+    emoji: '🌫',
+    name: '简约渐变',
+    desc: '淡雅渐变，高级质感',
+    style: '简约淡色渐变背景，高级干净，极简现代感',
+    scenarios: '品牌官网展示，高端电商场景图',
+  },
+  {
+    id: 'indoor_scene',
+    emoji: '🛋',
+    name: '室内生活',
+    desc: '居家氛围，种草利器',
+    style: '温馨真实室内生活场景，自然日光，高质感生活气息',
+    scenarios: '室内生活场景，桌面摆拍，沙发旁，生活化陈设',
+  },
+  {
+    id: 'outdoor_nature',
+    emoji: '🌿',
+    name: '户外自然',
+    desc: '清新自然光，格调提升',
+    style: '自然户外场景，清新明亮，真实自然光',
+    scenarios: '户外自然场景，草地、石板路、木质桌面等自然背景',
+  },
+  {
+    id: 'commercial_poster',
+    emoji: '🎯',
+    name: '商业海报',
+    desc: '视觉冲击，促销利器',
+    style: '商业海报风格，高对比度，视觉冲击感强，现代设计感',
+    scenarios: '活动促销海报，品牌主视觉，详情页 banner',
+  },
+  {
+    id: 'festive',
+    emoji: '🎁',
+    name: '节日氛围',
+    desc: '暖色氛围，大促必备',
+    style: '节日喜庆氛围，温暖橙红色调，活动感强，礼物感',
+    scenarios: '节假日大促场景，礼品礼盒展示，年节活动',
+  },
+];
+
 export default function Ecommerce() {
   const { viewer } = useAuth();
   const { t } = useSite();
@@ -89,6 +140,7 @@ export default function Ecommerce() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [editReferenceDragging, setEditReferenceDragging] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editReferenceInputRef = useRef<HTMLInputElement>(null);
   const productReferenceInputRef = useRef<HTMLInputElement>(null);
@@ -284,11 +336,25 @@ export default function Ecommerce() {
     });
     setAnalysisResult(null);
     setSelectedPlan(null);
+    setSelectedTemplate(null);
     setSelectedGroupKey(null);
     setEditingItem(null);
     setEditPrompt('');
     setEditReferences([]);
     notifyInfo(t('ecom_form_reset'));
+  }
+
+  function applyStyleTemplate(templateId: string) {
+    const tpl = STYLE_TEMPLATES.find((t) => t.id === templateId);
+    if (!tpl) return;
+    setSelectedTemplate(templateId);
+    setForm((current) => ({
+      ...current,
+      style: tpl.style,
+      scenarios: tpl.scenarios,
+    }));
+    setAnalysisResult(null);
+    setSelectedPlan(null);
   }
 
   async function handleSubmit() {
@@ -656,7 +722,31 @@ export default function Ecommerce() {
           ) : null}
         </div>
 
-        <div className="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="flex min-w-0 flex-col gap-3">
+
+          <div>
+            <div className="mb-1.5 text-[9px] font-bold uppercase tracking-widest text-white/35">快速风格选择</div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {STYLE_TEMPLATES.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => applyStyleTemplate(tpl.id)}
+                  className={`flex shrink-0 flex-col items-start gap-0.5 border px-3 py-2 text-left transition-colors ${
+                    selectedTemplate === tpl.id
+                      ? 'border-secondary bg-secondary/15 text-secondary'
+                      : 'border-white/10 bg-white/[0.02] text-white/60 hover:border-white/25 hover:text-white/80'
+                  }`}
+                >
+                  <span className="text-base leading-none">{tpl.emoji}</span>
+                  <span className="mt-1 text-[10px] font-bold leading-none">{tpl.name}</span>
+                  <span className="mt-0.5 text-[8px] leading-none opacity-60">{tpl.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           <CompactInput label={t('home_ecom_product_name')} value={form.productName} onChange={(value) => setForm((current) => ({ ...current, productName: value }))} />
           <CompactInput label={t('home_ecom_platform')} value={form.platform} onChange={(value) => setForm((current) => ({ ...current, platform: value }))} />
           <CompactInput label={t('home_ecom_style')} value={form.style} onChange={(value) => setForm((current) => ({ ...current, style: value }))} />
@@ -710,6 +800,7 @@ export default function Ecommerce() {
             ) : (
               <div className="border border-dashed border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-white/35">{t('ecom_edit_reference_tip')}</div>
             )}
+          </div>
           </div>
         </div>
 

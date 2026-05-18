@@ -353,7 +353,7 @@ export default function Recharge() {
                     <Summary label={t('recharge_summary_pay')} value={`$${payAmount.toFixed(2)}`} highlight />
                   </div>
                   <button
-                    className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-secondary px-5 text-sm font-black uppercase tracking-widest text-black transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
+                    className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-secondary px-5 text-sm font-black uppercase tracking-widest text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
                     disabled={!canSubmit || submitting}
                     type="button"
                     onClick={handleSubmit}
@@ -432,7 +432,7 @@ export default function Recharge() {
                 </div>
               ) : paymentState.pay_url ? (
                 <a
-                  className="inline-flex h-12 items-center justify-center gap-2 bg-secondary px-6 text-sm font-black uppercase tracking-widest text-black"
+                  className="inline-flex h-12 items-center justify-center gap-2 bg-secondary px-6 text-sm font-black uppercase tracking-widest text-white"
                   href={paymentState.pay_url}
                   rel="noreferrer"
                   target="_blank"
@@ -537,7 +537,7 @@ function isMobileDevice() {
 }
 
 function openPaymentWindow(url: string) {
-  const popup = window.open(url, 'jokoPayment', 'width=460,height=720,menubar=no,toolbar=no,location=yes,status=no');
+  const popup = window.open(url, 'aethergenixPayment', 'width=460,height=720,menubar=no,toolbar=no,location=yes,status=no');
   if (!popup || popup.closed) {
     window.location.href = url;
   }
