@@ -428,7 +428,7 @@ export default function Config() {
                 {t('config_test')}
               </button>
               <button
-                className="rounded-lg bg-primary text-on-primary font-semibold px-8 py-3 hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                className="btn-primary px-8 disabled:opacity-50"
                 type="submit"
                 disabled={saving}
               >

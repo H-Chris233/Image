@@ -301,7 +301,7 @@ export default function History() {
                 </button>
                 <button
                   onClick={() => handleRegenerate(group)}
-                  className={`col-span-4 flex h-10 min-w-0 items-center justify-center gap-2 px-3 text-xs font-black uppercase sm:col-span-1 ${colors.btnBg} ${colors.btnText} ${colors.btnShadow} shadow-white/40 transition-all duration-300 hover:bg-white hover:border-white`}
+                  className={`col-span-4 flex h-10 min-w-0 items-center justify-center gap-2 px-3 text-xs font-black uppercase sm:col-span-1 ${colors.btnBg} ${colors.btnText} ${colors.btnShadow} shadow-white/40 transition-all duration-300 hover:border-white/80 hover:brightness-110`}
                   type="button"
                 >
                   <RefreshCw size={14} />

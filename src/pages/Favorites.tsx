@@ -182,7 +182,7 @@ export default function Favorites() {
                         {removing ? <Loader2 className="animate-spin" size={15} /> : <HeartOff size={15} />}
                       </button>
                       <button
-                        className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-xs font-semibold text-on-primary hover:bg-primary/90 transition-colors"
+                        className="btn-primary min-w-0 px-3 text-xs"
                         type="button"
                         onClick={() => handleClonePrompt(item).catch(() => undefined)}
                       >
