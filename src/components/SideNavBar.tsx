@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { CreditCard, Heart, History, PenLine, Settings, UserCircle, Wallet, type LucideIcon } from 'lucide-react';
-import { useAuth } from '../auth';
+import { Heart, History, PenLine, UserCircle, type LucideIcon } from 'lucide-react';
 import { useSite } from '../site';
+import { isAccountCenterPath } from './AccountCenterHeader';
 
 type NavItem = { name: string; path: string; icon: LucideIcon };
 
@@ -27,21 +27,15 @@ function renderNavItem(item: NavItem, isActive: boolean) {
 
 export default function SideNavBar() {
   const location = useLocation();
-  const { viewer } = useAuth();
   const { t } = useSite();
 
   const mainItems: NavItem[] = [
     { name: t('side_create'), path: '/create', icon: PenLine },
     { name: t('side_history'), path: '/history', icon: History },
-    ...(viewer?.authenticated ? [{ name: t('side_favorites'), path: '/favorites', icon: Heart }] : []),
+    { name: t('side_favorites'), path: '/favorites', icon: Heart },
   ];
 
-  const accountItems: NavItem[] = [
-    { name: t('side_recharge'), path: '/recharge', icon: Wallet },
-    { name: t('side_billing'), path: '/billing', icon: CreditCard },
-    { name: t('side_account'), path: '/account', icon: UserCircle },
-    { name: t('side_config'), path: '/config', icon: Settings },
-  ];
+  const accountItem: NavItem = { name: t('account_center_title'), path: '/account', icon: UserCircle };
 
   return (
     <aside className="hidden lg:flex fixed left-0 top-16 h-[calc(100vh-64px)] w-60 flex-col border-r border-white/[0.05] bg-[#111110] py-4 z-40">
@@ -53,10 +47,10 @@ export default function SideNavBar() {
         <div className="my-4 border-t border-white/[0.05]" />
 
         <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-[#4a4844]">
-          {t('side_account')}
+          {t('account_center_area')}
         </p>
         <div className="flex flex-col gap-0.5">
-          {accountItems.map((item) => renderNavItem(item, location.pathname === item.path))}
+          {renderNavItem(accountItem, isAccountCenterPath(location.pathname))}
         </div>
       </nav>
     </aside>

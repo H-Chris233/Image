@@ -10,7 +10,6 @@ import History from './pages/History';
 import Favorites from './pages/Favorites';
 import Config from './pages/Config';
 import Account from './pages/Account';
-import Billing from './pages/Billing';
 import Recharge from './pages/Recharge';
 import Tasks from './pages/Tasks';
 import AnnouncementModal from './components/AnnouncementModal';
@@ -41,7 +40,7 @@ export default function App() {
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/config" element={<Config />} />
             <Route path="/account" element={<Account />} />
-            <Route path="/billing" element={<Billing />} />
+            <Route path="/billing" element={<Navigate to="/account" replace />} />
             <Route path="/recharge" element={<Recharge />} />
             <Route path="/tasks" element={<Tasks />} />
             {/* 旧路由兼容重定向 */}

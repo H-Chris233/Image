@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.joko.image',
-  appName: 'joko-image',
+  appId: 'com.aethergenix.image',
+  appName: 'AetherGenix',
   webDir: 'dist',
   server: {
     url: 'https://image.get-money.locker',

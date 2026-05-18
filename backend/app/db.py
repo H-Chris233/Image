@@ -9,17 +9,13 @@ from pathlib import Path
 from typing import Any, Iterator
 from uuid import uuid4
 
+from .branding import DEFAULT_ANNOUNCEMENT_BODY, DEFAULT_ANNOUNCEMENT_TITLE, USER_GALLERY_SOURCE_URL
 from .settings import DEFAULT_INSPIRATION_SOURCE_URLS, Settings
 
 
 LEGACY_OWNER_ID = "legacy:default"
 DEFAULT_SITE_LOCALE = "zh-CN"
-USER_GALLERY_SOURCE_URL = "aethergenix://user-gallery"
 USER_GALLERY_SECTION = "用户作品"
-DEFAULT_ANNOUNCEMENT_TITLE = "欢迎来到 AetherGenix 图像平台"
-DEFAULT_ANNOUNCEMENT_BODY = """欢迎使用 AetherGenix AI 图像平台。
-
-如需充值、额度支持或账号协助，请联系站主。"""
 
 
 def default_inspiration_sources(settings: Settings | None = None) -> list[str]:

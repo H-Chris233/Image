@@ -4,6 +4,7 @@ from typing import Any
 
 import httpx
 
+from .branding import UPSTREAM_SERVICE_LABEL
 from .provider import ProviderError
 
 
@@ -59,7 +60,7 @@ class Sub2APIAuthClient:
             access_token=access_token,
         )
         if not isinstance(data, dict):
-            raise ProviderError(502, "JokoAI 返回的 API Key 数据格式不正确", data)
+            raise ProviderError(502, f"{UPSTREAM_SERVICE_LABEL} 返回的 API Key 数据格式不正确", data)
         return data
 
     async def list_usage(self, base_url: str, access_token: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
@@ -86,7 +87,7 @@ class Sub2APIAuthClient:
             access_token=access_token,
         )
         if not isinstance(data, dict):
-            raise ProviderError(502, "JokoAI 返回的支付配置数据格式不正确", data)
+            raise ProviderError(502, f"{UPSTREAM_SERVICE_LABEL} 返回的支付配置数据格式不正确", data)
         return data
 
     async def payment_create_order(self, base_url: str, access_token: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -98,7 +99,7 @@ class Sub2APIAuthClient:
             access_token=access_token,
         )
         if not isinstance(data, dict):
-            raise ProviderError(502, "JokoAI 返回的支付订单数据格式不正确", data)
+            raise ProviderError(502, f"{UPSTREAM_SERVICE_LABEL} 返回的支付订单数据格式不正确", data)
         return data
 
     async def payment_list_orders(self, base_url: str, access_token: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -110,7 +111,7 @@ class Sub2APIAuthClient:
             access_token=access_token,
         )
         if not isinstance(data, dict):
-            raise ProviderError(502, "JokoAI 返回的支付订单列表格式不正确", data)
+            raise ProviderError(502, f"{UPSTREAM_SERVICE_LABEL} 返回的支付订单列表格式不正确", data)
         return data
 
     async def payment_get_order(self, base_url: str, access_token: str, order_id: int) -> dict[str, Any]:
@@ -121,7 +122,7 @@ class Sub2APIAuthClient:
             access_token=access_token,
         )
         if not isinstance(data, dict):
-            raise ProviderError(502, "JokoAI 返回的支付订单详情格式不正确", data)
+            raise ProviderError(502, f"{UPSTREAM_SERVICE_LABEL} 返回的支付订单详情格式不正确", data)
         return data
 
     async def payment_cancel_order(self, base_url: str, access_token: str, order_id: int) -> dict[str, Any]:
@@ -132,7 +133,7 @@ class Sub2APIAuthClient:
             access_token=access_token,
         )
         if not isinstance(data, dict):
-            raise ProviderError(502, "JokoAI 返回的取消订单数据格式不正确", data)
+            raise ProviderError(502, f"{UPSTREAM_SERVICE_LABEL} 返回的取消订单数据格式不正确", data)
         return data
 
     async def payment_verify_order(self, base_url: str, access_token: str, out_trade_no: str) -> dict[str, Any]:
@@ -144,7 +145,7 @@ class Sub2APIAuthClient:
             access_token=access_token,
         )
         if not isinstance(data, dict):
-            raise ProviderError(502, "JokoAI 返回的支付验证数据格式不正确", data)
+            raise ProviderError(502, f"{UPSTREAM_SERVICE_LABEL} 返回的支付验证数据格式不正确", data)
         return data
 
     async def admin_update_user_balance(
@@ -168,7 +169,7 @@ class Sub2APIAuthClient:
             **kwargs,
         )
         if not isinstance(data, dict):
-            raise ProviderError(502, "JokoAI 返回的用户余额数据格式不正确", data)
+            raise ProviderError(502, f"{UPSTREAM_SERVICE_LABEL} 返回的用户余额数据格式不正确", data)
         return data
 
     async def _request(
@@ -222,4 +223,4 @@ def _extract_error_message(payload: Any, response: httpx.Response) -> str:
             return str(error["message"])
         if error:
             return str(error)
-    return response.text[:1000] or f"JokoAI returned HTTP {response.status_code}"
+    return response.text[:1000] or f"{UPSTREAM_SERVICE_LABEL} returned HTTP {response.status_code}"

@@ -1,5 +1,5 @@
 {
-  "name": "react-example",
+  "name": "aethergenix-image",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,6 +7,8 @@
     "dev": "vite --port=3000 --host=0.0.0.0",
     "backend": "uvicorn backend.app.main:app --env-file .env --host 0.0.0.0 --port 8000 --reload",
     "build": "vite build",
+    "test:account": "tsx src/accountDomain.test.ts && tsx src/rechargeDomain.test.ts && tsx src/accountCenterRegression.test.ts",
+    "check:brand": "node scripts/check-brand-residuals.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",

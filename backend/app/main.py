@@ -18,6 +18,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .auth_client import Sub2APIAuthClient
+from .branding import (
+    BACKEND_API_TITLE,
+    MANAGED_API_KEY_NAME,
+    PRODUCT_NAME,
+    TRIAL_BALANCE_GRANT_NOTE,
+    UPSTREAM_SERVICE_LABEL,
+)
 from .db import Database, utc_now
 from .inspirations import normalize_inspiration_source_urls, run_inspiration_sync_loop, sync_inspirations
 from .provider import OpenAICompatibleImageClient, ProviderError
@@ -184,7 +191,7 @@ ALLOWED_PRESET_DIMENSIONS = set(SIZE_TIER_BY_DIMENSION)
 
 RETRYABLE_PROVIDER_STATUS_CODES = {429, 502, 503, 504}
 IMAGE_PROVIDER_MAX_ATTEMPTS = 3
-PROMPT_OPTIMIZER_SYSTEM_PROMPT = """你是 JokoAI 的图像生成提示词优化器。
+PROMPT_OPTIMIZER_SYSTEM_PROMPT = f"你是 {PRODUCT_NAME} 的图像生成提示词优化器。\n" """用户会提供一段原始生图提示词，以及可选的修改要求。你的任务是输出一段可以直接用于 gpt-image-2 / OpenAI 兼容生图接口的最终提示词。
 用户会提供一段原始生图提示词，以及可选的修改要求。你的任务是输出一段可以直接用于 gpt-image-2 / OpenAI 兼容生图接口的最终提示词。
 要求：
 1. 只输出最终提示词，不要标题、解释、Markdown、代码块或引号。
@@ -195,7 +202,7 @@ PROMPT_OPTIMIZER_SYSTEM_PROMPT = """你是 JokoAI 的图像生成提示词优化
 6. 保持原提示词主要语言；中文输入输出中文，英文输入输出英文。
 7. 输出要具体但不要冗长，适合直接复制到生图框。"""
 
-SERIES_PROMPT_PLANNER_SYSTEM_PROMPT = """你是 JokoAI 的系列图像提示词规划师。
+SERIES_PROMPT_PLANNER_SYSTEM_PROMPT = f"你是 {PRODUCT_NAME} 的系列图像提示词规划师。\n" """用户会提供一个总需求、生成模式、图片张数和画面参数。你的任务是把总需求拆解成一组同风格、同产品、可连续浏览的系列图像提示词。
 用户会提供一个总需求、生成模式、图片张数和画面参数。你的任务是把总需求拆解成一组同风格、同产品、可连续浏览的系列图像提示词。
 要求：
 1. 只输出 JSON，不要 Markdown、解释或代码块。
@@ -211,7 +218,7 @@ SERIES_PROMPT_PLANNER_SYSTEM_PROMPT = """你是 JokoAI 的系列图像提示词�
 11. 如果用户上下文包含 selected_plan，说明用户已经选定了固定蓝图；你不能改变屏数和顺序，但必须根据每屏 layout_type/visual_goal 扩写成真实详情页画面，不要机械复述标题。
 12. 保持原提示词主要语言；中文输入输出中文，英文输入输出英文。"""
 
-ECOMMERCE_PRODUCT_ANALYZER_SYSTEM_PROMPT = """你是 JokoAI 的电商商品图识别分析师。
+ECOMMERCE_PRODUCT_ANALYZER_SYSTEM_PROMPT = f"你是 {PRODUCT_NAME} 的电商商品图识别分析师。\n" """用户会上传一张或多张商品参考图，并提供商品名称、材质、卖点、平台和风格。你的任务是综合识别商品外观并输出可用于后续电商详情页生成的结构化信息和推荐设计方案。
 用户会上传一张或多张商品参考图，并提供商品名称、材质、卖点、平台和风格。你的任务是综合识别商品外观并输出可用于后续电商详情页生成的结构化信息和推荐设计方案。
 要求：
 1. 只输出 JSON，不要 Markdown、解释或代码块。
@@ -225,7 +232,7 @@ ECOMMERCE_PRODUCT_ANALYZER_SYSTEM_PROMPT = """你是 JokoAI 的电商商品图�
 9. 不确定的信息不要编造，优先根据图片可见信息和用户输入综合判断。
 10. 中文输入输出中文，英文输入输出英文。"""
 
-ECOMMERCE_PUBLISH_COPY_SYSTEM_PROMPT = """你是 JokoAI 的电商种草文案策划。
+ECOMMERCE_PUBLISH_COPY_SYSTEM_PROMPT = f"你是 {PRODUCT_NAME} 的电商种草文案策划。\n" """用户会提供一个已生成的电商详情页项目参数。你的任务是为小红书/朋友圈/社媒发布生成独立标题和正文。
 用户会提供一个已生成的电商详情页项目参数。你的任务是为小红书/朋友圈/社媒发布生成独立标题和正文。
 要求：
 1. 只输出 JSON，不要 Markdown、解释或代码块。
@@ -237,7 +244,7 @@ ECOMMERCE_PUBLISH_COPY_SYSTEM_PROMPT = """你是 JokoAI 的电商种草文案策
 7. 如果用户字段为空，不要编造具体品牌、价格、功效认证或无法确认的信息。
 8. 中文输入输出中文，英文输入输出英文。"""
 
-INSPIRATION_AI_SEARCH_SYSTEM_PROMPT = """你是 JokoAI 的案例库搜索助手。
+INSPIRATION_AI_SEARCH_SYSTEM_PROMPT = f"你是 {PRODUCT_NAME} 的案例库搜索助手。\n" """用户会用自然语言描述想找的图像案例。你的任务是把需求提炼成适合在标题、提示词、作者字段中检索的关键词。
 用户会用自然语言描述想找的图像案例。你的任务是把需求提炼成适合在标题、提示词、作者字段中检索的关键词。
 要求：
 1. 只输出 JSON，不要 Markdown、解释或代码块。
@@ -354,7 +361,7 @@ def create_app(
                 except asyncio.CancelledError:
                     pass
 
-    app = FastAPI(title="Joko Image Backend", version="2.0.0", lifespan=lifespan)
+    app = FastAPI(title=BACKEND_API_TITLE, version="2.0.0", lifespan=lifespan)
     app.state.settings = settings
     app.state.db = db
     app.state.provider = provider or OpenAICompatibleImageClient(settings.request_timeout_seconds)
@@ -592,7 +599,7 @@ def create_app(
             locked = {"base_url", "usage_path", "user_name", "managed_by_auth"}
             if clear_api_key or locked.intersection(updates):
                 if locked.intersection(updates):
-                    raise HTTPException(status_code=403, detail="Signed-in accounts use a fixed JokoAI endpoint and profile")
+                    raise HTTPException(status_code=403, detail=f"Signed-in accounts use a fixed {PRODUCT_NAME} endpoint and profile")
         if clear_api_key:
             updates["api_key"] = ""
         elif "api_key" in updates and updates["api_key"] == "":
@@ -919,8 +926,8 @@ def create_app(
     async def edit_history_image(
         history_id: str,
         raw_request: Request,
+        image: Annotated[list[UploadFile], File(default_factory=list)],
         prompt: Annotated[str | None, Form()] = None,
-        image: Annotated[list[UploadFile] | None, File()] = None,
         model: Annotated[str | None, Form()] = None,
         size: Annotated[str | None, Form()] = None,
         aspect_ratio: Annotated[str | None, Form()] = None,
@@ -1175,7 +1182,7 @@ def create_app(
     @app.post("/api/ecommerce/analyze")
     async def ecommerce_analyze(
         image: Annotated[UploadFile, File()],
-        reference_image: Annotated[list[UploadFile] | None, File()] = None,
+        reference_image: Annotated[list[UploadFile], File(default_factory=list)],
         product_name: Annotated[str, Form(max_length=300)] = "",
         materials: Annotated[str, Form(max_length=1200)] = "",
         selling_points: Annotated[str, Form(max_length=1600)] = "",
@@ -1330,7 +1337,7 @@ def create_app(
     async def ecommerce_generate(
         image: Annotated[UploadFile, File()],
         raw_request: Request,
-        reference_image: Annotated[list[UploadFile] | None, File()] = None,
+        reference_image: Annotated[list[UploadFile], File(default_factory=list)],
         product_name: Annotated[str, Form(max_length=300)] = "",
         materials: Annotated[str, Form(max_length=1200)] = "",
         selling_points: Annotated[str, Form(max_length=1600)] = "",
@@ -1476,7 +1483,7 @@ def _require_access_token(viewer: ViewerContext) -> str:
     _require_authenticated(viewer)
     access_token = str((viewer.session or {}).get("access_token") or "").strip()
     if not access_token:
-        raise HTTPException(status_code=401, detail="JokoAI login token is missing")
+        raise HTTPException(status_code=401, detail=f"{PRODUCT_NAME} login token is missing")
     return access_token
 
 
@@ -1628,7 +1635,7 @@ async def _complete_auth_flow(
     access_token = str(auth_result.get("access_token") or "").strip()
     user = auth_result.get("user")
     if not access_token or not isinstance(user, dict):
-        raise HTTPException(status_code=502, detail="JokoAI login response was missing user credentials")
+        raise HTTPException(status_code=502, detail=f"{UPSTREAM_SERVICE_LABEL} login response was missing user credentials")
 
     user_id = int(user["id"])
     owner_id = f"user:{user_id}"
@@ -1756,7 +1763,7 @@ async def _resolve_trial_api_key(
         created = selected or await _create_trial_api_key(settings, auth_client, auth_base_url, access_token)
         key = str(created.get("key") or "").strip()
         if not key:
-            raise ProviderError(502, "JokoAI did not return a usable trial API key", created)
+            raise ProviderError(502, f"{UPSTREAM_SERVICE_LABEL} did not return a usable trial API key", created)
 
         balance_granted, balance_error = await _grant_trial_balance(
             settings,
@@ -1866,7 +1873,7 @@ async def _grant_trial_balance(
     payload = {
         "balance": balance_usd,
         "operation": "add",
-        "notes": "aethergenix new user trial grant",
+        "notes": TRIAL_BALANCE_GRANT_NOTE,
     }
     try:
         await auth_client.admin_update_user_balance(
@@ -1891,14 +1898,14 @@ async def _resolve_user_api_key(
     if selected and selected.get("key"):
         return str(selected["key"])
 
-    payload: dict[str, Any] = {"name": "aethergenix-image"}
+    payload: dict[str, Any] = {"name": MANAGED_API_KEY_NAME}
     group_id = await _resolve_default_key_group_id(auth_client, auth_base_url, access_token)
     if group_id is not None:
         payload["group_id"] = group_id
     created = await auth_client.create_key(auth_base_url, access_token, payload)
     key = str(created.get("key") or "").strip()
     if not key:
-        raise HTTPException(status_code=502, detail="JokoAI did not return a usable API key")
+        raise HTTPException(status_code=502, detail=f"{UPSTREAM_SERVICE_LABEL} did not return a usable API key")
     return key
 
 

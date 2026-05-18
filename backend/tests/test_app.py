@@ -13,6 +13,15 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from app.branding import (
+    DEFAULT_GUEST_COOKIE_NAME,
+    DEFAULT_SESSION_COOKIE_NAME,
+    DEFAULT_TRIAL_KEY_NAME_PREFIX,
+    MANAGED_API_KEY_NAME,
+    PRODUCT_NAME,
+    TRIAL_BALANCE_GRANT_NOTE,
+    USER_GALLERY_SOURCE_URL,
+)
 from app.inspirations import cache_inspiration_images, normalize_inspiration_source_url, parse_inspiration_markdown
 from app.main import create_app, _auth_client, _db, _image_size_tier, _provider, _provider_image_size, _settings
 from app.provider import ProviderError
@@ -49,7 +58,7 @@ class FakeProvider:
 
     async def chat_completion(self, config: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
         if not config.get("api_key"):
-            raise ProviderError(400, "请先在配置页保存 JokoAI API Key")
+            raise ProviderError(400, "请先在配置页保存访问密钥")
         self.chat_configs.append(dict(config))
         self.chat_payloads.append(payload)
         system_content = payload["messages"][0]["content"] if payload.get("messages") else ""
@@ -493,15 +502,15 @@ def make_app(tmp_path: Path, auth_client: FakeAuthClient | None = None, provider
         inspiration_source_url="https://example.com/README.md",
         inspiration_sync_interval_seconds=0,
         inspiration_sync_on_startup=False,
-        session_cookie_name="joko_session",
-        guest_cookie_name="joko_guest",
+        session_cookie_name=DEFAULT_SESSION_COOKIE_NAME,
+        guest_cookie_name=DEFAULT_GUEST_COOKIE_NAME,
         session_ttl_seconds=3600,
         guest_ttl_seconds=86400,
         cookie_secure=False,
         trial_key_enabled=True,
         trial_key_quota_usd=0,
         trial_key_expires_days=30,
-        trial_key_name_prefix="joko-image2-trial",
+        trial_key_name_prefix=DEFAULT_TRIAL_KEY_NAME_PREFIX,
         trial_balance_grant_enabled=True,
         trial_balance_usd=2,
         sub2api_admin_token="",
@@ -596,7 +605,7 @@ def test_prompt_optimizer_requires_api_key(tmp_path: Path) -> None:
         response = client.post("/api/prompts/optimize", json={"prompt": "测试提示词"})
 
         assert response.status_code == 400
-        assert "API Key" in response.json()["detail"]
+        assert "访问密钥" in response.json()["detail"]
 
 
 def test_ecommerce_publish_copy_uses_current_provider_key(tmp_path: Path) -> None:
@@ -1435,7 +1444,7 @@ def test_user_can_publish_and_unpublish_history_as_public_case(tmp_path: Path) -
         public_cases = public_cases_payload["items"]
         assert public_cases_payload["total"] == 1
         assert len(public_cases) == 1
-        assert public_cases[0]["source_url"] == "joko-image://user-gallery"
+        assert public_cases[0]["source_url"] == USER_GALLERY_SOURCE_URL
 
         unpublished = client.delete(f"/api/history/{history_id}/publish")
         assert unpublished.status_code == 200
@@ -1521,7 +1530,7 @@ def test_ai_inspiration_search_keeps_keyword_search_separate(tmp_path: Path) -> 
         assert data["query"] == "赛博 城市 夜景"
         assert data["total"] == 1
         assert data["items"][0]["id"] == "case-ai-1"
-        assert provider.chat_payloads[-1]["messages"][0]["content"].startswith("你是 JokoAI 的案例库搜索助手")
+        assert provider.chat_payloads[-1]["messages"][0]["content"].startswith(f"你是 {PRODUCT_NAME} 的案例库搜索助手")
 
 
 def test_login_binds_managed_key_with_default_group(tmp_path: Path) -> None:
@@ -1530,7 +1539,7 @@ def test_login_binds_managed_key_with_default_group(tmp_path: Path) -> None:
         login = client.post("/api/auth/login", json={"email": "demo@example.com", "password": "secret123"})
         assert login.status_code == 200
         assert login.json()["viewer"]["authenticated"] is True
-        assert auth.created_keys and auth.created_keys[0]["name"] == "joko-image"
+        assert auth.created_keys and auth.created_keys[0]["name"] == MANAGED_API_KEY_NAME
         assert auth.created_keys[0]["group"]["id"] == 12
 
         config = client.get("/api/config").json()
@@ -1551,7 +1560,7 @@ def test_register_creates_unlimited_trial_key_and_records_balance_grant(tmp_path
         register = client.post("/api/auth/register", json={"email": "new@example.com", "password": "secret123"})
 
         assert register.status_code == 200
-        assert auth.created_keys and auth.created_keys[0]["name"].startswith("joko-image2-trial")
+        assert auth.created_keys and auth.created_keys[0]["name"].startswith(DEFAULT_TRIAL_KEY_NAME_PREFIX)
         assert auth.created_keys[0]["quota"] == 0
         assert auth.created_keys[0]["expires_in_days"] == 30
         assert auth.created_keys[0]["group"]["id"] == 12
@@ -1590,7 +1599,7 @@ def test_register_grants_trial_balance_when_admin_token_configured(tmp_path: Pat
                 "payload": {
                     "balance": 2,
                     "operation": "add",
-                    "notes": "joko-image2 new user trial grant",
+                    "notes": TRIAL_BALANCE_GRANT_NOTE,
                 },
                 "token_type": "api_key",
             }
@@ -1681,7 +1690,7 @@ def test_login_does_not_create_trial_key(tmp_path: Path) -> None:
         login = client.post("/api/auth/login", json={"email": "demo@example.com", "password": "secret123"})
 
         assert login.status_code == 200
-        assert auth.created_keys and auth.created_keys[0]["name"] == "joko-image"
+        assert auth.created_keys and auth.created_keys[0]["name"] == MANAGED_API_KEY_NAME
         assert auth.created_keys[0]["quota"] == 0
         assert auth.admin_balance_calls == []
         assert client.app.state.db.get_trial_grant(owner_id="user:7") is None
@@ -1716,8 +1725,8 @@ def test_site_settings_default_to_chinese(tmp_path: Path) -> None:
         data = response.json()
         assert data["default_locale"] == "zh-CN"
         assert data["announcement"]["enabled"] is True
-        assert "JokoAI" in data["announcement"]["title"]
-        assert "https://ai.get-money.locker" in data["announcement"]["body"]
+        assert PRODUCT_NAME in data["announcement"]["title"]
+        assert "联系站主" in data["announcement"]["body"]
         assert data["inspiration_sources"] == ["https://example.com/README.md"]
         assert data["recharge_url"] == "https://ai.get-money.locker"
 
