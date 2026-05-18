@@ -217,9 +217,9 @@ export default function Config() {
   }
 
   return (
-    <div className="md:ml-64 px-6 md:px-12 py-8 max-w-[1440px] mx-auto min-h-screen pt-24 pb-12 bg-[radial-gradient(ellipse_at_top,var(--color-surface-container-high),var(--color-background))] font-mono">
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto">
       <section className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-12">
-        <div className="w-24 h-24 border border-secondary relative bg-black p-1 shadow-[0_0_15px_rgba(255,0,255,0.2)]">
+        <div className="w-24 h-24 border border-outline-variant relative bg-surface-container rounded-xl p-1">
           <div className="absolute -top-1 -left-1 w-2 h-2 bg-secondary"></div>
           <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-secondary"></div>
           <AvatarBadge
@@ -234,7 +234,7 @@ export default function Config() {
           <div className="text-[10px] text-secondary uppercase font-bold tracking-widest flex items-center gap-2">
             <span className="w-4 h-[1px] bg-secondary"></span> {t('config_profile')}
           </div>
-          <h1 className="text-3xl md:text-5xl text-on-surface font-bold">{config?.user_name || 'NEON_USER_404'}</h1>
+          <h1 className="text-3xl md:text-5xl text-on-surface font-bold">{config?.user_name || 'Joko User'}</h1>
           <div className="flex items-center gap-4 text-xs mt-2 border border-white/10 bg-white/5 py-1 px-3 w-fit">
             <span className="text-white/50 uppercase">
               {t('config_mode')}:{' '}
@@ -319,7 +319,7 @@ export default function Config() {
               <div className="border-t border-secondary/10 pt-4">
                 <Field label={t('site_inspiration_sources_body')}>
                   <textarea
-                    className="input-cyber min-h-28 resize-y"
+                    className="min-h-28 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50 resize-y"
                     value={siteDraft.inspiration_sources}
                     onChange={(event) => setSiteDraft((current) => ({ ...current, inspiration_sources: event.target.value }))}
                   />
@@ -343,7 +343,7 @@ export default function Config() {
               <>
                 <Field label={t('config_user_name')}>
                   <input
-                    className="input-cyber"
+                    className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
                     disabled={config?.managed_by_auth}
                     value={config?.user_name || ''}
                     onChange={(event) => setConfig((current) => current && { ...current, user_name: event.target.value })}
@@ -352,12 +352,12 @@ export default function Config() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Field label={t('config_model')}>
-                    <input className="input-cyber" value={config?.model || 'gpt-image-2'} onChange={(event) => setConfig((current) => current && { ...current, model: event.target.value })} />
+                    <input className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50" value={config?.model || 'gpt-image-2'} onChange={(event) => setConfig((current) => current && { ...current, model: event.target.value })} />
                   </Field>
                   <Field label={t('config_size')}>
                     <>
                       <input
-                        className="input-cyber"
+                        className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
                         list="image-size-options"
                         value={config?.default_size || '2K'}
                         onChange={(event) => setConfig((current) => current && { ...current, default_size: event.target.value })}
@@ -370,7 +370,7 @@ export default function Config() {
                     </>
                   </Field>
                   <Field label={t('config_quality')}>
-                    <select className="input-cyber" value={config?.default_quality || 'auto'} onChange={(event) => setConfig((current) => current && { ...current, default_quality: event.target.value })}>
+                    <select className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50" value={config?.default_quality || 'auto'} onChange={(event) => setConfig((current) => current && { ...current, default_quality: event.target.value })}>
                       <option>low</option>
                       <option>medium</option>
                       <option>high</option>
@@ -385,7 +385,7 @@ export default function Config() {
               <label className="text-secondary text-[10px] uppercase tracking-widest font-bold mb-1" htmlFor="api_key">{t('config_api_key')}</label>
               <div className="relative">
                 <input
-                  className="input-cyber pr-12"
+                  className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50 pr-12"
                   id="api_key"
                   placeholder={config?.api_key_set ? config.api_key_hint : 'sk-...'}
                   type="password"
@@ -426,7 +426,7 @@ export default function Config() {
                 {t('config_test')}
               </button>
               <button
-                className="bg-secondary text-white font-bold px-8 py-3 uppercase tracking-widest hover:bg-white hover:text-black transition-colors flex items-center justify-center gap-2 text-xs shadow-[0_0_15px_rgba(255,0,255,0.3)] disabled:opacity-50"
+                className="rounded-lg bg-primary text-on-primary font-semibold px-8 py-3 hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                 type="submit"
                 disabled={saving}
               >
@@ -449,7 +449,7 @@ export default function Config() {
             <div className="space-y-5">
               <Field label={t('lang_label')}>
                 <select
-                  className="input-cyber"
+                  className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
                   value={siteDraft.default_locale}
                   onChange={(event) => handleLocaleChange(event.target.value as LocaleValue)}
                 >
@@ -470,7 +470,7 @@ export default function Config() {
                     <Field label={t('site_provider_base_url')}>
                       <>
                         <input
-                          className="input-cyber"
+                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
                           placeholder={siteSettings.upstream?.effective_provider_base_url || 'https://example.com/v1'}
                           value={siteDraft.provider_base_url}
                           onChange={(event) => setSiteDraft((current) => ({ ...current, provider_base_url: event.target.value }))}
@@ -484,7 +484,7 @@ export default function Config() {
                     <Field label={t('site_auth_base_url')}>
                       <>
                         <input
-                          className="input-cyber"
+                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
                           placeholder={siteSettings.upstream?.effective_auth_base_url || 'https://example.com'}
                           value={siteDraft.auth_base_url}
                           onChange={(event) => setSiteDraft((current) => ({ ...current, auth_base_url: event.target.value }))}
@@ -498,7 +498,7 @@ export default function Config() {
                     <Field label={t('site_recharge_url')}>
                       <>
                         <input
-                          className="input-cyber"
+                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
                           placeholder={siteSettings.upstream?.effective_recharge_url || 'https://ai.get-money.locker'}
                           value={siteDraft.recharge_url}
                           onChange={(event) => setSiteDraft((current) => ({ ...current, recharge_url: event.target.value }))}
@@ -512,7 +512,7 @@ export default function Config() {
                     <Field label={t('site_admin_token')}>
                       <>
                         <input
-                          className="input-cyber"
+                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
                           placeholder={siteSettings.upstream?.sub2api_admin_token_hint || 'admin-...'}
                           type="password"
                           value={siteDraft.sub2api_admin_token}
@@ -527,7 +527,7 @@ export default function Config() {
                     <Field label={t('site_admin_jwt')}>
                       <>
                         <input
-                          className="input-cyber"
+                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
                           placeholder={siteSettings.upstream?.sub2api_admin_jwt_hint || 'eyJ...'}
                           type="password"
                           value={siteDraft.sub2api_admin_jwt}
@@ -542,7 +542,7 @@ export default function Config() {
                     <Field label={t('site_trial_balance_usd')}>
                       <>
                         <input
-                          className="input-cyber"
+                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
                           min="0"
                           step="0.01"
                           type="number"
@@ -580,7 +580,7 @@ export default function Config() {
                   <div className="space-y-4">
                     <Field label={t('site_announcement_title')}>
                       <input
-                        className="input-cyber"
+                        className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
                         value={siteDraft.announcement_title}
                         onChange={(event) => setSiteDraft((current) => ({ ...current, announcement_title: event.target.value }))}
                       />
@@ -588,7 +588,7 @@ export default function Config() {
 
                     <Field label={t('site_announcement_body')}>
                       <textarea
-                        className="input-cyber min-h-32 resize-y"
+                        className="min-h-32 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50 resize-y"
                         value={siteDraft.announcement_body}
                         onChange={(event) => setSiteDraft((current) => ({ ...current, announcement_body: event.target.value }))}
                       />

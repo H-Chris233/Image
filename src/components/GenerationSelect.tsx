@@ -17,9 +17,9 @@ export default function GenerationSelect({
 }) {
   return (
     <label className="min-w-0">
-      <span className="mb-0.5 block truncate text-[8px] uppercase tracking-[0.18em] text-white/40">{label}</span>
+      <span className="mb-0.5 block text-[10px] font-medium text-on-surface-variant">{label}</span>
       <select
-        className="h-9 w-full border border-primary/20 bg-black px-2 text-xs uppercase text-primary outline-none transition-colors focus:border-primary"
+        className="h-9 w-full rounded-lg border border-outline-variant bg-surface-container-low px-2 text-xs text-on-surface outline-none focus:border-primary transition-colors"
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}

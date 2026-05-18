@@ -311,8 +311,8 @@ Docker Compose 默认挂载：
 |---|---|---|
 | `CORS_ORIGINS` | `https://image.get-money.locker,http://127.0.0.1:18080` | 允许访问 API 的前端来源 |
 | `COOKIE_SECURE` | `true` | HTTPS 部署必须为 `true` |
-| `SESSION_COOKIE_NAME` | `cybergen_session` | 登录用户 Cookie 名 |
-| `GUEST_COOKIE_NAME` | `cybergen_guest` | 游客 Cookie 名 |
+| `SESSION_COOKIE_NAME` | `joko_session` | 登录用户 Cookie 名 |
+| `GUEST_COOKIE_NAME` | `joko_guest` | 游客 Cookie 名 |
 | `SESSION_TTL_SECONDS` | `2592000` | 登录会话有效期，默认 30 天 |
 | `GUEST_TTL_SECONDS` | `31536000` | 游客身份有效期，默认 365 天 |
 

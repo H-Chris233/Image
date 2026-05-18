@@ -1,1 +1,1 @@
-"""FastAPI backend for CyberGen."""
+"""FastAPI backend for Joko Image."""

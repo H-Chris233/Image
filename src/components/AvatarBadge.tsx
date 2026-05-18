@@ -13,7 +13,7 @@ export default function AvatarBadge({ name, email, guestId, className = '', text
 
   return (
     <div
-      className={`flex items-center justify-center border border-secondary/40 text-white font-black uppercase ${className}`.trim()}
+      className={`flex items-center justify-center rounded-full font-semibold text-white uppercase ${className}`.trim()}
       style={{
         backgroundImage: `linear-gradient(135deg, hsl(${hue} 80% 54%), hsl(${(hue + 36) % 360} 72% 28%))`,
       }}

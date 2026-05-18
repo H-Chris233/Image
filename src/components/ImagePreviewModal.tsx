@@ -62,22 +62,23 @@ export default function ImagePreviewModal({ imageUrl, images, initialIndex = 0, 
   }
 
   return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/85 px-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-6xl border border-primary/30 bg-surface-container-high shadow-[0_0_40px_rgba(0,243,255,0.18)]"
+        className="relative w-full max-w-5xl bg-surface rounded-2xl shadow-2xl overflow-hidden"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-4">
+        {/* Top bar */}
+        <div className="flex items-center justify-between gap-4 px-5 py-4">
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-widest text-secondary">{t('modal_preview')}</div>
-            <div className="mt-1 flex min-w-0 items-center gap-3">
-              {hasMultiple ? <span className="shrink-0 text-xs font-bold text-primary">{currentIndex + 1} / {gallery.length}</span> : null}
-              {currentSubtitle ? <div className="min-w-0 truncate text-sm text-white/70">{currentSubtitle}</div> : null}
+            <div className="text-xs text-secondary font-medium">{t('modal_preview')}</div>
+            <div className="mt-0.5 flex items-center gap-3">
+              {hasMultiple ? <span className="text-sm font-semibold text-on-surface">{currentIndex + 1} / {gallery.length}</span> : null}
+              {currentSubtitle ? <div className="min-w-0 truncate text-sm text-on-surface-variant">{currentSubtitle}</div> : null}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <a
-              className="flex h-10 items-center gap-2 border border-white/10 px-4 text-xs font-bold uppercase tracking-widest text-white/70 transition-colors hover:border-primary hover:text-primary"
+              className="flex h-9 items-center gap-2 rounded-lg border border-outline-variant px-3 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
               href={current.url}
               download
               title={t('modal_download')}
@@ -86,7 +87,7 @@ export default function ImagePreviewModal({ imageUrl, images, initialIndex = 0, 
               {t('modal_download')}
             </a>
             <a
-              className="flex h-10 items-center gap-2 border border-primary/30 px-4 text-xs font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/10"
+              className="flex h-9 items-center gap-2 rounded-lg border border-outline-variant px-3 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
               href={current.url}
               rel="noreferrer"
               target="_blank"
@@ -95,7 +96,7 @@ export default function ImagePreviewModal({ imageUrl, images, initialIndex = 0, 
               {t('modal_open_image')}
             </a>
             <button
-              className="flex h-10 w-10 items-center justify-center border border-white/10 text-white/60 transition-colors hover:border-primary hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
               type="button"
               onClick={onClose}
               title={t('modal_close')}
@@ -105,28 +106,29 @@ export default function ImagePreviewModal({ imageUrl, images, initialIndex = 0, 
           </div>
         </div>
 
-        <div className="relative flex max-h-[80vh] items-center justify-center overflow-auto bg-black p-4">
+        {/* Image area */}
+        <div className="relative flex max-h-[75vh] items-center justify-center overflow-auto bg-surface-container-low">
           {hasMultiple ? (
             <>
               <button
-                className="absolute left-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center border border-white/15 bg-black/70 text-white/75 backdrop-blur transition-colors hover:border-primary hover:text-primary"
+                className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-surface/80 text-on-surface shadow-lg backdrop-blur hover:bg-surface transition-colors"
                 type="button"
                 onClick={() => setIndex((value) => (value <= 0 ? gallery.length - 1 : value - 1))}
                 title={t('modal_previous')}
               >
-                <ChevronLeft size={22} />
+                <ChevronLeft size={20} />
               </button>
               <button
-                className="absolute right-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center border border-white/15 bg-black/70 text-white/75 backdrop-blur transition-colors hover:border-primary hover:text-primary"
+                className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-surface/80 text-on-surface shadow-lg backdrop-blur hover:bg-surface transition-colors"
                 type="button"
                 onClick={() => setIndex((value) => (value >= gallery.length - 1 ? 0 : value + 1))}
                 title={t('modal_next')}
               >
-                <ChevronRight size={22} />
+                <ChevronRight size={20} />
               </button>
             </>
           ) : null}
-          <RetryImage alt={current.title || alt} className="max-h-[75vh] w-auto max-w-full object-contain" src={current.url} />
+          <RetryImage alt={current.title || alt} className="max-h-[70vh] w-auto max-w-full object-contain p-4" src={current.url} />
         </div>
       </div>
     </div>

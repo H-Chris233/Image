@@ -15,19 +15,19 @@ const getColorClasses = (colorMode: string) => {
     return {
       borderHover: 'hover:border-primary/50',
       textId: 'text-primary',
-      bgTag: 'bg-primary/10 border-primary/30',
+      bgTag: 'bg-primary-container border-primary/30',
       btnBg: 'bg-primary border-primary',
-      btnText: 'text-black hover:text-white',
-      btnShadow: 'shadow-[0_0_10px_rgba(0,243,255,0.5)]'
+      btnText: 'text-on-primary hover:bg-primary/90',
+      btnShadow: ''
     };
   }
   return {
     borderHover: 'hover:border-secondary/50',
     textId: 'text-secondary',
-    bgTag: 'bg-secondary/10 border-secondary/30',
+    bgTag: 'bg-secondary-container border-secondary/30',
     btnBg: 'bg-secondary border-secondary',
-    btnText: 'text-white hover:text-black',
-    btnShadow: 'shadow-[0_0_10px_rgba(255,0,255,0.5)]'
+    btnText: 'text-on-secondary hover:bg-secondary/90',
+    btnShadow: ''
   };
 };
 
@@ -135,7 +135,7 @@ export default function History() {
   );
 
   return (
-    <div className="md:ml-64 px-6 md:px-12 py-8 max-w-[1440px] mx-auto min-h-screen pt-24 pb-12 bg-[radial-gradient(ellipse_at_top,var(--color-surface-container-high),var(--color-background))] font-mono">
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6 border-b border-white/10 pb-6">
         <div className="flex flex-col gap-2">
            <div className="flex items-center gap-2 text-[10px] text-primary uppercase font-bold tracking-widest">
@@ -154,7 +154,7 @@ export default function History() {
               onKeyDown={(event) => {
                 if (event.key === 'Enter') load(0, false);
               }}
-              className="w-full bg-black border border-primary/20 focus:border-primary focus:ring-0 text-primary pl-10 py-2 font-code-data transition-colors placeholder:text-primary/20 outline-none text-xs shadow-inner"
+              className="w-full rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary text-on-surface pl-10 py-2 transition-colors placeholder:text-on-surface-variant/50 outline-none text-sm"
               placeholder={t('history_search')}
               type="text"
             />
@@ -318,7 +318,7 @@ export default function History() {
         <button
           onClick={() => load(offset, true)}
           disabled={loading}
-          className="border border-primary/30 hover:border-primary text-primary px-8 py-3 uppercase tracking-widest transition-colors flex items-center gap-2 text-xs bg-primary/5 shadow-[0_0_15px_rgba(0,243,255,0.1)] disabled:opacity-50"
+          className="rounded-lg border border-outline-variant hover:bg-surface-container text-on-surface-variant px-8 py-3 transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
         >
           {loading ? <Loader2 className="animate-spin" size={14} /> : <ArrowDown size={14} />}
           {t('history_load_more')}

@@ -17,9 +17,9 @@ function statusLabel(status: 'queued' | 'running' | 'succeeded' | 'failed', t: R
 }
 
 function statusIcon(status: 'queued' | 'running' | 'succeeded' | 'failed') {
-  if (status === 'queued') return <Clock3 size={14} className="text-white/70" />;
+  if (status === 'queued') return <Clock3 size={14} className="text-on-surface-variant" />;
   if (status === 'running') return <Loader2 size={14} className="animate-spin text-primary" />;
-  if (status === 'succeeded') return <CheckCircle2 size={14} className="text-secondary" />;
+  if (status === 'succeeded') return <CheckCircle2 size={14} className="text-tertiary" />;
   return <XCircle size={14} className="text-error" />;
 }
 
@@ -47,28 +47,28 @@ export default function TaskDrawer() {
   return (
     <>
       <div
-        className={`fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
           drawerOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
         onClick={closeDrawer}
       />
       <aside
-        className={`fixed right-0 top-0 z-[130] h-full w-full max-w-[420px] border-l border-primary/20 bg-surface-container-high/95 backdrop-blur-xl transition-transform duration-300 ${
+        className={`fixed right-0 top-0 z-[130] h-full w-full max-w-[420px] bg-surface shadow-xl transition-transform duration-300 ${
           drawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-start justify-between border-b border-white/10 px-6 py-5">
+          <div className="flex items-start justify-between border-b border-outline-variant px-6 py-5">
             <div>
-              <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.25em] text-primary/70">
+              <div className="flex items-center gap-2 text-xs text-on-surface-variant mb-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                 {t('top_tasks')}
               </div>
-              <h2 className="text-xl font-black tracking-tight text-white">{t('tasks_title')}</h2>
-              <p className="mt-1 text-xs text-white/45">{t('tasks_subtitle')}</p>
+              <h2 className="text-xl font-bold text-on-surface">{t('tasks_title')}</h2>
+              <p className="mt-1 text-sm text-on-surface-variant">{t('tasks_subtitle')}</p>
             </div>
             <button
-              className="flex h-10 w-10 items-center justify-center border border-white/10 text-white/70 transition-colors hover:border-primary hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
               type="button"
               onClick={closeDrawer}
               title={t('modal_close')}
@@ -77,10 +77,10 @@ export default function TaskDrawer() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between border-b border-white/10 px-6 py-3 text-[11px] uppercase tracking-[0.22em] text-white/50">
+          <div className="flex items-center justify-between border-b border-outline-variant px-6 py-3 text-sm text-on-surface-variant">
             <span>{activeCount > 0 ? t('tasks_active', { value: activeCount }) : t('tasks_idle')}</span>
             <Link
-              className="text-primary transition-colors hover:text-white"
+              className="text-primary font-medium hover:text-primary/80 transition-colors"
               to="/history"
               onClick={closeDrawer}
             >
@@ -88,7 +88,7 @@ export default function TaskDrawer() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 border-b border-white/10 px-4 py-3">
+          <div className="flex gap-2 border-b border-outline-variant px-4 py-3">
             {([
               ['all', t('tasks_filter_all')],
               ['active', t('tasks_filter_active')],
@@ -97,13 +97,13 @@ export default function TaskDrawer() {
             ] as const).map(([key, label]) => (
               <button
                 key={key}
-                className={`border px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   filter === key
-                    ? 'border-primary bg-primary/12 text-primary'
-                    : 'border-white/10 bg-black/20 text-white/50 hover:border-white/20 hover:text-white'
+                    ? 'bg-primary-container text-on-primary-container'
+                    : 'text-on-surface-variant hover:bg-surface-container'
                 }`}
                 type="button"
-                onClick={() => setFilter(key)}
+                onClick={() => setFilter(key as FilterKey)}
               >
                 {label}
               </button>
@@ -112,7 +112,7 @@ export default function TaskDrawer() {
 
           <div className="flex-1 overflow-y-auto px-4 py-4">
             {visibleTasks.length === 0 ? (
-              <div className="flex h-full min-h-[240px] items-center justify-center border border-dashed border-white/10 bg-black/20 px-6 text-center text-sm text-white/40">
+              <div className="flex h-full min-h-[240px] items-center justify-center rounded-xl border border-dashed border-outline-variant bg-surface-container-low px-6 text-sm text-on-surface-variant">
                 {t('tasks_empty')}
               </div>
             ) : (
@@ -124,30 +124,30 @@ export default function TaskDrawer() {
                     .map((item) => ({ id: item.id, url: item.image_url || '', prompt: item.prompt }));
                   const previewImage = previewImages[0]?.url || null;
                   return (
-                    <div key={task.id} className="border border-white/10 bg-black/30 p-3">
+                    <div key={task.id} className="rounded-xl border border-outline-variant bg-surface p-3">
                       <div className="mb-3 flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-2">
                           {statusIcon(task.status)}
                           <div className="min-w-0">
-                            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">
+                            <div className="text-sm font-medium text-on-surface">
                               {task.mode === 'edit' ? t('home_mode_edit') : t('home_mode_generate')}
                             </div>
-                            <div className="mt-1 text-[11px] text-white/45">{formatDate(task.created_at)}</div>
+                            <div className="text-xs text-on-surface-variant">{formatDate(task.created_at)}</div>
                           </div>
                         </div>
-                        <div className="border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
+                        <div className="rounded-lg bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
                           {statusLabel(task.status, t)}
                         </div>
                       </div>
 
                       <div className="flex gap-3">
-                        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden border border-white/10 bg-black/40">
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-outline-variant bg-surface-container">
                           {previewImages.length > 1 ? (
-                            <div className="grid h-full w-full grid-cols-2 gap-0.5 bg-black p-0.5">
+                            <div className="grid h-full w-full grid-cols-2 gap-0.5 p-0.5">
                               {previewImages.slice(0, 4).map((image, imageIndex) => (
                                 <button
                                   key={image.id}
-                                  className="min-h-0 min-w-0 cursor-zoom-in overflow-hidden bg-black/40"
+                                  className="min-h-0 min-w-0 cursor-zoom-in overflow-hidden rounded"
                                   type="button"
                                   title={t('history_preview')}
                                   onClick={() => setPreviewItem({
@@ -167,7 +167,7 @@ export default function TaskDrawer() {
                             </div>
                           ) : previewImage ? (
                             <button
-                              className="h-full w-full cursor-zoom-in bg-black/40"
+                              className="h-full w-full cursor-zoom-in"
                               type="button"
                               title={t('history_preview')}
                               onClick={() => setPreviewItem({ imageUrl: previewImage, prompt: task.prompt })}
@@ -175,22 +175,22 @@ export default function TaskDrawer() {
                               <RetryImage alt={task.prompt} className="h-full w-full object-contain" src={previewImage} />
                             </button>
                           ) : (
-                            <ImageIcon size={18} className="text-white/25" />
+                            <ImageIcon size={18} className="text-on-surface-variant" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="line-clamp-3 text-sm text-white/85">{task.prompt}</p>
-                          <div className="mt-2 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.18em] text-white/45">
+                          <p className="line-clamp-3 text-sm text-on-surface">{task.prompt}</p>
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-on-surface-variant">
                             <span>{task.model}</span>
                             <span>{task.size}</span>
                             {task.aspect_ratio ? <span>{task.aspect_ratio}</span> : null}
                             <span>{task.quality}</span>
                             {previewImages.length > 1 ? <span>x{previewImages.length}</span> : null}
                           </div>
-                          {task.error ? <div className="mt-2 text-xs text-error">{task.error}</div> : null}
+                          {task.error ? <div className="mt-2 text-sm text-error">{task.error}</div> : null}
                           {previewImages.length > 1 ? (
                             <a
-                              className="mt-3 inline-flex h-8 items-center gap-2 border border-white/10 px-3 text-[10px] font-bold uppercase tracking-widest text-white/55 transition-colors hover:border-primary hover:text-primary"
+                              className="mt-3 inline-flex h-8 items-center gap-2 rounded-lg border border-outline-variant px-3 text-xs font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
                               href={taskDownloadUrl(task.id)}
                               title={t('history_download_zip')}
                             >

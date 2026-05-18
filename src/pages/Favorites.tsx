@@ -73,7 +73,7 @@ export default function Favorites() {
 
   if (!viewer?.authenticated) {
     return (
-      <div className="md:ml-64 mx-auto min-h-screen max-w-[960px] px-6 py-8 pt-24 font-mono">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
         <div className="border border-primary/20 bg-black/50 p-8 text-center">
           <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">{t('favorites_tag')}</div>
           <h1 className="mb-3 text-3xl font-black tracking-tight text-white">{t('favorites_title')}</h1>
@@ -90,7 +90,7 @@ export default function Favorites() {
   }
 
   return (
-    <div className="md:ml-64 mx-auto min-h-screen max-w-[1440px] bg-[radial-gradient(ellipse_at_top,var(--color-surface-container-high),var(--color-background))] px-6 py-8 pt-24 pb-12 font-mono md:px-12">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
       <div className="mb-10 flex flex-col items-start justify-between gap-6 border-b border-white/10 pb-6 md:flex-row md:items-end">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-secondary">
@@ -179,7 +179,7 @@ export default function Favorites() {
                         {removing ? <Loader2 className="animate-spin" size={15} /> : <HeartOff size={15} />}
                       </button>
                       <button
-                        className="flex h-10 min-w-0 items-center justify-center gap-2 bg-primary px-3 text-xs font-black uppercase text-black shadow-[0_0_10px_rgba(0,243,255,0.35)] transition-colors hover:bg-white"
+                        className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-xs font-semibold text-on-primary hover:bg-primary/90 transition-colors"
                         type="button"
                         onClick={() => handleClonePrompt(item).catch(() => undefined)}
                       >

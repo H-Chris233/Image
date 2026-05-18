@@ -493,8 +493,8 @@ def make_app(tmp_path: Path, auth_client: FakeAuthClient | None = None, provider
         inspiration_source_url="https://example.com/README.md",
         inspiration_sync_interval_seconds=0,
         inspiration_sync_on_startup=False,
-        session_cookie_name="cybergen_session",
-        guest_cookie_name="cybergen_guest",
+        session_cookie_name="joko_session",
+        guest_cookie_name="joko_guest",
         session_ttl_seconds=3600,
         guest_ttl_seconds=86400,
         cookie_secure=False,
@@ -1519,7 +1519,7 @@ def test_login_binds_managed_key_with_default_group(tmp_path: Path) -> None:
         login = client.post("/api/auth/login", json={"email": "demo@example.com", "password": "secret123"})
         assert login.status_code == 200
         assert login.json()["viewer"]["authenticated"] is True
-        assert auth.created_keys and auth.created_keys[0]["name"] == "cybergen-image"
+        assert auth.created_keys and auth.created_keys[0]["name"] == "joko-image"
         assert auth.created_keys[0]["group"]["id"] == 12
 
         config = client.get("/api/config").json()
@@ -1670,7 +1670,7 @@ def test_login_does_not_create_trial_key(tmp_path: Path) -> None:
         login = client.post("/api/auth/login", json={"email": "demo@example.com", "password": "secret123"})
 
         assert login.status_code == 200
-        assert auth.created_keys and auth.created_keys[0]["name"] == "cybergen-image"
+        assert auth.created_keys and auth.created_keys[0]["name"] == "joko-image"
         assert auth.created_keys[0]["quota"] == 0
         assert auth.admin_balance_calls == []
         assert client.app.state.db.get_trial_grant(owner_id="user:7") is None

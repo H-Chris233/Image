@@ -354,7 +354,7 @@ def create_app(
                 except asyncio.CancelledError:
                     pass
 
-    app = FastAPI(title="CyberGen Backend", version="2.0.0", lifespan=lifespan)
+    app = FastAPI(title="Joko Image Backend", version="2.0.0", lifespan=lifespan)
     app.state.settings = settings
     app.state.db = db
     app.state.provider = provider or OpenAICompatibleImageClient(settings.request_timeout_seconds)
@@ -1890,7 +1890,7 @@ async def _resolve_user_api_key(
     if selected and selected.get("key"):
         return str(selected["key"])
 
-    payload: dict[str, Any] = {"name": "cybergen-image"}
+    payload: dict[str, Any] = {"name": "joko-image"}
     group_id = await _resolve_default_key_group_id(auth_client, auth_base_url, access_token)
     if group_id is not None:
         payload["group_id"] = group_id

@@ -75,38 +75,38 @@ export default function Register() {
   }
 
   return (
-    <div className="px-6 py-24 max-w-[760px] mx-auto min-h-screen flex items-center">
-      <section className="w-full border border-primary/25 bg-black/70 p-8 md:p-10 shadow-[0_0_40px_rgba(255,0,255,0.08)]">
-        <div className="text-[10px] text-secondary uppercase tracking-widest font-bold mb-3">
-          joko-image2 {t('register_access')}
+    <div className="max-w-md mx-auto px-4 py-16 min-h-screen flex items-center">
+      <section className="w-full rounded-xl border border-outline-variant bg-surface p-8 shadow-sm">
+        <div className="text-xs text-secondary font-medium mb-2">
+          {t('register_access')}
         </div>
-        <h1 className="text-3xl md:text-4xl font-black text-white mb-3 uppercase">{t('register_title')}</h1>
-        <p className="text-sm text-white/50 mb-8">
+        <h1 className="text-2xl font-bold text-on-surface mb-2">{t('register_title')}</h1>
+        <p className="text-sm text-on-surface-variant mb-8">
           {t('register_desc')}
         </p>
 
         {!canRegister && (
-          <div className="border border-error/40 bg-error/10 p-4 text-xs text-error">
+          <div className="rounded-lg border border-error/30 bg-error-container p-4 text-sm text-on-error-container">
             {t('register_disabled')}
           </div>
         )}
 
         <form className="space-y-5 mt-6" onSubmit={handleSubmit}>
           <Field label={t('register_email')}>
-            <input className="input-cyber" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+            <input className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
           </Field>
 
           <Field label={t('register_password')}>
-            <input className="input-cyber" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+            <input className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
           </Field>
 
           {settings?.email_verify_enabled && (
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
               <Field label={t('register_verify_code')}>
-                <input className="input-cyber" value={verifyCode} onChange={(event) => setVerifyCode(event.target.value)} />
+                <input className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors" value={verifyCode} onChange={(event) => setVerifyCode(event.target.value)} />
               </Field>
               <button
-                className="h-[46px] px-5 border border-primary/30 text-primary uppercase tracking-widest text-xs hover:bg-primary/10 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="h-10 px-5 rounded-lg border border-outline-variant text-sm text-on-surface hover:bg-surface-container disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                 disabled={sendingCode || !email.trim() || countdown > 0}
                 type="button"
                 onClick={handleSendCode}
@@ -119,18 +119,18 @@ export default function Register() {
 
           {settings?.promo_code_enabled && (
             <Field label={t('register_promo')}>
-              <input className="input-cyber" value={promoCode} onChange={(event) => setPromoCode(event.target.value)} />
+              <input className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors" value={promoCode} onChange={(event) => setPromoCode(event.target.value)} />
             </Field>
           )}
 
           {settings?.invitation_code_enabled && (
             <Field label={t('register_invitation')}>
-              <input className="input-cyber" value={invitationCode} onChange={(event) => setInvitationCode(event.target.value)} />
+              <input className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors" value={invitationCode} onChange={(event) => setInvitationCode(event.target.value)} />
             </Field>
           )}
 
           <button
-            className="w-full bg-secondary text-white font-bold px-6 py-3 uppercase tracking-widest hover:bg-white hover:text-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-11 rounded-lg bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             disabled={loading || !canRegister}
             type="submit"
           >
@@ -139,9 +139,9 @@ export default function Register() {
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-white/10 text-xs text-white/50 flex items-center justify-between gap-4">
+        <div className="mt-6 pt-6 border-t border-outline-variant text-sm text-on-surface-variant flex items-center justify-between gap-4">
           <span>{t('register_exists')}</span>
-          <Link className="text-primary uppercase tracking-widest hover:text-secondary" to="/login">
+          <Link className="text-primary font-medium hover:text-primary/80 transition-colors" to="/login">
             {t('login_submit')}
           </Link>
         </div>
@@ -152,8 +152,8 @@ export default function Register() {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="space-y-2">
-      <label className="text-[10px] text-secondary uppercase tracking-widest font-bold">{label}</label>
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-on-surface-variant">{label}</label>
       {children}
     </div>
   );

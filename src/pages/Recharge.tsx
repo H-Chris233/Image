@@ -213,7 +213,7 @@ export default function Recharge() {
   }
 
   return (
-    <div className="md:ml-64 mx-auto min-h-screen max-w-[1440px] bg-[radial-gradient(ellipse_at_top,var(--color-surface-container-high),var(--color-background))] px-4 pb-12 pt-24 font-mono sm:px-6 md:px-12">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
       <div className="mb-6 flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary">

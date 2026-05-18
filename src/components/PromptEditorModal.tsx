@@ -1,4 +1,4 @@
-import { Clipboard, Minimize2, Trash2, X } from 'lucide-react';
+import { Copy, Maximize2, Minimize2, X } from 'lucide-react';
 import { useSite } from '../site';
 
 type Props = {
@@ -17,47 +17,44 @@ export default function PromptEditorModal({ open, value, onChange, onClose, onCo
   }
 
   return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/85 px-3 py-4 backdrop-blur-sm sm:px-6" onClick={onClose}>
+    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="flex h-[calc(100vh-2rem)] w-full max-w-5xl flex-col border border-primary/30 bg-surface-container-high shadow-[0_0_40px_rgba(0,243,255,0.18)] sm:h-[82vh]"
+        className="flex h-[calc(100vh-2rem)] w-full max-w-3xl flex-col rounded-2xl border border-outline-variant bg-surface shadow-xl sm:h-[80vh] animate-fade-in"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 sm:px-5">
+        <div className="flex items-center justify-between gap-3 border-b border-outline-variant px-5 py-4">
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-widest text-secondary">{t('prompt_editor_title')}</div>
-            <div className="mt-1 truncate font-code-data text-[10px] uppercase tracking-[0.18em] text-primary/45">
-              UTF-8 // AI-GEN // [{value.length}/8000]
-            </div>
+            <div className="text-sm font-medium text-on-surface">{t('prompt_editor_title')}</div>
+            <div className="mt-0.5 text-xs text-on-surface-variant">[{value.length}/8000]</div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
-              className="flex h-10 items-center gap-2 border border-primary/30 px-3 text-xs font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/10"
+              className="flex h-9 items-center gap-2 rounded-lg border border-outline-variant px-3 text-xs font-medium text-on-surface hover:bg-surface-container transition-colors"
               type="button"
               onClick={onCopy}
               title={t('prompt_editor_copy')}
             >
-              <Clipboard size={14} />
+              <Copy size={14} />
               <span className="hidden sm:inline">{t('prompt_editor_copy')}</span>
             </button>
             <button
-              className="flex h-10 w-10 items-center justify-center border border-white/10 text-white/60 transition-colors hover:border-error hover:text-error"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
               type="button"
               onClick={() => onChange('')}
               title={t('prompt_editor_clear')}
             >
-              <Trash2 size={15} />
+              <X size={15} />
             </button>
             <button
-              className="hidden h-10 items-center gap-2 border border-secondary/30 px-3 text-xs font-bold uppercase tracking-widest text-secondary transition-colors hover:bg-secondary/10 sm:flex"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
               type="button"
               onClick={onClose}
               title={t('prompt_editor_collapse')}
             >
               <Minimize2 size={14} />
-              {t('prompt_editor_collapse')}
             </button>
             <button
-              className="flex h-10 w-10 items-center justify-center border border-white/10 text-white/60 transition-colors hover:border-primary hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
               type="button"
               onClick={onClose}
               title={t('modal_close')}
@@ -69,7 +66,7 @@ export default function PromptEditorModal({ open, value, onChange, onClose, onCo
 
         <textarea
           autoFocus
-          className="min-h-0 flex-1 resize-none bg-black p-4 text-sm leading-6 text-primary outline-none placeholder:text-primary/20 sm:p-5"
+          className="min-h-0 flex-1 resize-none bg-surface-container-low p-4 text-sm leading-6 text-on-surface outline-none placeholder:text-on-surface-variant/50 rounded-b-2xl"
           maxLength={8000}
           placeholder={t('home_placeholder')}
           value={value}

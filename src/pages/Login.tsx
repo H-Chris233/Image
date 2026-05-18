@@ -63,15 +63,15 @@ export default function Login() {
   }
 
   return (
-    <div className="px-6 py-24 max-w-[640px] mx-auto min-h-screen flex items-center">
-      <section className="w-full border border-primary/25 bg-black/70 p-8 md:p-10 shadow-[0_0_40px_rgba(0,243,255,0.08)]">
-        <div className="text-[10px] text-secondary uppercase tracking-widest font-bold mb-3">
-          joko-image2 {t('login_access')}
+    <div className="max-w-md mx-auto px-4 py-16 min-h-screen flex items-center">
+      <section className="w-full rounded-xl border border-outline-variant bg-surface p-8 shadow-sm">
+        <div className="text-xs text-secondary font-medium mb-2">
+          {t('login_access')}
         </div>
-        <h1 className="text-3xl md:text-4xl font-black text-white mb-3 uppercase">
+        <h1 className="text-2xl font-bold text-on-surface mb-2">
           {tempToken ? t('login_title_2fa') : t('login_title')}
         </h1>
-        <p className="text-sm text-white/50 mb-8">
+        <p className="text-sm text-on-surface-variant mb-8">
           {tempToken
             ? t('login_desc_2fa', { value: maskedEmail })
             : t('login_desc')}
@@ -81,10 +81,10 @@ export default function Login() {
           {!tempToken && (
             <>
               <Field label={t('login_email')}>
-                <input className="input-cyber" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                <input className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
               </Field>
               <Field label={t('login_password')}>
-                <input className="input-cyber" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+                <input className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
               </Field>
             </>
           )}
@@ -92,7 +92,7 @@ export default function Login() {
           {tempToken && (
             <Field label={t('login_totp')}>
               <input
-                className="input-cyber tracking-[0.35em] text-center"
+                className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors text-center tracking-widest"
                 inputMode="numeric"
                 maxLength={6}
                 value={totpCode}
@@ -102,7 +102,7 @@ export default function Login() {
           )}
 
           <button
-            className="w-full bg-secondary text-white font-bold px-6 py-3 uppercase tracking-widest hover:bg-white hover:text-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-11 rounded-lg bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             disabled={loading}
             type="submit"
           >
@@ -111,9 +111,9 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-white/10 text-xs text-white/50 flex items-center justify-between gap-4">
+        <div className="mt-6 pt-6 border-t border-outline-variant text-sm text-on-surface-variant flex items-center justify-between gap-4">
           <span>{t('login_new')}</span>
-          <Link className="text-primary uppercase tracking-widest hover:text-secondary" to="/register">
+          <Link className="text-primary font-medium hover:text-primary/80 transition-colors" to="/register">
             {t('top_register')}
           </Link>
         </div>
@@ -124,8 +124,8 @@ export default function Login() {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="space-y-2">
-      <label className="text-[10px] text-secondary uppercase tracking-widest font-bold">{label}</label>
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-on-surface-variant">{label}</label>
       {children}
     </div>
   );

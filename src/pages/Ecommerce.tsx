@@ -549,7 +549,7 @@ export default function Ecommerce() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1440px] bg-[radial-gradient(ellipse_at_top,var(--color-surface-container-high),var(--color-background))] px-4 pb-14 pt-24 font-mono sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
       <div className="mb-6 flex flex-col gap-3 border-b border-white/10 pb-5 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-secondary">
@@ -715,7 +715,7 @@ export default function Ecommerce() {
 
         <div className="grid grid-cols-2 gap-2 lg:h-full lg:w-36 lg:grid-cols-1">
           <button
-            className="flex h-12 items-center justify-center bg-primary px-5 text-sm font-black uppercase tracking-widest text-black shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-transform hover:scale-95 disabled:opacity-40 lg:h-auto lg:flex-1"
+            className="flex h-12 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-40 lg:h-auto lg:flex-1"
             type="button"
             disabled={loading || !productImage}
             onClick={handleSubmit}
@@ -885,7 +885,7 @@ export default function Ecommerce() {
             ) : null}
           </div>
           <button
-            className="flex h-12 items-center justify-center gap-2 bg-primary px-5 text-xs font-black uppercase tracking-widest text-black shadow-[0_0_20px_rgba(0,243,255,0.45)] hover:bg-white disabled:opacity-40"
+            className="flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-40"
             type="button"
             disabled={loading || !editPrompt.trim()}
             onClick={submitEdit}

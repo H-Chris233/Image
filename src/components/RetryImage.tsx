@@ -29,12 +29,12 @@ export default function RetryImage({ src, alt = '', className = '', onError, onL
 
   if (!src || failed) {
     return (
-      <div className={`flex min-h-24 flex-col items-center justify-center gap-2 bg-black/70 p-3 text-center ${className}`}>
-        <ImageOff size={18} className="text-white/25" />
-        <div className="text-[10px] uppercase tracking-widest text-white/40">{t('image_load_failed')}</div>
+      <div className={`flex min-h-24 flex-col items-center justify-center gap-2 bg-surface-container-low p-3 text-center ${className}`}>
+        <ImageOff size={18} className="text-on-surface-variant" />
+        <div className="text-xs text-on-surface-variant">{t('image_load_failed')}</div>
         {src ? (
           <button
-            className="flex h-8 items-center gap-2 border border-primary/25 px-3 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10"
+            className="flex h-8 items-center gap-2 rounded-lg border border-outline-variant px-3 text-xs font-medium text-on-surface hover:bg-surface-container transition-colors"
             type="button"
             onClick={(event) => {
               event.stopPropagation();

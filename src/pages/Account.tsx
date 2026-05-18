@@ -17,7 +17,7 @@ export default function Account() {
   }, [viewer?.owner_id, notifyError]);
 
   return (
-    <div className="md:ml-64 px-6 md:px-12 py-8 max-w-[1440px] mx-auto min-h-screen pt-24 pb-12 bg-[radial-gradient(ellipse_at_top,var(--color-surface-container-high),var(--color-background))] font-mono">
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto">
       <div className="flex flex-col gap-2 mb-10 border-b border-white/10 pb-6">
         <div className="flex items-center gap-2 text-[10px] text-secondary uppercase font-bold tracking-widest">
           <span className="w-4 h-[1px] bg-secondary"></span> {t('account_tag')}

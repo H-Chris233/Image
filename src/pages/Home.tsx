@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowUp, Heart, ImagePlus, Maximize2, Minimize2, RefreshCw, Loader2, Search, Sparkles, X } from 'lucide-react';
 import {
   editImage,
@@ -531,38 +530,253 @@ export default function Home() {
   };
 
   return (
-    <div className={`pt-24 px-4 sm:px-6 max-w-[1440px] mx-auto min-h-screen bg-[radial-gradient(ellipse_at_top,var(--color-surface-container-high),var(--color-background))] font-mono ${generationPanelExpanded ? 'pb-[19rem] sm:pb-56' : 'pb-28 sm:pb-32'}`}>
-      <div className="flex justify-between items-end mb-8">
-        <div className="flex flex-col gap-2">
-           <div className="flex items-center gap-2 text-[10px] text-secondary uppercase font-bold tracking-widest">
-              <span className="w-4 h-[1px] bg-secondary"></span> {t('home_scan')}
-           </div>
-          <h1 className="text-4xl md:text-5xl text-on-surface font-bold tracking-tighter">{t('home_title')}</h1>
-          <div className="flex flex-wrap items-center gap-3">
+    <div className="px-4 sm:px-6 max-w-7xl mx-auto pt-6 pb-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-primary font-medium mb-1">
+            <span className="w-4 h-[1px] bg-primary" /> {t('home_title')}
+          </div>
+          <h1 className="text-2xl font-bold text-on-surface">{t('home_title')}</h1>
+          <div className="flex items-center gap-3 mt-1">
             <ModelBadge />
-            <div className="text-xs uppercase tracking-widest text-white/40">
+            <span className="text-xs text-on-surface-variant">
               {viewer?.authenticated
                 ? t('home_owner', { value: viewer.user?.username || viewer.user?.email || '--' })
                 : t('home_guest', { value: viewer?.guest_id?.slice(0, 8) || '--' })}
-            </div>
+            </span>
           </div>
-        </div>
-        <div className="hidden min-w-[260px] grid-cols-2 gap-2 sm:grid">
-          <Link className="flex h-10 items-center justify-center border border-primary bg-primary/15 text-xs font-bold uppercase tracking-widest text-primary" to="/">
-            {t('home_tab_general')}
-          </Link>
-          <Link className="flex h-10 items-center justify-center border border-white/10 bg-black/30 text-xs font-bold uppercase tracking-widest text-white/50 transition-colors hover:border-secondary hover:text-secondary" to="/ecommerce">
-            {t('home_tab_ecommerce')}
-          </Link>
         </div>
       </div>
 
-      <div className="mb-6 flex flex-col gap-3 border border-primary/20 bg-black/50 p-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
-          <div className="grid h-10 shrink-0 grid-cols-2 border border-white/10 bg-surface-container-low/70 p-1">
+      {/* Generation Panel — moved to top of page */}
+      <div
+        className={`mb-6 rounded-xl border bg-surface transition-all ${
+          generationPanelExpanded ? 'p-4' : 'p-3'
+        } ${
+          draggingReference ? 'border-primary border-2' : 'border-outline-variant'
+        }`}
+        onDragEnter={handleReferenceDragOver}
+        onDragLeave={handleReferenceDragLeave}
+        onDragOver={handleReferenceDragOver}
+        onDrop={handleReferenceDrop}
+      >
+        <input
+          ref={fileInputRef}
+          className="hidden"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          multiple
+          onChange={handleReferenceImages}
+        />
+        <div className={`${generationPanelExpanded ? 'mb-3' : ''} flex items-center gap-3`}>
+          <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+            <span className="h-2 w-2 rounded-full bg-secondary" />
+            {t('home_mode')}: {selectedReferences.length ? t('home_mode_edit') : t('home_mode_generate')}
+          </div>
+          <div className="hidden md:flex items-center gap-2 text-xs text-on-surface-variant">
+            <span>{SIZE_LABELS[imageScale] || imageScale}</span>
+            <span>{aspectRatio}</span>
+            <span>{providerImageSize(imageScale, aspectRatio)}</span>
+            <span>{imageQuality}</span>
+            {Number(imageCount) > 1 ? <span>x{imageCount}</span> : null}
+          </div>
+          <div className="flex-1 min-w-0">
             <button
-              className={`px-3 text-[10px] font-bold uppercase tracking-widest transition-colors ${
-                inspirationSearchMode === 'keyword' ? 'bg-primary text-black' : 'text-white/55 hover:text-primary'
+              type="button"
+              className="w-full text-left text-xs text-on-surface-variant truncate hover:text-primary transition-colors"
+              onClick={() => setGenerationPanelExpanded(true)}
+            >
+              {message || (promptValue ? promptValue : t('home_message_waiting'))}
+            </button>
+          </div>
+          {!generationPanelExpanded ? (
+            <>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-dashed border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
+                title={t('home_ref_image')}
+              >
+                <ImagePlus size={15} />
+              </button>
+              <button
+                onClick={handleExecute}
+                disabled={loading || !promptValue.trim()}
+                className="flex h-8 items-center justify-center rounded-lg bg-primary px-3 text-xs font-semibold text-on-primary hover:bg-primary/90 disabled:opacity-40 transition-colors"
+              >
+                {loading ? <Loader2 className="animate-spin" size={15} /> : t('home_execute')}
+              </button>
+              <button
+                type="button"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
+                title={t('home_panel_expand')}
+                aria-label={t('home_panel_expand')}
+                onClick={() => setGenerationPanelExpanded(true)}
+              >
+                <Maximize2 size={15} />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
+              title={t('home_panel_collapse')}
+              aria-label={t('home_panel_collapse')}
+              onClick={() => setGenerationPanelExpanded(false)}
+            >
+              <Minimize2 size={14} />
+            </button>
+          )}
+        </div>
+
+        {generationPanelExpanded ? (
+          <>
+            <div className="mb-3 grid grid-cols-2 items-end gap-2 sm:grid-cols-4 lg:grid-cols-[128px_112px_104px_84px_1fr_auto]">
+              <GenerationSelect
+                label={t('home_size')}
+                value={imageScale}
+                onChange={setImageScale}
+                options={SIZE_OPTIONS}
+                getOptionLabel={(option) => SIZE_LABELS[option] || option}
+                isOptionDisabled={(option) => !isSupportedImagePreset(option, aspectRatio)}
+              />
+              <GenerationSelect label={t('home_aspect_ratio')} value={aspectRatio} onChange={handleAspectRatioChange} options={ASPECT_RATIO_OPTIONS} />
+              <GenerationSelect label={t('home_quality')} value={imageQuality} onChange={setImageQuality} options={QUALITY_OPTIONS} />
+              <GenerationSelect
+                label={t('home_image_count')}
+                value={imageCount}
+                onChange={setImageCount}
+                options={IMAGE_COUNT_OPTIONS}
+              />
+              <div className="col-span-2 flex min-w-0 gap-2 sm:col-span-4 lg:col-span-2">
+                <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-3 focus-within:border-primary transition-colors">
+                  <Sparkles className="shrink-0 text-secondary/80" size={14} />
+                  <input
+                    className="min-w-0 flex-1 bg-transparent text-xs text-on-surface outline-none placeholder:text-on-surface-variant/50"
+                    value={promptInstruction}
+                    onChange={(event) => setPromptInstruction(event.target.value)}
+                    placeholder={t('home_prompt_instruction')}
+                  />
+                </label>
+                <button
+                  className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-secondary/30 bg-secondary/5 px-3 text-xs font-medium text-secondary hover:bg-secondary/10 disabled:opacity-40 transition-colors"
+                  type="button"
+                  disabled={optimizingPrompt || !promptValue.trim()}
+                  onClick={handleOptimizePrompt}
+                >
+                  {optimizingPrompt ? <Loader2 className="animate-spin" size={13} /> : <Sparkles size={13} />}
+                  <span className="hidden sm:inline">{optimizingPrompt ? t('home_optimizing_prompt') : t('home_optimize_prompt')}</span>
+                  <span className="sm:hidden">AI</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+              <div className="min-w-0">
+                <textarea
+                  value={promptValue}
+                  onChange={(e) => setPromptValue(e.target.value)}
+                  className="h-16 w-full resize-none rounded-lg border border-outline-variant bg-surface-container-low p-2.5 text-sm text-on-surface focus:border-primary focus:outline-none placeholder:text-on-surface-variant/50 md:h-20 md:p-3"
+                  placeholder={t('home_placeholder')}
+                ></textarea>
+                <div className="mt-1 flex items-center justify-between gap-3 text-[10px] text-on-surface-variant">
+                  <button
+                    className="flex items-center gap-1 text-on-surface-variant hover:text-primary transition-colors"
+                    type="button"
+                    onClick={() => setPromptEditorOpen(true)}
+                    title={t('prompt_editor_expand')}
+                  >
+                    <Maximize2 size={10} />
+                    {t('prompt_editor_expand')}
+                  </button>
+                  <span>[{promptValue.length}/8000]</span>
+                </div>
+              </div>
+
+              <div className="flex min-w-0 gap-2 sm:shrink-0">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="group relative flex h-12 w-14 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-outline-variant hover:border-primary transition-colors sm:h-16 md:h-20 md:w-16"
+                  title={t('home_ref_image')}
+                >
+                  <ImagePlus className="mb-1 h-5 w-5 text-on-surface-variant transition-colors group-hover:text-primary" />
+                  <span className="text-[8px] text-on-surface-variant group-hover:text-primary">{t('home_ref_image')}</span>
+                </button>
+                <button
+                  onClick={handleExecute}
+                  disabled={loading || !promptValue.trim()}
+                  className="flex h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-lg bg-primary text-on-primary font-semibold hover:bg-primary/90 disabled:opacity-40 transition-colors sm:h-16 sm:w-20 sm:flex-none md:h-20 md:w-28"
+                >
+                  {loading ? <Loader2 className="animate-spin" size={22} /> : <span className="text-lg font-bold">{t('home_execute')}</span>}
+                  <span className="text-[10px] opacity-70">{selectedReferences.length ? t('home_edit') : t('home_generate')}</span>
+                </button>
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {selectedPreviews.length > 0 && (
+          <div className="mt-3 flex max-w-full gap-2 overflow-x-auto pb-1">
+            {selectedPreviews.map((preview, index) => (
+              <div key={preview.id} className="group/reference relative flex w-48 shrink-0 gap-2 rounded-lg border border-outline-variant bg-surface-container-low p-1.5">
+                <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-md bg-surface-container">
+                  <button
+                    type="button"
+                    className="h-full w-full cursor-zoom-in"
+                    title={preview.name}
+                    onClick={() => setPreviewItem({ imageUrl: preview.url, prompt: preview.name })}
+                  >
+                    <RetryImage alt={preview.name} className="h-full w-full object-cover" src={preview.url} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t('modal_close')}
+                    className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded bg-black/60 text-white/80 hover:bg-error hover:text-white transition-colors opacity-0 group-hover/reference:opacity-100"
+                    onClick={() => removeReferenceImage(index)}
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <label className="mb-1 block">
+                    <span className="mb-0.5 block text-[9px] text-on-surface-variant">{t('reference_role')}</span>
+                    <select
+                      className="h-7 w-full rounded-md border border-outline-variant bg-surface px-1 text-[10px] text-on-surface outline-none focus:border-primary"
+                      value={selectedReferences[index]?.role || ''}
+                      onChange={(event) => updateReferenceImage(index, { role: event.target.value })}
+                    >
+                      {REFERENCE_ROLE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {t(option.labelKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 block text-[9px] text-on-surface-variant">{t('reference_note')}</span>
+                    <input
+                      className="h-7 w-full rounded-md border border-outline-variant bg-surface px-1 text-[10px] text-on-surface outline-none placeholder:text-on-surface-variant/50 focus:border-primary"
+                      value={selectedReferences[index]?.note || ''}
+                      onChange={(event) => updateReferenceImage(index, { note: event.target.value })}
+                      placeholder={t('reference_note_placeholder')}
+                    />
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Search */}
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+          <div className="flex h-9 shrink-0 rounded-lg bg-surface-container p-0.5">
+            <button
+              className={`rounded-md px-3 text-xs font-medium transition-colors ${
+                inspirationSearchMode === 'keyword' ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
               }`}
               type="button"
               onClick={setKeywordSearchMode}
@@ -570,8 +784,8 @@ export default function Home() {
               {t('home_case_search_keyword')}
             </button>
             <button
-              className={`px-3 text-[10px] font-bold uppercase tracking-widest transition-colors ${
-                inspirationSearchMode === 'ai' ? 'bg-secondary text-black' : 'text-white/55 hover:text-secondary'
+              className={`rounded-md px-3 text-xs font-medium transition-colors ${
+                inspirationSearchMode === 'ai' ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
               }`}
               type="button"
               onClick={handleAISearch}
@@ -580,10 +794,10 @@ export default function Home() {
               {aiSearching ? <Loader2 className="mx-auto animate-spin" size={14} /> : t('home_case_search_ai')}
             </button>
           </div>
-          <label className="flex min-w-0 flex-1 items-center gap-3 border border-white/10 bg-surface-container-low/70 px-3 py-2 text-white/70 focus-within:border-primary">
-            <Search className="shrink-0 text-primary/70" size={16} />
+          <label className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 focus-within:border-primary transition-colors">
+            <Search className="shrink-0 text-on-surface-variant" size={16} />
             <input
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/30"
+              className="min-w-0 flex-1 bg-transparent text-sm text-on-surface outline-none placeholder:text-on-surface-variant/50"
               value={inspirationSearchInput}
               onChange={(event) => {
                 patchState({ inspirationSearchInput: event.target.value });
@@ -601,7 +815,7 @@ export default function Home() {
             />
             {inspirationSearchInput ? (
               <button
-                className="flex h-7 w-7 shrink-0 items-center justify-center text-white/45 transition-colors hover:text-primary"
+                className="flex h-7 w-7 shrink-0 items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
                 type="button"
                 title={t('home_case_clear_search')}
                 aria-label={t('home_case_clear_search')}
@@ -620,7 +834,7 @@ export default function Home() {
             ) : null}
           </label>
         </div>
-        <div className="shrink-0 font-code-data text-[10px] uppercase tracking-[0.24em] text-white/40">
+        <div className="shrink-0 text-xs text-on-surface-variant">
           {aiSearching
             ? t('home_case_ai_searching')
             : inspirationSearchMode === 'ai' && inspirationAIQuery
@@ -631,20 +845,20 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Feed */}
       {feedLoading ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="relative aspect-[3/4] overflow-hidden border border-primary/20 bg-black/60">
-              <div className="absolute inset-0 animate-pulse bg-[linear-gradient(180deg,rgba(0,243,255,0.08),rgba(255,0,255,0.08))]" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_55%)]" />
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <div className="mb-3 h-3 w-24 animate-pulse bg-white/10" />
-                <div className="mb-2 h-4 w-full animate-pulse bg-white/10" />
-                <div className="h-4 w-3/4 animate-pulse bg-white/10" />
+            <div key={index} className="animate-skeleton rounded-xl bg-surface-container overflow-hidden">
+              <div className="aspect-[3/4] bg-surface-container-high" />
+              <div className="p-4 space-y-3">
+                <div className="h-3 w-24 rounded bg-surface-container-high" />
+                <div className="h-4 w-full rounded bg-surface-container-high" />
+                <div className="h-4 w-3/4 rounded bg-surface-container-high" />
               </div>
             </div>
           ))}
-          <div className="col-span-full flex items-center justify-center gap-3 py-4 text-xs uppercase tracking-[0.3em] text-primary/70">
+          <div className="col-span-full flex items-center justify-center gap-3 py-4 text-sm text-on-surface-variant">
             <Loader2 className="animate-spin" size={16} />
             {t('home_loading_feed')}
           </div>
@@ -660,13 +874,13 @@ export default function Home() {
               const images = item.images.length > 0 ? item.images : [{ id: item.id, url: item.img, prompt: item.prompt }];
               const isBatch = images.length > 1;
               return (
-                <div className="overflow-hidden border border-primary/30 bg-black">
+                <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface shadow-sm">
                   {isBatch ? (
-                    <div className="grid grid-cols-3 gap-1 bg-black p-1">
+                    <div className="grid grid-cols-3 gap-1 p-1">
                       {images.map((image, index) => (
                         <button
                           key={image.id}
-                          className="relative aspect-square cursor-zoom-in overflow-hidden bg-black text-left"
+                          className="relative aspect-square cursor-zoom-in overflow-hidden rounded-md text-left"
                           type="button"
                           onClick={() => setPreviewItem({
                               images: images.map((galleryImage, galleryIndex) => ({
@@ -681,7 +895,7 @@ export default function Home() {
                         >
                           <RetryImage
                             alt={`${item.id}-${index + 1}`}
-                            className="h-full w-full object-cover opacity-95 transition-opacity duration-300 hover:opacity-100"
+                            className="h-full w-full object-cover"
                             loading="lazy"
                             src={image.url}
                           />
@@ -690,30 +904,27 @@ export default function Home() {
                     </div>
                   ) : (
                     <button
-                      className="block w-full cursor-zoom-in bg-black text-left"
+                      className="block w-full cursor-zoom-in text-left"
                       type="button"
                       onClick={() => setPreviewItem({ imageUrl: item.img, prompt: item.prompt })}
                     >
                       <RetryImage
                         alt={item.id}
-                        className="block h-auto w-full opacity-95 transition-opacity duration-300 hover:opacity-100"
+                        className="block h-auto w-full"
                         loading="lazy"
                         src={item.img}
                       />
                     </button>
                   )}
-                  <div className="border-t border-primary/15 bg-surface-container-low/80 p-4">
+                  <div className="p-4">
                     <div className="mb-2 flex items-center justify-between gap-3">
-                      <div className="min-w-0 truncate text-[10px] uppercase tracking-widest text-secondary">{item.title}</div>
-                      <div className="shrink-0 font-code-data text-[10px] text-white/25">
-                        {item.id}
-                        {isBatch ? ` x${images.length}` : ''}
-                      </div>
+                      <div className="min-w-0 truncate text-xs font-medium text-secondary">{item.title}</div>
+                      {isBatch ? <span className="shrink-0 text-xs text-on-surface-variant">x{images.length}</span> : null}
                     </div>
-                    <p className="mb-3 line-clamp-3 text-sm text-white/80">{item.prompt}</p>
-                    <div className={`grid gap-2 ${canFavorite ? 'grid-cols-[44px_44px_1fr]' : 'grid-cols-[44px_1fr]'}`}>
+                    <p className="mb-3 line-clamp-3 text-sm text-on-surface">{item.prompt}</p>
+                    <div className={`flex gap-2 ${canFavorite ? '' : ''}`}>
                       <button
-                        className="flex h-10 items-center justify-center border border-white/10 bg-white/5 text-white/70 transition-all duration-300 hover:border-primary hover:text-primary"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
                         type="button"
                         onClick={() => setPreviewItem({
                             imageUrl: images[0]?.url || item.img,
@@ -734,10 +945,10 @@ export default function Home() {
                       </button>
                       {canFavorite ? (
                         <button
-                          className={`flex h-10 items-center justify-center border transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors disabled:opacity-50 ${
                             item.favorited
-                              ? 'border-secondary/50 bg-secondary/15 text-secondary hover:bg-secondary/25'
-                              : 'border-white/10 bg-white/5 text-white/70 hover:border-secondary hover:text-secondary'
+                              ? 'border-secondary/40 bg-secondary/10 text-secondary'
+                              : 'border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
                           }`}
                           type="button"
                           disabled={favoritePending}
@@ -756,7 +967,7 @@ export default function Home() {
                           event.stopPropagation();
                           handleClonePrompt(item.prompt).catch(() => undefined);
                         }}
-                        className="flex h-10 items-center justify-center gap-2 bg-primary px-3 text-xs font-black uppercase text-black shadow-[0_0_10px_rgba(0,243,255,0.35)] transition-all duration-300 hover:bg-white hover:shadow-white/40"
+                        className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-primary text-xs font-semibold text-on-primary hover:bg-primary/90 transition-colors"
                       >
                         <RefreshCw size={14} />
                         {t('home_clone_prompt')}
@@ -769,248 +980,29 @@ export default function Home() {
           />
           <div className="flex flex-col items-center gap-4 py-8">
             {loadingMoreFeed ? (
-              <div className="flex items-center justify-center gap-3 text-xs uppercase tracking-[0.3em] text-primary/70">
+              <div className="flex items-center justify-center gap-3 text-sm text-on-surface-variant">
                 <Loader2 className="animate-spin" size={16} />
                 {t('home_loading_more')}
               </div>
             ) : hasMoreInspirations ? (
               <button
-                className="border border-primary/30 bg-primary/5 px-6 py-3 text-xs font-bold uppercase tracking-[0.25em] text-primary transition-colors hover:bg-primary/10"
+                className="rounded-lg border border-outline-variant bg-surface px-6 py-3 text-sm font-medium text-on-surface hover:bg-surface-container transition-colors"
                 type="button"
                 onClick={() => loadMoreInspirations().catch(() => undefined)}
               >
                 {t('home_load_more')}
               </button>
             ) : (
-              <div className="text-xs uppercase tracking-[0.3em] text-white/35">{t('home_all_loaded')}</div>
+              <div className="text-sm text-on-surface-variant">{t('home_all_loaded')}</div>
             )}
             <div ref={loadMoreRef} className="h-2 w-full" />
           </div>
         </>
       ) : (
-        <div className="flex min-h-[320px] items-center justify-center border border-primary/20 bg-black/50 px-6 text-sm text-white/50">
+        <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-dashed border-outline-variant bg-surface-container-low px-6 text-sm text-on-surface-variant">
           {t('home_empty_feed')}
         </div>
       )}
-
-      <div
-        className={`fixed bottom-3 left-3 right-3 z-50 mx-auto rounded-sm border bg-surface-container/90 font-mono shadow-[0_-20px_40px_rgba(0,0,0,0.75)] backdrop-blur-xl transition-colors md:bottom-5 ${
-          generationPanelExpanded ? 'max-w-[1080px] p-3 md:p-4' : 'max-w-[920px] p-2 md:p-2.5'
-        } ${
-          draggingReference ? 'border-secondary bg-secondary/10' : 'border-primary/40'
-        }`}
-        onDragEnter={handleReferenceDragOver}
-        onDragLeave={handleReferenceDragLeave}
-        onDragOver={handleReferenceDragOver}
-        onDrop={handleReferenceDrop}
-      >
-        <input
-          ref={fileInputRef}
-          className="hidden"
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          multiple
-          onChange={handleReferenceImages}
-        />
-        <div className={`${generationPanelExpanded ? 'mb-2' : ''} flex min-w-0 items-center gap-2 md:gap-3`}>
-          <div className="flex shrink-0 items-center gap-2 border-r border-white/10 pr-3 text-[10px] text-white/50">
-            <span className="h-2 w-2 rounded-full bg-secondary" />
-            {t('home_mode')}: {selectedReferences.length ? t('home_mode_edit') : t('home_mode_generate')}
-          </div>
-          <div className="hidden items-center gap-2 text-[10px] uppercase tracking-widest text-white/45 md:flex">
-            <span>{SIZE_LABELS[imageScale] || imageScale}</span>
-            <span>{aspectRatio}</span>
-            <span>{providerImageSize(imageScale, aspectRatio)}</span>
-            <span>{imageQuality}</span>
-            {Number(imageCount) > 1 ? <span>x{imageCount}</span> : null}
-          </div>
-          <button
-            type="button"
-            className="min-w-0 flex-1 truncate text-left text-[10px] tracking-widest text-primary transition-colors hover:text-secondary"
-            onClick={() => setGenerationPanelExpanded(true)}
-            title={generationPanelExpanded ? undefined : t('home_panel_expand')}
-          >
-            {message || (promptValue ? promptValue : t('home_message_waiting'))}
-          </button>
-          {!generationPanelExpanded ? (
-            <>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex h-9 w-9 shrink-0 items-center justify-center border border-dashed border-primary/25 text-white/45 transition-colors hover:border-primary hover:text-primary"
-                title={t('home_ref_image')}
-              >
-                <ImagePlus size={15} />
-              </button>
-              <button
-                onClick={handleExecute}
-                disabled={loading || !promptValue.trim()}
-                className="flex h-9 shrink-0 items-center justify-center bg-primary px-3 text-[10px] font-black uppercase tracking-widest text-black shadow-[0_0_12px_rgba(0,243,255,0.35)] transition-transform hover:scale-95 disabled:opacity-40 disabled:hover:scale-100"
-              >
-                {loading ? <Loader2 className="animate-spin" size={15} /> : t('home_execute')}
-              </button>
-              <button
-                type="button"
-                className="flex h-9 w-9 shrink-0 items-center justify-center border border-secondary/40 text-secondary transition-colors hover:bg-secondary hover:text-black"
-                title={t('home_panel_expand')}
-                aria-label={t('home_panel_expand')}
-                onClick={() => setGenerationPanelExpanded(true)}
-              >
-                <Maximize2 size={15} />
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="flex h-8 w-8 shrink-0 items-center justify-center border border-white/10 text-white/55 transition-colors hover:border-primary hover:text-primary"
-              title={t('home_panel_collapse')}
-              aria-label={t('home_panel_collapse')}
-              onClick={() => setGenerationPanelExpanded(false)}
-            >
-              <Minimize2 size={14} />
-            </button>
-          )}
-        </div>
-
-        {generationPanelExpanded ? (
-          <>
-            <div className="mb-2 grid grid-cols-2 items-end gap-2 sm:grid-cols-4 lg:grid-cols-[128px_112px_104px_84px_1fr_auto]">
-              <GenerationSelect
-                label={t('home_size')}
-                value={imageScale}
-                onChange={setImageScale}
-                options={SIZE_OPTIONS}
-                getOptionLabel={(option) => SIZE_LABELS[option] || option}
-                isOptionDisabled={(option) => !isSupportedImagePreset(option, aspectRatio)}
-              />
-              <GenerationSelect label={t('home_aspect_ratio')} value={aspectRatio} onChange={handleAspectRatioChange} options={ASPECT_RATIO_OPTIONS} />
-              <GenerationSelect label={t('home_quality')} value={imageQuality} onChange={setImageQuality} options={QUALITY_OPTIONS} />
-              <GenerationSelect
-                label={t('home_image_count')}
-                value={imageCount}
-                onChange={setImageCount}
-                options={IMAGE_COUNT_OPTIONS}
-              />
-              <div className="col-span-2 flex min-w-0 gap-2 sm:col-span-4 lg:col-span-2">
-                <label className="flex h-9 min-w-0 flex-1 items-center gap-2 border border-primary/20 bg-black px-3 text-primary focus-within:border-primary">
-                  <Sparkles className="shrink-0 text-secondary/80" size={14} />
-                  <input
-                    className="min-w-0 flex-1 bg-transparent text-xs text-primary outline-none placeholder:text-primary/25"
-                    value={promptInstruction}
-                    onChange={(event) => setPromptInstruction(event.target.value)}
-                    placeholder={t('home_prompt_instruction')}
-                  />
-                </label>
-                <button
-                  className="flex h-9 shrink-0 items-center justify-center gap-2 border border-secondary/50 bg-secondary/10 px-3 text-[11px] font-black uppercase tracking-widest text-secondary transition-colors hover:bg-secondary hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
-                  type="button"
-                  disabled={optimizingPrompt || !promptValue.trim()}
-                  onClick={handleOptimizePrompt}
-                >
-                  {optimizingPrompt ? <Loader2 className="animate-spin" size={13} /> : <Sparkles size={13} />}
-                  <span className="hidden sm:inline">{optimizingPrompt ? t('home_optimizing_prompt') : t('home_optimize_prompt')}</span>
-                  <span className="sm:hidden">AI</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
-              <div className="min-w-0">
-                <textarea
-                  value={promptValue}
-                  onChange={(e) => setPromptValue(e.target.value)}
-                  className="h-16 w-full resize-none border border-primary/20 bg-black p-2.5 text-sm text-primary shadow-inner focus:border-primary focus:outline-none placeholder:text-primary/20 md:h-20 md:p-3"
-                  placeholder={t('home_placeholder')}
-                ></textarea>
-                <div className="mt-1 flex items-center justify-between gap-3 text-[8px] uppercase leading-none text-primary/40">
-                  <button
-                    className="flex items-center gap-1 text-primary/60 transition-colors hover:text-primary"
-                    type="button"
-                    onClick={() => setPromptEditorOpen(true)}
-                    title={t('prompt_editor_expand')}
-                  >
-                    <Maximize2 size={10} />
-                    {t('prompt_editor_expand')}
-                  </button>
-                  <span>UTF-8 // AI-GEN // [{promptValue.length}/8000]</span>
-                </div>
-              </div>
-
-              <div className="flex min-w-0 gap-2 sm:shrink-0">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="group relative flex h-12 w-14 shrink-0 cursor-pointer flex-col items-center justify-center border border-dashed border-primary/20 transition-colors hover:bg-primary/5 sm:h-16 md:h-20 md:w-16"
-                  title={t('home_ref_image')}
-                >
-                  <ImagePlus className="mb-1 h-5 w-5 text-white/30 transition-colors group-hover:text-primary" />
-                  <span className="max-w-full truncate px-1 text-[8px] uppercase text-white/40 group-hover:text-primary">{t('home_ref_image')}</span>
-                </button>
-                <button
-                  onClick={handleExecute}
-                  disabled={loading || !promptValue.trim()}
-                  className="flex h-12 min-w-0 flex-1 flex-col items-center justify-center bg-primary text-black font-black shadow-[0_0_15px_rgba(0,243,255,0.4)] transition-transform hover:scale-95 disabled:opacity-40 disabled:hover:scale-100 sm:h-16 sm:w-20 sm:flex-none md:h-20 md:w-28"
-                >
-                  {loading ? <Loader2 className="animate-spin" size={22} /> : <span className="mb-[-4px] text-lg md:text-xl">{t('home_execute')}</span>}
-                  <span className="text-[9px] italic opacity-70 md:text-[10px]">{selectedReferences.length ? t('home_edit') : t('home_generate')}</span>
-                </button>
-              </div>
-            </div>
-          </>
-        ) : null}
-
-        {selectedPreviews.length > 0 && (
-          <div className="mt-2 flex max-w-full gap-2 overflow-x-auto pb-1">
-            {selectedPreviews.map((preview, index) => (
-              <div key={preview.id} className="group/reference relative grid w-48 shrink-0 grid-cols-[56px_1fr] gap-2 border border-primary/20 bg-black p-1.5">
-                <div className="relative h-20 overflow-hidden border border-white/10 bg-black">
-                  <button
-                    type="button"
-                    className="h-full w-full cursor-zoom-in bg-black"
-                    title={preview.name}
-                    onClick={() => setPreviewItem({ imageUrl: preview.url, prompt: preview.name })}
-                  >
-                    <RetryImage alt={preview.name} className="h-full w-full object-cover" src={preview.url} />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={t('modal_close')}
-                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center border border-white/15 bg-black/70 text-white/80 opacity-100 transition-colors hover:border-error hover:text-error sm:opacity-0 sm:group-hover/reference:opacity-100"
-                    onClick={() => removeReferenceImage(index)}
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-                <div className="min-w-0">
-                  <label className="mb-1 block">
-                    <span className="mb-0.5 block text-[8px] uppercase tracking-widest text-white/35">{t('reference_role')}</span>
-                    <select
-                      className="h-7 w-full border border-white/10 bg-black px-1 text-[10px] text-primary outline-none focus:border-primary"
-                      value={selectedReferences[index]?.role || ''}
-                      onChange={(event) => updateReferenceImage(index, { role: event.target.value })}
-                    >
-                      {REFERENCE_ROLE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {t(option.labelKey)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="block">
-                    <span className="mb-0.5 block text-[8px] uppercase tracking-widest text-white/35">{t('reference_note')}</span>
-                    <input
-                      className="h-7 w-full border border-white/10 bg-black px-1 text-[10px] text-white/75 outline-none placeholder:text-white/25 focus:border-primary"
-                      value={selectedReferences[index]?.note || ''}
-                      onChange={(event) => updateReferenceImage(index, { note: event.target.value })}
-                      placeholder={t('reference_note_placeholder')}
-                    />
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       <ImagePreviewModal
         imageUrl={previewItem?.imageUrl || null}
@@ -1029,9 +1021,7 @@ export default function Home() {
       />
       {showBackToTop ? (
         <button
-          className={`fixed right-5 z-40 flex h-11 w-11 items-center justify-center border border-primary/40 bg-black/80 text-primary shadow-[0_0_18px_rgba(0,243,255,0.22)] backdrop-blur transition-colors hover:bg-primary hover:text-black md:right-8 ${
-            generationPanelExpanded ? 'bottom-[14rem] md:bottom-28' : 'bottom-24 md:bottom-24'
-          }`}
+          className="fixed right-5 bottom-24 z-40 flex h-11 w-11 items-center justify-center rounded-xl border border-outline-variant bg-surface/80 text-on-surface-variant backdrop-blur hover:bg-surface hover:text-on-surface shadow-lg transition-colors"
           type="button"
           title={t('home_back_to_top')}
           aria-label={t('home_back_to_top')}
