@@ -9,7 +9,7 @@ type ThemeContextValue = {
   setTheme: (theme: Theme) => void;
 };
 
-const THEME_STORAGE_KEY = 'joko_theme';
+const THEME_STORAGE_KEY = 'aethergenix_theme';
 const DARK_CLASS = 'dark';
 
 function getInitialTheme(): Theme {

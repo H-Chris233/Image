@@ -537,7 +537,7 @@ function isMobileDevice() {
 }
 
 function openPaymentWindow(url: string) {
-  const popup = window.open(url, 'jokoPayment', 'width=460,height=720,menubar=no,toolbar=no,location=yes,status=no');
+  const popup = window.open(url, 'aethergenixPayment', 'width=460,height=720,menubar=no,toolbar=no,location=yes,status=no');
   if (!popup || popup.closed) {
     window.location.href = url;
   }

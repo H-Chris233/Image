@@ -1100,7 +1100,7 @@ def create_app(
         if count == 0:
             raise HTTPException(status_code=404, detail="No downloadable images found for this task")
         archive.seek(0)
-        headers = {"Content-Disposition": f'attachment; filename="joko-image2-{task_id[:12]}.zip"'}
+        headers = {"Content-Disposition": f'attachment; filename="aethergenix-{task_id[:12]}.zip"'}
         return Response(content=archive.getvalue(), media_type="application/zip", headers=headers)
 
     @app.get("/api/tasks")
@@ -1865,7 +1865,7 @@ async def _grant_trial_balance(
     payload = {
         "balance": balance_usd,
         "operation": "add",
-        "notes": "joko-image2 new user trial grant",
+        "notes": "aethergenix new user trial grant",
     }
     try:
         await auth_client.admin_update_user_balance(
@@ -1890,7 +1890,7 @@ async def _resolve_user_api_key(
     if selected and selected.get("key"):
         return str(selected["key"])
 
-    payload: dict[str, Any] = {"name": "joko-image"}
+    payload: dict[str, Any] = {"name": "aethergenix-image"}
     group_id = await _resolve_default_key_group_id(auth_client, auth_base_url, access_token)
     if group_id is not None:
         payload["group_id"] = group_id

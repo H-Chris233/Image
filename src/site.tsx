@@ -17,8 +17,8 @@ type SiteContextValue = {
   closeAnnouncement: () => void;
 };
 
-const LOCALE_STORAGE_KEY = 'joko_locale';
-const ANNOUNCEMENT_SEEN_KEY = 'joko_announcement_seen_at';
+const LOCALE_STORAGE_KEY = 'aethergenix_locale';
+const ANNOUNCEMENT_SEEN_KEY = 'aethergenix_announcement_seen_at';
 
 const translations = {
   'zh-CN': {

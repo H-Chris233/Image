@@ -81,7 +81,7 @@ async def cache_remote_image(settings: Settings, image_url: str, client: httpx.A
         image_url,
         headers={
             "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-            "User-Agent": "joko-image/1.0",
+            "User-Agent": "aethergenix-image/1.0",
         },
     )
     response.raise_for_status()

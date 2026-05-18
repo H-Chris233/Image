@@ -11,7 +11,7 @@ import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 
 const FAVORITE_PAGE_SIZE = 24;
-const PROMPT_TRANSFER_KEY = 'joko_pending_prompt';
+const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
 
 export default function Favorites() {
   const { viewer } = useAuth();

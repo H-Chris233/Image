@@ -1,6 +1,6 @@
 {
-  "name": "CYBER_GEN",
-  "description": "Cyberpunk themed AI image generation dashboard using proxy backend setup.",
+  "name": "AetherGenix",
+  "description": "AI image generation platform with modern minimal UI and proxy backend.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

@@ -5,7 +5,7 @@ import { useAuth } from '../auth';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 import { useTheme } from './ThemeProvider';
-import jokoLogo from '../../joko.svg';
+import aethergenixLogo from '../../aethergenix.svg';
 
 export default function TopNavBar() {
   const { viewer, refresh } = useAuth();
@@ -40,8 +40,8 @@ export default function TopNavBar() {
   return (
     <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between h-16 bg-surface/80 backdrop-blur-lg border-b border-outline-variant px-4 shrink-0">
       <div className="flex items-center gap-3">
-        <img alt="joko" className="h-9 w-9 rounded-lg object-contain" src={jokoLogo} />
-        <span className="text-lg font-bold text-on-surface tracking-tight">Joko</span>
+        <img alt="AetherGenix" className="h-9 w-9 rounded-lg object-contain" src={aethergenixLogo} />
+        <span className="text-lg font-bold text-on-surface tracking-tight">AetherGenix</span>
       </div>
 
       <div className="flex items-center gap-2">

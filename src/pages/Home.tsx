@@ -39,7 +39,7 @@ import { useTasks } from '../tasks';
 import GenerationSelect from '../components/GenerationSelect';
 
 const FEED_PAGE_SIZE = 24;
-const PROMPT_TRANSFER_KEY = 'joko_pending_prompt';
+const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
 
 function groupHistoryForFeed(items: HistoryItem[]): FeedItem[] {
   return groupHistoryItems(items)
