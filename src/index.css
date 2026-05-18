@@ -4,20 +4,20 @@
 @theme {
   /* ── Surface 层级（浅色模式）── */
   --color-surface: #ffffff;
-  --color-surface-dim: #f1f5f9;
+  --color-surface-dim: #f5f4f2;
   --color-surface-bright: #ffffff;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f8fafc;
-  --color-surface-container: #f1f5f9;
-  --color-surface-container-high: #e2e8f0;
-  --color-surface-container-highest: #cbd5e1;
-  --color-on-surface: #0f172a;
-  --color-on-surface-variant: #64748b;
-  --color-inverse-surface: #1e293b;
-  --color-inverse-on-surface: #f1f5f9;
-  --color-outline: #94a3b8;
-  --color-outline-variant: #e2e8f0;
-  --color-surface-tint: #06b6d4;
+  --color-surface-container-low: #faf9f7;
+  --color-surface-container: #f0ede8;
+  --color-surface-container-high: #e5e0d8;
+  --color-surface-container-highest: #d8d0c4;
+  --color-on-surface: #1a1816;
+  --color-on-surface-variant: #6b6560;
+  --color-inverse-surface: #28251f;
+  --color-inverse-on-surface: #f5f0e8;
+  --color-outline: #a09a8e;
+  --color-outline-variant: #e5e0d8;
+  --color-surface-tint: #00D4F0;
 
   /* ── 品牌色 ── */
   --color-primary: #0891b2;
@@ -40,8 +40,8 @@
   --color-error-container: #fef2f2;
   --color-on-error-container: #991b1b;
 
-  --color-background: #f8fafc;
-  --color-on-background: #0f172a;
+  --color-background: #faf9f7;
+  --color-on-background: #1a1816;
 
   /* ── 字体 ── */
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
@@ -49,39 +49,43 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   /* ── Aether Fruit 品牌色 ── */
-  --color-ag-cyan: #00D4F0;
+  --color-ag-cyan:   #00D4F0;
   --color-ag-violet: #8B5CF6;
-  --color-ag-amber: #F59E0B;
-  --color-ag-lime: #D9F20A;
+  --color-ag-amber:  #F59E0B;
+  --color-ag-lime:   #D9F20A;
 
-  /* ── 深空背景层级（暗色专用，可直接用 Tailwind class）── */
-  --color-void:   #050810;
-  --color-deep:   #080D1A;
-  --color-cosmic: #0D1428;
-  --color-nebula: #151E38;
-  --color-stellar:#1E2A4A;
+  /* ── Lovart 暖炭黑背景层级（暗色专用）── */
+  --color-void:   #0e0d0b;
+  --color-deep:   #141210;
+  --color-cosmic: #1e1c19;
+  --color-nebula: #28251f;
+  --color-stellar:#332f27;
 }
 
-/* ── 暗色模式覆盖 ── */
+/* ── 暗色模式：Lovart 暖炭黑风格 ── */
 .dark {
-  --color-surface: #0D1428;
-  --color-surface-dim: #080D1A;
-  --color-surface-bright: #151E38;
-  --color-surface-container-lowest: #050810;
-  --color-surface-container-low: #0D1428;
-  --color-surface-container: #151E38;
-  --color-surface-container-high: #1E2A4A;
-  --color-surface-container-highest: #273554;
-  --color-on-surface: #E8F0FF;
-  --color-on-surface-variant: #8899BB;
-  --color-inverse-surface: #E8F0FF;
-  --color-inverse-on-surface: #0D1428;
-  --color-outline: #3A4D6B;
-  --color-outline-variant: #1E2A4A;
+  /* 背景层级：暖棕调，而非冷蓝调 */
+  --color-surface: #1e1c19;
+  --color-surface-dim: #141210;
+  --color-surface-bright: #28251f;
+  --color-surface-container-lowest: #0e0d0b;
+  --color-surface-container-low: #1e1c19;
+  --color-surface-container: #28251f;
+  --color-surface-container-high: #332f27;
+  --color-surface-container-highest: #3e3a30;
+  /* 文字：暖米白而非冷白 */
+  --color-on-surface: #f0ece4;
+  --color-on-surface-variant: #a09a8e;
+  --color-inverse-surface: #f0ece4;
+  --color-inverse-on-surface: #1e1c19;
+  /* 边框：暖调 */
+  --color-outline: #4a4540;
+  --color-outline-variant: #332f27;
   --color-surface-tint: #00D4F0;
 
+  /* 主色在暗色模式下保持鲜艳 */
   --color-primary: #00D4F0;
-  --color-on-primary: #00293D;
+  --color-on-primary: #003340;
   --color-primary-container: #004D5E;
   --color-on-primary-container: #A8F0FA;
 
@@ -100,23 +104,23 @@
   --color-error-container: #991b1b;
   --color-on-error-container: #fecaca;
 
-  --color-background: #080D1A;
-  --color-on-background: #E8F0FF;
+  --color-background: #141210;
+  --color-on-background: #f0ece4;
 }
 
-/* ── 全局 CSS 变量（easing、glow）── */
+/* ── 全局 CSS 变量 ── */
 :root {
   --ag-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ag-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ag-glow-cyan:   0 0 20px rgba(0,212,240,0.35), 0 0 60px rgba(0,212,240,0.12);
   --ag-glow-violet: 0 0 20px rgba(139,92,246,0.35), 0 0 60px rgba(139,92,246,0.12);
-  --ag-glow-soft:   0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.08);
+  --ag-glow-soft:   0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.06);
 }
 
 /* ── 动画 ── */
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
 }
 
 @keyframes fade-in {
@@ -151,8 +155,9 @@
   .gradient-fruit {
     background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
   }
-  .gradient-void {
-    background: radial-gradient(ellipse at 20% 50%, #1E1B4B 0%, #050810 60%);
+  /* Lovart 风格暖炭渐变（用于底层背景光晕）*/
+  .gradient-warm-void {
+    background: radial-gradient(ellipse at 30% 40%, #2c2820 0%, #0e0d0b 65%);
   }
 
   /* 渐变文字 */
@@ -168,35 +173,44 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+  /* Lovart 签名高亮色（电石灰）*/
+  .text-lime { color: #D9F20A; }
 
-  /* 玻璃态 */
+  /* 玻璃态：暖色调 */
   .glass-card {
-    background: linear-gradient(135deg, rgba(0,212,240,0.06) 0%, rgba(139,92,246,0.04) 100%);
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
     border: 1px solid rgba(255,255,255,0.08);
     backdrop-filter: blur(12px);
   }
+  /* Lovart nav 风格：暖炭底+毛玻璃 */
   .glass-nav {
-    background: rgba(8,13,26,0.75);
-    backdrop-filter: blur(20px) saturate(1.5);
+    background: rgba(20,18,16,0.82);
+    backdrop-filter: blur(20px) saturate(1.4);
   }
 
   /* Glow */
-  .glow-cyan  { box-shadow: var(--ag-glow-cyan); }
+  .glow-cyan   { box-shadow: var(--ag-glow-cyan); }
   .glow-violet { box-shadow: var(--ag-glow-violet); }
-  .glow-soft  { box-shadow: var(--ag-glow-soft); }
+  .glow-soft   { box-shadow: var(--ag-glow-soft); }
 
   /* 字体 */
   .font-display { font-family: var(--font-display); }
 }
 
 /* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--color-outline-variant);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-outline); }
+
+/* ── 全局选中高亮：Lovart 签名电石灰 ── */
+::selection {
+  background: #D9F20A;
+  color: #1a1816;
+}
 
 /* ── Body ── */
 body {

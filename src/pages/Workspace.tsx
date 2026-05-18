@@ -79,7 +79,7 @@ export default function Workspace() {
 
         {/* 等待中 */}
         {isLoading && (
-          <div className="rounded-2xl border border-[rgba(0,212,240,0.15)] bg-[rgba(13,20,40,0.8)] backdrop-blur-sm p-8 mb-6">
+          <div className="rounded-2xl border border-[rgba(0,212,240,0.15)] bg-[rgba(30,28,25,0.85)] backdrop-blur-sm p-8 mb-6">
             <div className="flex items-center gap-3 mb-5">
               <Loader2 className="animate-spin text-[#00D4F0]" size={20} />
               <span className="text-sm font-medium text-on-surface">
@@ -160,7 +160,7 @@ export default function Workspace() {
 
         {/* 操作台子功能 Segment Control */}
         {!isLoading && (
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(13,20,40,0.7)] backdrop-blur-sm overflow-hidden">
+          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(30,28,25,0.75)] backdrop-blur-sm overflow-hidden">
             <div className="flex border-b border-[rgba(255,255,255,0.08)]">
               {(Object.keys(TAB_LABELS) as WorkspaceTab[]).map((tab) => (
                 <button

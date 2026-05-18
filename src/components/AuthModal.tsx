@@ -46,7 +46,7 @@ export default function AuthModal() {
       {/* 弹窗背景光晕 */}
       <div className="absolute pointer-events-none w-[400px] h-[400px] rounded-full bg-[rgba(139,92,246,0.12)] blur-[80px]" />
 
-      <div className="relative w-full max-w-md rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(13,20,40,0.92)] backdrop-blur-xl shadow-[0_24px_64px_rgba(0,0,0,0.6)] animate-fade-in overflow-hidden">
+      <div className="relative w-full max-w-md rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(30,28,25,0.96)] backdrop-blur-xl shadow-[0_24px_64px_rgba(0,0,0,0.6)] animate-fade-in overflow-hidden">
         {/* 顶部渐变光带 */}
         <div className="absolute inset-x-0 top-0 h-px gradient-genesis" />
 

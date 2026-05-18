@@ -47,8 +47,8 @@ export default function TopNavBar() {
     : t('home_guest', { value: viewer?.guest_id?.slice(0, 8) || '--' });
 
   const navBg = scrolled
-    ? 'bg-[rgba(8,13,26,0.92)] border-b border-[rgba(0,212,240,0.15)]'
-    : 'bg-[rgba(8,13,26,0.75)] border-b border-transparent';
+    ? 'bg-[rgba(20,18,16,0.96)] border-b border-[rgba(0,212,240,0.15)]'
+    : 'bg-[rgba(20,18,16,0.82)] border-b border-transparent';
 
   return (
     <header
@@ -154,7 +154,7 @@ export default function TopNavBar() {
 
       {/* 移动端菜单 */}
       {mobileMenuOpen && (
-        <div className="fixed inset-x-0 top-16 z-50 border-b border-outline-variant/50 bg-[rgba(8,13,26,0.96)] backdrop-blur-xl px-4 py-4 shadow-lg lg:hidden animate-fade-in">
+        <div className="fixed inset-x-0 top-16 z-50 border-b border-outline-variant/50 bg-[rgba(20,18,16,0.96)] backdrop-blur-xl px-4 py-4 shadow-lg lg:hidden animate-fade-in">
           <div className="mb-4 rounded-2xl bg-surface-container/60 p-4">
             <div className="text-xs text-on-surface-variant">{t('top_owner')}</div>
             <div className="mt-1 text-sm font-semibold text-on-surface">{viewerLabel}</div>
