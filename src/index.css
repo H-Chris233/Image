@@ -1,7 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
+  /* ── Surface 层级（浅色模式）── */
   --color-surface: #ffffff;
   --color-surface-dim: #f1f5f9;
   --color-surface-bright: #ffffff;
@@ -18,6 +19,7 @@
   --color-outline-variant: #e2e8f0;
   --color-surface-tint: #06b6d4;
 
+  /* ── 品牌色 ── */
   --color-primary: #0891b2;
   --color-on-primary: #ffffff;
   --color-primary-container: #cffafe;
@@ -41,36 +43,52 @@
   --color-background: #f8fafc;
   --color-on-background: #0f172a;
 
+  /* ── 字体 ── */
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Inter', ui-sans-serif, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Aether Fruit 品牌色 ── */
+  --color-ag-cyan: #00D4F0;
+  --color-ag-violet: #8B5CF6;
+  --color-ag-amber: #F59E0B;
+  --color-ag-lime: #D9F20A;
+
+  /* ── 深空背景层级（暗色专用，可直接用 Tailwind class）── */
+  --color-void:   #050810;
+  --color-deep:   #080D1A;
+  --color-cosmic: #0D1428;
+  --color-nebula: #151E38;
+  --color-stellar:#1E2A4A;
 }
 
+/* ── 暗色模式覆盖 ── */
 .dark {
-  --color-surface: #0f172a;
-  --color-surface-dim: #0b1120;
-  --color-surface-bright: #1e293b;
-  --color-surface-container-lowest: #020617;
-  --color-surface-container-low: #0f172a;
-  --color-surface-container: #1e293b;
-  --color-surface-container-high: #334155;
-  --color-surface-container-highest: #475569;
-  --color-on-surface: #f1f5f9;
-  --color-on-surface-variant: #94a3b8;
-  --color-inverse-surface: #f1f5f9;
-  --color-inverse-on-surface: #0f172a;
-  --color-outline: #475569;
-  --color-outline-variant: #334155;
-  --color-surface-tint: #22d3ee;
+  --color-surface: #0D1428;
+  --color-surface-dim: #080D1A;
+  --color-surface-bright: #151E38;
+  --color-surface-container-lowest: #050810;
+  --color-surface-container-low: #0D1428;
+  --color-surface-container: #151E38;
+  --color-surface-container-high: #1E2A4A;
+  --color-surface-container-highest: #273554;
+  --color-on-surface: #E8F0FF;
+  --color-on-surface-variant: #8899BB;
+  --color-inverse-surface: #E8F0FF;
+  --color-inverse-on-surface: #0D1428;
+  --color-outline: #3A4D6B;
+  --color-outline-variant: #1E2A4A;
+  --color-surface-tint: #00D4F0;
 
-  --color-primary: #22d3ee;
-  --color-on-primary: #164e63;
-  --color-primary-container: #155e75;
-  --color-on-primary-container: #cffafe;
+  --color-primary: #00D4F0;
+  --color-on-primary: #00293D;
+  --color-primary-container: #004D5E;
+  --color-on-primary-container: #A8F0FA;
 
-  --color-secondary: #818cf8;
-  --color-on-secondary: #312e81;
-  --color-secondary-container: #3730a3;
-  --color-on-secondary-container: #e0e7ff;
+  --color-secondary: #A78BFA;
+  --color-on-secondary: #2E1065;
+  --color-secondary-container: #4C1D95;
+  --color-on-secondary-container: #DDD6FE;
 
   --color-tertiary: #34d399;
   --color-on-tertiary: #064e3b;
@@ -82,10 +100,20 @@
   --color-error-container: #991b1b;
   --color-on-error-container: #fecaca;
 
-  --color-background: #0b1120;
-  --color-on-background: #f1f5f9;
+  --color-background: #080D1A;
+  --color-on-background: #E8F0FF;
 }
 
+/* ── 全局 CSS 变量（easing、glow）── */
+:root {
+  --ag-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ag-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ag-glow-cyan:   0 0 20px rgba(0,212,240,0.35), 0 0 60px rgba(0,212,240,0.12);
+  --ag-glow-violet: 0 0 20px rgba(139,92,246,0.35), 0 0 60px rgba(139,92,246,0.12);
+  --ag-glow-soft:   0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.08);
+}
+
+/* ── 动画 ── */
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.8; }
@@ -96,30 +124,81 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* ── Utility 层 ── */
 @layer utilities {
   .animate-skeleton {
     animation: skeleton-pulse 1.5s ease-in-out infinite;
   }
   .animate-fade-in {
-    animation: fade-in 0.3s ease-out;
+    animation: fade-in 0.3s var(--ag-ease-out);
   }
+  .animate-glow-breathe {
+    animation: glow-breathe 3s ease-in-out infinite;
+  }
+
+  /* 渐变背景 */
+  .gradient-genesis {
+    background: linear-gradient(135deg, #00D4F0 0%, #8B5CF6 100%);
+  }
+  .gradient-aether {
+    background: linear-gradient(135deg, #00D4F0 0%, #8B5CF6 55%, #EC4899 100%);
+  }
+  .gradient-fruit {
+    background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+  }
+  .gradient-void {
+    background: radial-gradient(ellipse at 20% 50%, #1E1B4B 0%, #050810 60%);
+  }
+
+  /* 渐变文字 */
+  .text-gradient-genesis {
+    background: linear-gradient(135deg, #00D4F0, #8B5CF6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-aether {
+    background: linear-gradient(135deg, #00D4F0, #8B5CF6, #EC4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* 玻璃态 */
+  .glass-card {
+    background: linear-gradient(135deg, rgba(0,212,240,0.06) 0%, rgba(139,92,246,0.04) 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+  }
+  .glass-nav {
+    background: rgba(8,13,26,0.75);
+    backdrop-filter: blur(20px) saturate(1.5);
+  }
+
+  /* Glow */
+  .glow-cyan  { box-shadow: var(--ag-glow-cyan); }
+  .glow-violet { box-shadow: var(--ag-glow-violet); }
+  .glow-soft  { box-shadow: var(--ag-glow-soft); }
+
+  /* 字体 */
+  .font-display { font-family: var(--font-display); }
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--color-outline-variant);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-outline);
-}
+::-webkit-scrollbar-thumb:hover { background: var(--color-outline); }
 
+/* ── Body ── */
 body {
   background-color: var(--color-background);
   color: var(--color-on-background);

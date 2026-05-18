@@ -67,9 +67,9 @@ export default function Explore() {
 
   return (
     <div className="min-h-screen px-4 py-6 max-w-screen-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-on-surface">{t('home_title')}</h1>
-        <p className="text-sm text-on-surface-variant mt-1">{t('explore_desc')}</p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold font-display text-gradient-genesis tracking-tight">{t('home_title')}</h1>
+        <p className="text-sm text-on-surface-variant mt-2">{t('explore_desc')}</p>
       </div>
 
       <MasonryGrid<InspirationItem>
@@ -110,27 +110,33 @@ function ExploreCard({
 
   return (
     <div
-      className="relative rounded-xl overflow-hidden cursor-pointer group"
+      className="relative rounded-2xl overflow-hidden cursor-pointer group transition-transform duration-300 hover:-translate-y-1"
+      style={{ boxShadow: hovered ? '0 8px 32px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.06)' : 'none' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <RetryImage
         src={item.image_url ?? ''}
         alt={item.title || item.prompt}
-        className="w-full block object-cover"
+        className="w-full block object-cover transition-transform duration-500 group-hover:scale-[1.03]"
       />
 
+      {/* 顶部渐变光带（悬停时出现） */}
       {hovered && (
-        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent animate-fade-in">
+        <div className="absolute inset-x-0 top-0 h-0.5 gradient-genesis animate-fade-in" />
+      )}
+
+      {hovered && (
+        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/85 via-black/30 to-transparent animate-fade-in">
           {item.prompt && (
-            <div className="p-3">
-              <p className="text-white text-xs leading-relaxed line-clamp-2 mb-3 opacity-90">
+            <div className="p-4">
+              <p className="text-white/90 text-xs leading-relaxed line-clamp-2 mb-3">
                 {item.prompt}
               </p>
               <button
                 type="button"
                 onClick={() => onReusePrompt(item)}
-                className="flex items-center gap-1.5 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/20 px-3 py-1.5 text-white text-xs font-medium transition-colors"
+                className="flex items-center gap-1.5 rounded-full gradient-genesis px-3 py-1.5 text-white text-xs font-semibold transition-all hover:brightness-110 shadow-[0_0_12px_rgba(0,212,240,0.3)]"
               >
                 <PenLine size={12} />
                 复用提示词创作

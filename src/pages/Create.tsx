@@ -150,13 +150,13 @@ export default function Create() {
               type="button"
               onClick={() => setMode(m)}
               style={{ zIndex: isActive ? 10 : 5 - idx, left: `calc(50% - 120px + ${idx * 100}px)` }}
-              className={`absolute bottom-0 w-[140px] rounded-t-2xl px-4 py-3 text-left transition-all duration-200 ${
+              className={`absolute bottom-0 w-[140px] rounded-t-2xl px-4 py-3 text-left transition-all duration-300 ${
                 isActive
-                  ? 'bg-primary text-on-primary h-16 shadow-lg'
-                  : 'bg-surface-container text-on-surface-variant h-12 hover:bg-surface-container-high'
+                  ? 'gradient-genesis text-white h-16 shadow-lg glow-cyan'
+                  : 'bg-surface-container/80 text-on-surface-variant h-12 hover:bg-surface-container-high border border-outline-variant/50'
               }`}
             >
-              <div className="text-sm font-semibold leading-tight">{label.title}</div>
+              <div className="text-sm font-semibold leading-tight font-display">{label.title}</div>
               {isActive && <div className="text-xs opacity-75 mt-0.5">{label.sub}</div>}
             </button>
           );
@@ -165,7 +165,7 @@ export default function Create() {
 
       {/* 主输入卡片 */}
       <div
-        className="w-full max-w-2xl rounded-2xl border border-outline-variant bg-surface shadow-sm"
+        className="w-full max-w-2xl rounded-2xl border border-outline-variant/60 bg-surface/80 backdrop-blur-sm shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-shadow hover:shadow-[0_8px_40px_rgba(0,212,240,0.1)]"
         onDrop={handleRefImageDrop}
         onDragOver={(e) => e.preventDefault()}
       >
@@ -212,7 +212,7 @@ export default function Create() {
         </div>
 
         {/* 底部参数栏 */}
-        <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant/50 px-4 py-3">
           <GenerationSelect
             label={t('home_scale') || '模型'}
             value={imageScale}
@@ -248,7 +248,7 @@ export default function Create() {
               type="button"
               onClick={handleGenerate}
               disabled={loading}
-              className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="flex h-9 items-center gap-1.5 rounded-full gradient-genesis px-4 text-sm font-semibold text-white hover:brightness-110 transition-all disabled:opacity-50 shadow-[0_0_16px_rgba(0,212,240,0.25)]"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : <ArrowUp size={14} />}
               生成图片
