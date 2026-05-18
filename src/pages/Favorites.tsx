@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ArrowDown, HeartOff, Loader2, Maximize2, RefreshCw, Search } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { formatDate, getFavoriteInspirations, InspirationItem, unfavoriteInspiration } from '../api';
 import { useAuth } from '../auth';
+import { useAuthModal } from '../authModal';
 import { copyTextToClipboard } from '../clipboard';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import MasonryGrid from '../components/MasonryGrid';
@@ -15,6 +16,7 @@ const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
 
 export default function Favorites() {
   const { viewer } = useAuth();
+  const { openAuthModal } = useAuthModal();
   const { t } = useSite();
   const { notifyError, notifySuccess } = useNotifier();
   const navigate = useNavigate();
@@ -78,12 +80,13 @@ export default function Favorites() {
           <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-primary">{t('favorites_tag')}</div>
           <h1 className="mb-3 text-3xl font-black tracking-tight text-white">{t('favorites_title')}</h1>
           <p className="mb-6 text-sm text-white/50">{t('favorites_login_required')}</p>
-          <Link
-            className="inline-flex h-11 items-center justify-center border border-primary/40 px-6 text-xs font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/10"
-            to="/login"
+          <button
+            className="btn-primary"
+            type="button"
+            onClick={() => openAuthModal('login')}
           >
             {t('top_login')}
-          </Link>
+          </button>
         </div>
       </div>
     );
