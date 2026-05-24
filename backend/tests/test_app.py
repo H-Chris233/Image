@@ -515,7 +515,7 @@ def make_app(tmp_path: Path, auth_client: FakeAuthClient | None = None, provider
         trial_balance_usd=2,
         sub2api_admin_token="",
         sub2api_admin_jwt="",
-        recharge_url="https://ai.get-money.locker",
+        recharge_url="https://sub.chris233.qzz.io",
     )
     app = create_app(settings=settings, provider=provider or FakeProvider(), auth_client=auth_client or FakeAuthClient())
     app.dependency_overrides[_db] = lambda: app.state.db
@@ -1728,7 +1728,27 @@ def test_site_settings_default_to_chinese(tmp_path: Path) -> None:
         assert PRODUCT_NAME in data["announcement"]["title"]
         assert "联系站主" in data["announcement"]["body"]
         assert data["inspiration_sources"] == ["https://example.com/README.md"]
-        assert data["recharge_url"] == "https://ai.get-money.locker"
+        assert data["recharge_url"] == "https://sub.chris233.qzz.io"
+
+
+def test_settings_default_recharge_url_uses_sub2api_auth_base(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RECHARGE_URL", "")
+    monkeypatch.setenv("SUB2API_BASE_URL", "https://sub.chris233.qzz.io/v1")
+    monkeypatch.setenv("SUB2API_AUTH_BASE_URL", "https://sub.chris233.qzz.io")
+
+    settings = Settings.from_env()
+
+    assert settings.recharge_url == "https://sub.chris233.qzz.io"
+
+
+def test_legacy_recharge_url_falls_back_to_sub2api_auth_base(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RECHARGE_URL", "https://ai.get-money.locker")
+    monkeypatch.setenv("SUB2API_BASE_URL", "https://sub.chris233.qzz.io/v1")
+    monkeypatch.setenv("SUB2API_AUTH_BASE_URL", "https://sub.chris233.qzz.io")
+
+    settings = Settings.from_env()
+
+    assert settings.recharge_url == "https://sub.chris233.qzz.io"
 
 
 def test_admin_can_update_site_settings(tmp_path: Path) -> None:
