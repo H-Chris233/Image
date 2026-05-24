@@ -12,6 +12,7 @@ import Config from './pages/Config';
 import Account from './pages/Account';
 import Recharge from './pages/Recharge';
 import Tasks from './pages/Tasks';
+import DesignSystem from './pages/DesignSystem';
 import AnnouncementModal from './components/AnnouncementModal';
 import AuthModal from './components/AuthModal';
 import TaskDrawer from './components/TaskDrawer';
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/billing" element={<Navigate to="/account" replace />} />
             <Route path="/recharge" element={<Recharge />} />
             <Route path="/tasks" element={<Tasks />} />
+            <Route path="/design-system" element={<DesignSystem />} />
             {/* 旧路由兼容重定向 */}
             <Route path="/login" element={<Navigate to="/explore" replace />} />
             <Route path="/register" element={<Navigate to="/explore" replace />} />
