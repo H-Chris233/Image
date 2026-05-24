@@ -28,7 +28,7 @@ from .branding import (
 from .db import Database, utc_now
 from .inspirations import normalize_inspiration_source_urls, run_inspiration_sync_loop, sync_inspirations
 from .provider import OpenAICompatibleImageClient, ProviderError
-from .settings import Settings
+from .settings import LEGACY_RECHARGE_URLS, Settings
 from .storage import load_stored_image_as_upload, save_provider_image, save_upload
 
 
@@ -1542,7 +1542,10 @@ def _effective_auth_base_url(settings_data: dict[str, Any], settings: Settings) 
 
 
 def _effective_recharge_url(settings_data: dict[str, Any], settings: Settings) -> str:
-    return str(settings_data.get("recharge_url") or settings.recharge_url).strip().rstrip("/")
+    configured_url = str(settings_data.get("recharge_url") or "").strip().rstrip("/")
+    if configured_url and configured_url not in LEGACY_RECHARGE_URLS:
+        return configured_url
+    return settings.recharge_url.strip().rstrip("/")
 
 
 def _effective_trial_balance_usd(settings_data: dict[str, Any], settings: Settings) -> float:
