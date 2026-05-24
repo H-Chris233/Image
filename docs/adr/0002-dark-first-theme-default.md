@@ -3,6 +3,8 @@
 **状态**：已决定  
 **日期**：2026-05-18
 
+> 2026-05-21 更新：本 ADR 的 **dark-first 决策仍然有效**，但下文关于 “Aether Fruit / 深空背景 / 高饱和渐变色 / 玻璃卡片” 的视觉理由已被后续 Warm Charcoal UI 标准取代。当前 UI 执行标准以 `src/design-system/design.md` 为准；不要从本 ADR 恢复 cyan / violet / Genesis gradient 作为新增 UI 主视觉。
+
 ## 背景
 
 原有代码跟随系统偏好（`prefers-color-scheme`），没有产品层面的主题立场。Aether Fruit 设计系统以深空背景为核心，暗色模式下品牌色彩效果最佳。

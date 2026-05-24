@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AetherGenix Design System Preview</title>
+    <style>
+      :root {
+        --color-background: #111110;
+        --color-surface: #1a1917;
+        --color-surface-container: #242220;
+        --color-surface-container-high: #2e2c29;
+        --color-surface-control: #3a3835;
+        --color-outline: #504d49;
+        --color-outline-subtle: rgba(255, 255, 255, 0.07);
+        --color-on-surface: #f0ede8;
+        --color-on-surface-variant: #8a8680;
+        --color-muted-low: #4a4844;
+        --color-lime: #e3ff74;
+        --color-lime-dim: #c8e84a;
+        --color-orange: #fe6e00;
+        --color-success: #4ade80;
+        --color-error: #ff6b6b;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 20px;
+        --radius-pill: 9999px;
+        --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.5);
+        --shadow-dialog: 0 24px 64px rgba(0, 0, 0, 0.7);
+        --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.06);
+        --shadow-lime: 0 0 16px rgba(227, 255, 116, 0.3), 0 0 48px rgba(227, 255, 116, 0.1);
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--color-background);
+        color: var(--color-on-surface);
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .app {
+        min-height: 100vh;
+        padding: 24px 16px 40px;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 24px;
+        width: 100%;
+        min-width: 0;
+        max-width: 1280px;
+        margin: 0 auto;
+      }
+
+      .stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .hero,
+      .panel {
+        min-width: 0;
+        max-width: 100%;
+        border: 1px solid var(--color-outline-subtle);
+        background: var(--color-surface);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-card);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: end;
+        padding: 24px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: fit-content;
+        border: 1px solid rgba(227, 255, 116, 0.22);
+        border-radius: var(--radius-pill);
+        background: rgba(227, 255, 116, 0.09);
+        color: var(--color-lime);
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        margin-top: 14px;
+        font-size: clamp(28px, 3vw, 40px);
+        line-height: 1.05;
+        letter-spacing: 0;
+        overflow-wrap: anywhere;
+      }
+
+      h1 span {
+        display: inline;
+      }
+
+      h2 {
+        font-size: 18px;
+        line-height: 1.25;
+      }
+
+      h3 {
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .muted {
+        color: var(--color-on-surface-variant);
+      }
+
+      .hero p,
+      .panel p {
+        line-height: 1.65;
+        overflow-wrap: anywhere;
+      }
+
+      .panel {
+        padding: 20px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .token-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .token {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        min-width: 0;
+        border: 1px solid var(--color-outline-subtle);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.03);
+        padding: 10px;
+      }
+
+      .token h3,
+      .scale-row span,
+      .type-row span,
+      .nav-item span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .swatch {
+        height: 48px;
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      code {
+        color: var(--color-on-surface-variant);
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 11px;
+      }
+
+      .type-row,
+      .scale-row {
+        display: grid;
+        grid-template-columns: 130px minmax(0, 1fr);
+        gap: 12px;
+        align-items: baseline;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 10px 0;
+      }
+
+      .type-row:last-child,
+      .scale-row:last-child {
+        border-bottom: 0;
+      }
+
+      .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        border: 0;
+        border-radius: var(--radius-pill);
+        padding: 0 16px;
+        cursor: pointer;
+        transition: transform 160ms var(--ease-out), background 160ms var(--ease-out), border-color 160ms var(--ease-out);
+        white-space: nowrap;
+      }
+
+      .button:focus-visible,
+      .icon-button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible {
+        outline: 2px solid rgba(227, 255, 116, 0.42);
+        outline-offset: 2px;
+      }
+
+      .button:hover,
+      .icon-button:hover {
+        transform: translateY(-1px);
+      }
+
+      .primary {
+        background: var(--color-on-surface);
+        color: var(--color-surface);
+        font-weight: 700;
+      }
+
+      .ghost {
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: transparent;
+        color: var(--color-on-surface);
+      }
+
+      .lime {
+        background: var(--color-lime);
+        color: var(--color-surface);
+        font-weight: 800;
+      }
+
+      .orange {
+        background: var(--color-orange);
+        color: white;
+        font-weight: 800;
+      }
+
+      .danger {
+        background: rgba(255, 107, 107, 0.12);
+        color: var(--color-error);
+        border: 1px solid rgba(255, 107, 107, 0.24);
+      }
+
+      .plain {
+        background: transparent;
+        color: var(--color-on-surface-variant);
+      }
+
+      .icon-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 44px);
+        gap: 8px;
+      }
+
+      .icon-button {
+        width: 44px;
+        height: 44px;
+        display: inline-grid;
+        place-items: center;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-outline-subtle);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--color-on-surface);
+        cursor: pointer;
+        transition: transform 160ms var(--ease-out), background 160ms var(--ease-out);
+      }
+
+      .field-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--color-on-surface-variant);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      input,
+      select,
+      textarea {
+        min-width: 0;
+        width: 100%;
+        border: 1px solid var(--color-outline-subtle);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--color-on-surface);
+        padding: 0 12px;
+      }
+
+      input,
+      select {
+        height: 44px;
+      }
+
+      textarea {
+        min-height: 108px;
+        padding-top: 10px;
+        resize: vertical;
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: var(--color-muted-low);
+      }
+
+      .segmented {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        border: 1px solid var(--color-outline-subtle);
+        border-radius: var(--radius-lg);
+        background: #171613;
+        padding: 6px;
+      }
+
+      .segment {
+        border-radius: var(--radius-md);
+        padding: 10px;
+        color: var(--color-on-surface-variant);
+        text-align: left;
+      }
+
+      .segment.active {
+        background: var(--color-on-surface);
+        color: var(--color-surface);
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        border-radius: var(--radius-pill);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+        padding: 5px 9px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .queued { color: var(--color-on-surface-variant); }
+      .running { color: var(--color-lime); background: rgba(227, 255, 116, 0.08); }
+      .success { color: var(--color-success); background: rgba(74, 222, 128, 0.08); }
+      .error { color: var(--color-error); background: rgba(255, 107, 107, 0.08); }
+      .commercial { color: var(--color-orange); background: rgba(254, 110, 0, 0.09); }
+
+      .state {
+        min-height: 160px;
+        display: grid;
+        align-content: center;
+        gap: 10px;
+        border: 1px dashed rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.03);
+        padding: 20px;
+      }
+
+      .skeleton {
+        height: 92px;
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.05);
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      .image-frame {
+        min-height: 430px;
+        display: grid;
+        border: 1px solid var(--color-outline-subtle);
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 52% 28%, rgba(240, 237, 232, 0.72), rgba(240, 237, 232, 0.15) 28%, transparent 48%),
+          linear-gradient(145deg, rgba(254, 110, 0, 0.18), rgba(227, 255, 116, 0.08) 48%, rgba(17, 17, 16, 1));
+        box-shadow: var(--shadow-soft);
+      }
+
+      .image-caption {
+        align-self: end;
+        padding: 16px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+      }
+
+      .nav-preview {
+        display: grid;
+        gap: 8px;
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 42px;
+        border-radius: var(--radius-md);
+        padding: 0 12px;
+        color: var(--color-on-surface-variant);
+      }
+
+      .nav-item.active {
+        border: 1px solid rgba(227, 255, 116, 0.15);
+        background: rgba(227, 255, 116, 0.08);
+        color: var(--color-lime);
+      }
+
+      .modal-preview {
+        position: relative;
+        min-height: 240px;
+        overflow: hidden;
+        border-radius: var(--radius-xl);
+        background: rgba(0, 0, 0, 0.34);
+        padding: 18px;
+      }
+
+      .dialog {
+        max-width: 360px;
+        margin: 18px auto 0;
+        border: 1px solid var(--color-outline-subtle);
+        border-radius: var(--radius-xl);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-dialog);
+        overflow: hidden;
+      }
+
+      .dialog::before {
+        content: "";
+        display: block;
+        height: 2px;
+        background: var(--color-lime);
+      }
+
+      .dialog-body {
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 0.35; }
+        50% { opacity: 0.7; }
+      }
+
+      @media (max-width: 980px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .app {
+          padding: 16px 12px 28px;
+        }
+
+        .hero,
+        .grid-2,
+        .grid-3,
+        .token-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          padding: 18px;
+        }
+
+        .type-row,
+        .scale-row {
+          grid-template-columns: 1fr;
+          gap: 4px;
+        }
+
+        .btn-row {
+          align-items: stretch;
+        }
+
+        .button {
+          min-height: 44px;
+        }
+
+        h1 span {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app" data-static-design-system-preview>
+      <div class="shell">
+        <main class="stack">
+          <header class="hero">
+            <div>
+              <span class="eyebrow">Canonical static preview</span>
+              <h1>AetherGenix <span>Warm Charcoal UI</span></h1>
+              <p class="muted">Static HTML/CSS proof for tokens, primitives, layout patterns, states, and responsive behavior. React components must conform to this spec.</p>
+            </div>
+            <div class="btn-row">
+              <button class="button ghost">Inspect</button>
+              <button class="button primary">Generate</button>
+            </div>
+          </header>
+
+          <section class="grid-2">
+            <div class="panel">
+              <div class="section-head">
+                <div>
+                  <h2>Color Tokens</h2>
+                  <p class="muted">Semantic role first, raw value second.</p>
+                </div>
+                <span class="pill running">focus</span>
+              </div>
+              <div class="token-grid">
+                <div class="token"><span class="swatch" style="background:#111110"></span><div><h3>background</h3><code>#111110</code></div></div>
+                <div class="token"><span class="swatch" style="background:#1a1917"></span><div><h3>surface</h3><code>#1a1917</code></div></div>
+                <div class="token"><span class="swatch" style="background:#242220"></span><div><h3>surface-container</h3><code>#242220</code></div></div>
+                <div class="token"><span class="swatch" style="background:#f0ede8"></span><div><h3>on-surface</h3><code>#f0ede8</code></div></div>
+                <div class="token"><span class="swatch" style="background:#E3FF74"></span><div><h3>lime</h3><code>#E3FF74</code></div></div>
+                <div class="token"><span class="swatch" style="background:#fe6e00"></span><div><h3>orange</h3><code>#fe6e00</code></div></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="section-head">
+                <div>
+                  <h2>Typography</h2>
+                  <p class="muted">Dense work surfaces, no hero type inside tools.</p>
+                </div>
+              </div>
+              <div class="type-row"><code>page title</code><strong style="font-size:30px">Create Workspace</strong></div>
+              <div class="type-row"><code>panel title</code><strong style="font-size:18px">Task input</strong></div>
+              <div class="type-row"><code>body</code><span>Describe product, scene, lighting, and commercial intent.</span></div>
+              <div class="type-row"><code>caption</code><span class="muted" style="font-size:12px">Reference image is generation context, not exact edit guarantee.</span></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <h2>Actions And Controls</h2>
+                <p class="muted">Cream for primary work, lime for state, orange for commercial intent.</p>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="button primary">Generate image</button>
+              <button class="button ghost">Download</button>
+              <button class="button lime">Selected</button>
+              <button class="button orange">Recharge</button>
+              <button class="button danger">Delete</button>
+              <button class="button plain">Cancel</button>
+            </div>
+            <div style="height:14px"></div>
+            <div class="icon-grid" aria-label="Icon button examples">
+              <button class="icon-button" aria-label="Upload image">+</button>
+              <button class="icon-button" aria-label="Refresh">↻</button>
+              <button class="icon-button" aria-label="More actions">⋯</button>
+              <button class="icon-button" aria-label="Notifications">•</button>
+              <button class="icon-button" aria-label="Close">×</button>
+            </div>
+          </section>
+
+          <section class="grid-2">
+            <div class="panel">
+              <div class="section-head">
+                <div>
+                  <h2>Form Pattern</h2>
+                  <p class="muted">Compact controls, visible lime focus, stable dimensions.</p>
+                </div>
+              </div>
+              <div class="field-grid">
+                <div class="segmented">
+                  <div class="segment active"><strong>General</strong><br><span class="muted">creative</span></div>
+                  <div class="segment"><strong>Commerce</strong><br><span class="muted">product</span></div>
+                </div>
+                <label>Campaign name <input placeholder="Spring launch set" /></label>
+                <label>Aspect ratio <select><option>1:1 Square</option><option>16:9 Scene banner</option></select></label>
+                <label>Prompt <textarea placeholder="Describe product, scene, light, and style..."></textarea></label>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="section-head">
+                <div>
+                  <h2>Status Language</h2>
+                  <p class="muted">One status system for the entire task lifecycle.</p>
+                </div>
+              </div>
+              <div class="pill-row">
+                <span class="pill queued">queued</span>
+                <span class="pill running">running</span>
+                <span class="pill success">succeeded</span>
+                <span class="pill error">failed</span>
+                <span class="pill commercial">commercial</span>
+              </div>
+              <div style="height:14px"></div>
+              <div class="state">
+                <h3>No reference image yet</h3>
+                <p class="muted">Empty and upload states use dashed warm surfaces and one clear next action.</p>
+                <div><button class="button primary">Upload reference</button></div>
+              </div>
+              <div style="height:12px"></div>
+              <div class="skeleton" aria-label="Loading skeleton"></div>
+            </div>
+          </section>
+
+          <section class="grid-2">
+            <div class="image-frame">
+              <div class="image-caption">
+                <h2>Image remains the subject</h2>
+                <p class="muted">Overlay and controls support the generated image instead of becoming the composition.</p>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="section-head">
+                <div>
+                  <h2>Modal / Drawer Contract</h2>
+                  <p class="muted">Dialogs need labels, focus, close paths, and readable consequences.</p>
+                </div>
+              </div>
+              <div class="modal-preview">
+                <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+                  <div class="dialog-body">
+                    <h3 id="dialog-title">Delete 3 image records?</h3>
+                    <p class="muted">This permanently removes this batch from history. This action cannot be undone.</p>
+                    <div class="btn-row">
+                      <button class="button ghost">Cancel</button>
+                      <button class="button danger">Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <aside class="stack">
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <h2>Navigation</h2>
+                <p class="muted">Active equals lime, not commercial orange.</p>
+              </div>
+            </div>
+            <nav class="nav-preview" aria-label="Design system navigation preview">
+              <div class="nav-item active"><span>Create</span><span>●</span></div>
+              <div class="nav-item"><span>Tasks</span><span>○</span></div>
+              <div class="nav-item"><span>History</span><span>○</span></div>
+              <div class="nav-item"><span>Favorites</span><span>○</span></div>
+              <div class="nav-item"><span>Account</span><span>○</span></div>
+            </nav>
+          </section>
+
+          <section class="panel">
+            <h2>Spacing And Radius</h2>
+            <div style="height:10px"></div>
+            <div class="scale-row"><code>icon button</code><span>44px</span></div>
+            <div class="scale-row"><code>input</code><span>44px</span></div>
+            <div class="scale-row"><code>primary action</code><span>44px</span></div>
+            <div class="scale-row"><code>panel radius</code><span>16px to 20px</span></div>
+            <div class="scale-row"><code>button radius</code><span>9999px</span></div>
+          </section>
+
+          <section class="panel">
+            <h2>Guardrails</h2>
+            <div style="height:10px"></div>
+            <p class="muted">Do not create page-local button, card, form, nav, or status systems. Do not restore cold blue, cyan, or violet primary visuals. Do keep images dominant.</p>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </body>
+</html>
