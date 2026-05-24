@@ -1,20 +1,26 @@
-import { useEffect, useState } from 'react';
-import { Bell, ListTodo, LogOut } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Bell, Check, Languages, ListTodo, LogOut } from 'lucide-react';
 import { AccountInfo, formatBalance, getAccount, logoutAccount } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 import aethergenixLogo from '../../aethergenix.svg';
+import { Button, IconButton } from './design-system';
 
 export default function TopNavBar() {
+  const location = useLocation();
   const { viewer, refresh } = useAuth();
   const { openAuthModal } = useAuthModal();
-  const { siteSettings, openAnnouncement, t } = useSite();
+  const { siteSettings, openAnnouncement, t, locale, setLocale } = useSite();
   const { activeCount, openDrawer } = useTasks();
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const languageButtonRef = useRef<HTMLButtonElement | null>(null);
+  const languageMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     getAccount().then(setAccount).catch(() => setAccount(null));
@@ -25,6 +31,37 @@ export default function TopNavBar() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    setLanguageMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!languageMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (languageButtonRef.current?.contains(target) || languageMenuRef.current?.contains(target)) {
+        return;
+      }
+      setLanguageMenuOpen(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setLanguageMenuOpen(false);
+        languageButtonRef.current?.focus();
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [languageMenuOpen]);
 
   async function handleLogout() {
     if (loggingOut) return;
@@ -44,47 +81,121 @@ export default function TopNavBar() {
   const navCls = scrolled
     ? 'bg-[rgba(17,17,16,0.95)] border-b border-[rgba(255,255,255,0.06)]'
     : 'bg-[rgba(17,17,16,0.7)] border-b border-transparent';
+  const taskButtonLabel = activeCount > 0
+    ? `${t('top_tasks')}: ${t('tasks_active', { value: activeCount })}`
+    : t('top_tasks');
+  const homeLabel = t('explore_home_label');
+  const showLanguageMenu = location.pathname !== '/config' && !location.pathname.startsWith('/config/');
+  const localeOptions = [
+    { value: 'zh-CN', label: t('lang_zh') },
+    { value: 'en-US', label: t('lang_en') },
+  ] as const;
 
   return (
     <header className={`fixed top-0 left-0 w-full z-50 flex items-center justify-between h-16 px-4 shrink-0 backdrop-blur-[20px] transition-all duration-300 ${navCls}`}>
 
       {/* Logo */}
-      <div className="flex items-center gap-2.5">
+      <Link
+        to="/explore"
+        aria-label={homeLabel}
+        title={homeLabel}
+        data-testid="brand-home-link"
+        className="group relative flex min-h-11 min-w-11 items-center gap-2.5 rounded-xl pr-2 transition-colors hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
+      >
         <img alt="AetherGenix" className="h-8 w-8 rounded-xl" src={aethergenixLogo} />
         <span className="text-base font-semibold tracking-tight font-display text-[#f0ede8] hidden sm:block">
           AetherGenix
         </span>
-      </div>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[70] hidden whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#1a1917]/95 px-2.5 py-1.5 text-xs font-medium text-[#E3FF74] opacity-0 shadow-xl shadow-black/30 backdrop-blur-md transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 sm:block"
+        >
+          {homeLabel}
+        </span>
+      </Link>
 
       {/* 右侧 */}
       <div className="flex items-center gap-1">
+        {showLanguageMenu && (
+          <div className="relative">
+            <IconButton
+              ref={languageButtonRef}
+              className="relative"
+              icon={<Languages size={17} aria-hidden="true" />}
+              label={t('lang_label')}
+              aria-haspopup="menu"
+              aria-expanded={languageMenuOpen}
+              data-testid="shell-language-button"
+              onClick={() => setLanguageMenuOpen((open) => !open)}
+            />
+            {languageMenuOpen && (
+              <div
+                ref={languageMenuRef}
+                role="menu"
+                aria-label={t('lang_label')}
+                className="absolute right-0 top-[calc(100%+8px)] z-[60] w-48 rounded-xl border border-white/[0.08] bg-[#1a1917]/95 p-1 shadow-2xl shadow-black/30 backdrop-blur-xl"
+                data-testid="shell-language-menu"
+              >
+                <div className="flex min-h-[36px] items-center gap-2 px-3 text-[11px] font-medium uppercase tracking-[0.12em] text-[#8a8680]">
+                  <Languages size={13} aria-hidden="true" />
+                  {t('lang_label')}
+                </div>
+                {localeOptions.map((option) => {
+                  const selected = locale === option.value;
+                  return (
+                    <Button
+                      key={option.value}
+                      className={`justify-between rounded-lg px-3 ${
+                        selected
+                          ? 'bg-[#E3FF74]/10 text-[#E3FF74]'
+                          : 'text-[#f0ede8] hover:bg-white/[0.06]'
+                      }`}
+                      variant="plain"
+                      fullWidth
+                      role="menuitemradio"
+                      aria-checked={selected}
+                      onClick={() => {
+                        setLocale(option.value);
+                        setLanguageMenuOpen(false);
+                        window.setTimeout(() => languageButtonRef.current?.focus(), 0);
+                      }}
+                    >
+                      <span>{option.label}</span>
+                      {selected && <Check size={14} aria-hidden="true" />}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 任务 */}
-        <button
-          className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#8a8680] hover:text-[#f0ede8] hover:bg-white/5 transition-colors"
-          type="button"
-          aria-label={t('top_tasks')}
+        <IconButton
+          className="relative"
+          variant={activeCount > 0 ? 'lime' : 'ghost'}
+          icon={<ListTodo aria-hidden="true" size={15} />}
+          label={taskButtonLabel}
           onClick={openDrawer}
         >
-          <ListTodo size={15} />
           {activeCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E3FF74] px-1 text-[9px] font-bold text-[#1a1917]">
+            <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E3FF74] px-1 text-[9px] font-bold text-[#1a1917]">
               {activeCount}
             </span>
           )}
-        </button>
+        </IconButton>
 
         {/* 公告 */}
-        <button
-          className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[#8a8680] hover:text-[#f0ede8] hover:bg-white/5 transition-colors"
-          type="button"
-          aria-label={t('top_announcement')}
+        <IconButton
+          className="relative"
+          icon={<Bell aria-hidden="true" size={15} />}
+          label={t('top_announcement')}
           onClick={openAnnouncement}
         >
-          <Bell size={15} />
           {siteSettings?.announcement.enabled && (
-            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#E3FF74]" />
+            <span aria-hidden="true" className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#E3FF74]" />
           )}
-        </button>
+        </IconButton>
 
         {/* 桌面端账户 */}
         <div className="hidden lg:flex items-center gap-2 ml-2">
@@ -96,32 +207,29 @@ export default function TopNavBar() {
                   {formatBalance(account?.balance)}
                 </div>
               </div>
-              <button
-                className="btn-ghost h-8 px-3 text-xs"
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleLogout}
-                disabled={loggingOut}
+                loading={loggingOut}
+                iconStart={<LogOut aria-hidden="true" size={13} />}
               >
-                <LogOut size={13} />
                 {t('top_logout')}
-              </button>
+              </Button>
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <button
-                className="btn-ghost h-9"
-                type="button"
+              <Button
+                variant="ghost"
                 onClick={() => openAuthModal('login')}
               >
                 {t('top_login')}
-              </button>
-              <button
-                className="btn-primary h-9"
-                type="button"
+              </Button>
+              <Button
                 onClick={() => openAuthModal('register')}
               >
                 {t('top_register')}
-              </button>
+              </Button>
             </div>
           )}
         </div>

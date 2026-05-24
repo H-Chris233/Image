@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, LockKeyhole, MailPlus, Send, ShieldCheck, X } from 'lucide-react';
 import {
@@ -13,6 +13,7 @@ import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
+import { Button, IconButton, TextInput } from './design-system';
 
 const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
 const FOCUSABLE_SELECTOR = [
@@ -25,14 +26,16 @@ const FOCUSABLE_SELECTOR = [
 ].join(',');
 
 export default function AuthModal() {
-  const { open, tab, pendingPath, closeAuthModal, openAuthModal } = useAuthModal();
+  const { open, tab, pendingPath, actionContext, closeAuthModal, openAuthModal } = useAuthModal();
   const navigate = useNavigate();
   const { t } = useSite();
   const [settings, setSettings] = useState<PublicAuthSettings | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const modalTitleId = 'auth-modal-title';
+  const modalDescriptionId = 'auth-modal-description';
   const modalTitle = tab === 'login' ? t('login_title') : t('register_title');
+  const modalDescription = getAuthModalDescription(actionContext, tab, t);
 
   useEffect(() => {
     if (open) getAuthPublicSettings().then(setSettings).catch(() => setSettings(null));
@@ -129,6 +132,7 @@ export default function AuthModal() {
       {/* 弹窗背景光晕 */}
       <div
         ref={dialogRef}
+        aria-describedby={modalDescriptionId}
         aria-labelledby={modalTitleId}
         aria-modal="true"
         className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col rounded-2xl border border-white/[0.08] bg-[#1a1917] shadow-[0_24px_64px_rgba(0,0,0,0.7)] animate-fade-in overflow-hidden"
@@ -138,36 +142,37 @@ export default function AuthModal() {
         {/* 顶部电石灰光带 */}
         <div className="absolute inset-x-0 top-0 h-px bg-[#E3FF74] opacity-60" />
 
-        <button
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-xl text-on-surface-variant hover:bg-[rgba(255,255,255,0.08)] transition-colors z-10"
-          type="button"
-          aria-label={t('modal_close')}
+        <IconButton
+          className="absolute right-3 top-3 z-10"
+          label={t('modal_close')}
+          icon={<X aria-hidden="true" size={15} />}
           onClick={closeAuthModal}
-          title={t('modal_close')}
-        >
-          <X aria-hidden="true" size={15} />
-        </button>
+        />
 
         {/* Logo + 标题 */}
-        <div className="shrink-0 px-6 pt-8 pb-4 text-center">
-          <p className="text-sm font-semibold text-gradient-genesis font-display tracking-tight">AetherGenix</p>
-          <h2 className="sr-only" id={modalTitleId}>{modalTitle}</h2>
+        <div className="shrink-0 px-6 pt-8 pb-5 text-center">
+          <p className="font-display text-sm font-semibold tracking-tight text-lime">AetherGenix</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[#f0ede8]" id={modalTitleId}>{modalTitle}</h2>
+          <p id={modalDescriptionId} className="mx-auto mt-2 max-w-sm text-sm leading-6 text-on-surface-variant">
+            {modalDescription}
+          </p>
         </div>
 
         <div className="mx-6 flex shrink-0 border-b border-[rgba(255,255,255,0.08)]">
           {(['login', 'register'] as const).map((t_) => (
-            <button
+            <Button
               key={t_}
-              type="button"
-              onClick={() => openAuthModal(t_, pendingPath)}
-              className={`flex-1 py-3 text-sm font-medium transition-all duration-200 ${
+              variant="plain"
+              onClick={() => openAuthModal(t_, pendingPath, actionContext)}
+              aria-pressed={tab === t_}
+              className={`flex-1 rounded-none border-b-2 py-3 ${
                 tab === t_
-                  ? 'text-[#E3FF74] border-b-2 border-[#E3FF74]'
-                  : 'text-[#8a8680] hover:text-[#f0ede8]'
+                  ? 'border-[#E3FF74] text-[#E3FF74]'
+                  : 'border-transparent text-[#8a8680] hover:text-[#f0ede8]'
               }`}
             >
               {t_ === 'login' ? t('login_submit') : t('top_register')}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -181,6 +186,17 @@ export default function AuthModal() {
       </div>
     </div>
   );
+}
+
+function getAuthModalDescription(
+  actionContext: ReturnType<typeof useAuthModal>['actionContext'],
+  tab: ReturnType<typeof useAuthModal>['tab'],
+  t: ReturnType<typeof useSite>['t'],
+) {
+  if (actionContext === 'history') return t('history_login_desc');
+  if (actionContext === 'favorites') return t('favorites_login_desc');
+  if (actionContext === 'generate' || actionContext === 'reuse-prompt') return t('home_generation_login_required');
+  return tab === 'login' ? t('login_desc') : t('register_desc');
 }
 
 function LoginForm({ settings: _settings, onSuccess }: { settings: PublicAuthSettings | null; onSuccess: () => void }) {
@@ -222,48 +238,41 @@ function LoginForm({ settings: _settings, onSuccess }: { settings: PublicAuthSet
       {tempToken ? (
         <>
           <p className="text-sm text-on-surface-variant">{t('login_desc_2fa', { value: maskedEmail })}</p>
-          <Field id="auth-login-totp" label={t('login_totp')}>
-            <input
-              id="auth-login-totp"
-              className={inputCls}
-              autoComplete="one-time-code"
-              data-auth-autofocus
-              inputMode="numeric"
-              maxLength={6}
-              value={totpCode}
-              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            />
-          </Field>
+          <TextInput
+            id="auth-login-totp"
+            label={t('login_totp')}
+            autoComplete="one-time-code"
+            data-auth-autofocus
+            inputMode="numeric"
+            maxLength={6}
+            value={totpCode}
+            onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          />
         </>
       ) : (
         <>
-          <Field id="auth-login-email" label={t('login_email')}>
-            <input
-              id="auth-login-email"
-              className={inputCls}
-              autoComplete="email"
-              data-auth-autofocus
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </Field>
-          <Field id="auth-login-password" label={t('login_password')}>
-            <input
-              id="auth-login-password"
-              className={inputCls}
-              autoComplete="current-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </Field>
+          <TextInput
+            id="auth-login-email"
+            label={t('login_email')}
+            autoComplete="email"
+            data-auth-autofocus
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <TextInput
+            id="auth-login-password"
+            label={t('login_password')}
+            autoComplete="current-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </>
       )}
-      <button className={submitCls} disabled={loading} type="submit">
-        {loading ? <Loader2 className="animate-spin" size={16} /> : tempToken ? <ShieldCheck size={16} /> : <LockKeyhole size={16} />}
+      <Button fullWidth loading={loading} disabled={loading} type="submit" iconStart={tempToken ? <ShieldCheck aria-hidden="true" size={16} /> : <LockKeyhole aria-hidden="true" size={16} />}>
         {tempToken ? t('login_submit_2fa') : t('login_submit')}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -325,83 +334,64 @@ function RegisterForm({ settings, onSuccess }: { settings: PublicAuthSettings | 
           {t('register_disabled')}
         </div>
       )}
-      <Field id="auth-register-email" label={t('register_email')}>
-        <input
-          id="auth-register-email"
-          className={inputCls}
-          autoComplete="email"
-          data-auth-autofocus
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </Field>
-      <Field id="auth-register-password" label={t('register_password')}>
-        <input
-          id="auth-register-password"
-          className={inputCls}
-          autoComplete="new-password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </Field>
+      <TextInput
+        id="auth-register-email"
+        label={t('register_email')}
+        autoComplete="email"
+        data-auth-autofocus
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <TextInput
+        id="auth-register-password"
+        label={t('register_password')}
+        autoComplete="new-password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
       {settings?.email_verify_enabled && (
-        <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
-          <Field id="auth-register-verify-code" label={t('register_verify_code')}>
-            <input
-              id="auth-register-verify-code"
-              className={inputCls}
-              autoComplete="one-time-code"
-              value={verifyCode}
-              onChange={(e) => setVerifyCode(e.target.value)}
-            />
-          </Field>
-          <button
-            className="h-10 px-4 rounded-lg border border-outline-variant text-sm text-on-surface hover:bg-surface-container disabled:opacity-50 transition-colors flex items-center gap-1.5"
+        <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <TextInput
+            id="auth-register-verify-code"
+            label={t('register_verify_code')}
+            autoComplete="one-time-code"
+            value={verifyCode}
+            onChange={(e) => setVerifyCode(e.target.value)}
+          />
+          <Button
+            variant="ghost"
             disabled={sendingCode || !email.trim() || countdown > 0}
             type="button"
+            loading={sendingCode}
+            iconStart={<Send aria-hidden="true" size={13} />}
             onClick={handleSendCode}
           >
-            {sendingCode ? <Loader2 className="animate-spin" size={13} /> : <Send size={13} />}
             {countdown > 0 ? `${countdown}s` : t('register_send_code')}
-          </button>
+          </Button>
         </div>
       )}
       {settings?.promo_code_enabled && (
-        <Field id="auth-register-promo" label={t('register_promo')}>
-          <input
-            id="auth-register-promo"
-            className={inputCls}
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value)}
-          />
-        </Field>
+        <TextInput
+          id="auth-register-promo"
+          label={t('register_promo')}
+          value={promoCode}
+          onChange={(e) => setPromoCode(e.target.value)}
+        />
       )}
       {settings?.invitation_code_enabled && (
-        <Field id="auth-register-invitation" label={t('register_invitation')}>
-          <input
-            id="auth-register-invitation"
-            className={inputCls}
-            value={invitationCode}
-            onChange={(e) => setInvitationCode(e.target.value)}
-          />
-        </Field>
+        <TextInput
+          id="auth-register-invitation"
+          label={t('register_invitation')}
+          value={invitationCode}
+          onChange={(e) => setInvitationCode(e.target.value)}
+        />
       )}
-      <button className={submitCls} disabled={loading || !canRegister} type="submit">
-        {loading ? <Loader2 className="animate-spin" size={16} /> : <MailPlus size={16} />}
+      <Button fullWidth loading={loading} disabled={loading || !canRegister} type="submit" iconStart={<MailPlus aria-hidden="true" size={16} />}>
         {t('register_submit')}
-      </button>
+      </Button>
     </form>
-  );
-}
-
-function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium text-on-surface-variant" htmlFor={id}>{label}</label>
-      {children}
-    </div>
   );
 }
 
@@ -411,6 +401,3 @@ function getFocusableElements(container: HTMLElement) {
     return isVisible && !element.getAttribute('aria-hidden');
   });
 }
-
-const inputCls = 'h-10 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-[#f0ede8] outline-none focus:border-[#E3FF74]/40 focus:bg-white/[0.06] transition-all placeholder:text-[#4a4844]';
-const submitCls = 'w-full h-11 rounded-full bg-[#f0ede8] text-[#1a1917] font-semibold text-sm hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-2';

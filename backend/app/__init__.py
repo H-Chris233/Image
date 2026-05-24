@@ -1,1 +1,1 @@
-"""FastAPI backend for Joko Image."""
+"""FastAPI backend for AetherGenix Image."""

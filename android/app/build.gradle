@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.joko.image"
+    namespace = "com.aethergenix.image"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.joko.image"
+        applicationId "com.aethergenix.image"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

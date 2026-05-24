@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">joko-image</string>
-    <string name="title_activity_main">joko-image</string>
-    <string name="package_name">com.joko.image</string>
-    <string name="custom_url_scheme">com.joko.image</string>
+    <string name="app_name">AetherGenix</string>
+    <string name="title_activity_main">AetherGenix</string>
+    <string name="package_name">com.aethergenix.image</string>
+    <string name="custom_url_scheme">com.aethergenix.image</string>
 </resources>

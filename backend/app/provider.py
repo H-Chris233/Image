@@ -4,6 +4,8 @@ from typing import Any
 
 import httpx
 
+from .branding import UPSTREAM_SERVICE_LABEL
+
 
 class ProviderError(Exception):
     def __init__(self, status_code: int, message: str, payload: Any | None = None):
@@ -63,7 +65,7 @@ class OpenAICompatibleImageClient:
     ) -> httpx.Response:
         api_key = (config.get("api_key") or "").strip()
         if not api_key:
-            raise ProviderError(400, "请先在配置页保存 JokoAI API Key")
+            raise ProviderError(400, "请先在配置页保存访问密钥")
 
         url = _join_absolute_path(config["base_url"], path) if absolute_path else _join_base(config["base_url"], path)
         headers = kwargs.pop("headers", {})
@@ -73,9 +75,9 @@ class OpenAICompatibleImageClient:
             async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
                 response = await client.request(method, url, headers=headers, **kwargs)
         except httpx.TimeoutException as exc:
-            raise ProviderError(504, "JokoAI 上游请求超时，请稍后重试或降低批量张数") from exc
+            raise ProviderError(504, f"{UPSTREAM_SERVICE_LABEL} 上游请求超时，请稍后重试或降低批量张数") from exc
         except httpx.RequestError as exc:
-            raise ProviderError(502, f"JokoAI 上游请求失败：{exc.__class__.__name__}") from exc
+            raise ProviderError(502, f"{UPSTREAM_SERVICE_LABEL} 上游请求失败：{exc.__class__.__name__}") from exc
 
         if response.status_code >= 400:
             raise ProviderError(response.status_code, _extract_error_message(response), _safe_json(response))

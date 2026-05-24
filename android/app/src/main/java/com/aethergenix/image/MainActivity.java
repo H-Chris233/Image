@@ -1,4 +1,4 @@
-package com.joko.image;
+package com.aethergenix.image;
 
 import com.getcapacitor.BridgeActivity;
 

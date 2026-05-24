@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY index.html metadata.json tsconfig.json vite.config.ts ./
-COPY joko.svg ./joko.svg
+COPY aethergenix.svg ./aethergenix.svg
 COPY src ./src
 RUN npm run build
 

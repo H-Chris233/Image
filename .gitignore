@@ -13,3 +13,4 @@ __pycache__/
 backend/data/
 backend/storage/
 .venv/
+output/

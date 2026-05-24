@@ -4,6 +4,13 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from .branding import (
+    DEFAULT_GUEST_COOKIE_NAME,
+    DEFAULT_SESSION_COOKIE_NAME,
+    DEFAULT_TRIAL_KEY_NAME_PREFIX,
+    PRODUCT_USER_NAME,
+)
+
 DEFAULT_INSPIRATION_SOURCE_URLS = [
     "https://raw.githubusercontent.com/EvoLinkAI/awesome-gpt-image-2-prompts/main/README.md",
     "https://raw.githubusercontent.com/YouMind-OpenLab/awesome-gpt-image-2/main/README.md",
@@ -104,22 +111,22 @@ class Settings:
             image_price_1k=float(os.getenv("IMAGE_PRICE_1K_USD", "0.134")),
             image_price_2k=float(os.getenv("IMAGE_PRICE_2K_USD", "0.201")),
             image_price_4k=float(os.getenv("IMAGE_PRICE_4K_USD", "0.268")),
-            user_name=os.getenv("APP_USER_NAME", "Joko User"),
+            user_name=os.getenv("APP_USER_NAME", PRODUCT_USER_NAME),
             cors_origins=cors_origins,
             request_timeout_seconds=float(os.getenv("PROVIDER_TIMEOUT_SECONDS", "300")),
             inspiration_source_url=source_urls[0],
             inspiration_sync_interval_seconds=float(os.getenv("INSPIRATION_SYNC_INTERVAL_SECONDS", "21600")),
             inspiration_sync_on_startup=os.getenv("INSPIRATION_SYNC_ON_STARTUP", "true").lower()
             not in {"0", "false", "no", "off"},
-            session_cookie_name=os.getenv("SESSION_COOKIE_NAME", "aethergenix_session"),
-            guest_cookie_name=os.getenv("GUEST_COOKIE_NAME", "aethergenix_guest"),
+            session_cookie_name=os.getenv("SESSION_COOKIE_NAME", DEFAULT_SESSION_COOKIE_NAME),
+            guest_cookie_name=os.getenv("GUEST_COOKIE_NAME", DEFAULT_GUEST_COOKIE_NAME),
             session_ttl_seconds=int(os.getenv("SESSION_TTL_SECONDS", str(30 * 24 * 60 * 60))),
             guest_ttl_seconds=int(os.getenv("GUEST_TTL_SECONDS", str(365 * 24 * 60 * 60))),
             cookie_secure=_env_bool("COOKIE_SECURE", False),
             trial_key_enabled=_env_bool("TRIAL_KEY_ENABLED", True),
             trial_key_quota_usd=float(os.getenv("TRIAL_KEY_QUOTA_USD", "0")),
             trial_key_expires_days=int(os.getenv("TRIAL_KEY_EXPIRES_DAYS", os.getenv("TRIAL_KEY_EXPIRE_DAYS", "30"))),
-            trial_key_name_prefix=os.getenv("TRIAL_KEY_NAME_PREFIX", "aethergenix-trial"),
+            trial_key_name_prefix=os.getenv("TRIAL_KEY_NAME_PREFIX", DEFAULT_TRIAL_KEY_NAME_PREFIX),
             trial_balance_grant_enabled=_env_bool("TRIAL_BALANCE_GRANT_ENABLED", True),
             trial_balance_usd=float(os.getenv("TRIAL_BALANCE_USD", "2")),
             sub2api_admin_token=os.getenv("SUB2API_ADMIN_TOKEN", "").strip(),

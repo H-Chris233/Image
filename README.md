@@ -1,6 +1,6 @@
-# joko-image 生图服务
+# AetherGenix 生图服务
 
-`joko-image` 是一个基于 React + FastAPI 的生图网站项目。前端负责生图、改图、历史、任务列表、账单、系统设置等页面；后端负责用户会话、配置保存、异步生图任务、图片落盘、账单记录和对接 sub2api。
+`AetherGenix` 是一个基于 React + FastAPI 的生图网站项目。前端负责生图、改图、历史、任务列表、账单、系统设置等页面；后端负责用户会话、配置保存、异步生图任务、图片落盘、账单记录和对接 sub2api。
 
 当前对接的是 sub2api 的 OpenAI 兼容接口，默认模型为：
 <img width="2880" height="1462" alt="image" src="https://github.com/user-attachments/assets/dcb7dea6-f5fc-4e65-9627-89425051137f" />
@@ -157,7 +157,7 @@ SUB2API_AUTH_BASE_URL=http://127.0.0.1:9878
 复制部署环境变量示例：
 
 ```bash
-cp deploy/joko-image.env.example .env
+cp deploy/aethergenix-image.env.example .env
 ```
 
 编辑 `.env`，至少确认这些值：
@@ -242,14 +242,14 @@ docker compose logs --tail=100 backend web
 
 ### 新用户试用额度
 
-注册成功后，joko-image2 会用该用户在 sub2api 的登录态创建一个 API Key；如果配置了 sub2api 管理员凭据，还会调用管理员接口给该用户增加体验余额。默认创建的 Key 不限制额度，后续用户自行充值后也能继续使用同一个 Key。
+注册成功后，AetherGenix 会用该用户在 sub2api 的登录态创建一个 API Key；如果配置了 sub2api 管理员凭据，还会调用管理员接口给该用户增加体验余额。默认创建的 Key 不限制额度，后续用户自行充值后也能继续使用同一个 Key。
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `TRIAL_KEY_ENABLED` | `true` | 是否给新注册用户创建试用 Key |
 | `TRIAL_KEY_QUOTA_USD` | `0` | 试用 Key 的美元限额，`0` 表示不限制 Key 额度 |
 | `TRIAL_KEY_EXPIRES_DAYS` | `30` | 试用 Key 过期天数，设为 `0` 表示不过期 |
-| `TRIAL_KEY_NAME_PREFIX` | `joko-image2-trial` | 试用 Key 名称前缀 |
+| `TRIAL_KEY_NAME_PREFIX` | `aethergenix-trial` | 试用 Key 名称前缀 |
 | `TRIAL_BALANCE_GRANT_ENABLED` | `true` | 是否自动给 sub2api 用户加体验余额 |
 | `TRIAL_BALANCE_USD` | `2` | 新用户赠送余额金额 |
 | `SUB2API_ADMIN_TOKEN` | 空 | sub2api 后台设置里的 Admin API Key，通过 `x-api-key` 调管理员接口 |
@@ -311,8 +311,8 @@ Docker Compose 默认挂载：
 |---|---|---|
 | `CORS_ORIGINS` | `https://image.get-money.locker,http://127.0.0.1:18080` | 允许访问 API 的前端来源 |
 | `COOKIE_SECURE` | `true` | HTTPS 部署必须为 `true` |
-| `SESSION_COOKIE_NAME` | `joko_session` | 登录用户 Cookie 名 |
-| `GUEST_COOKIE_NAME` | `joko_guest` | 游客 Cookie 名 |
+| `SESSION_COOKIE_NAME` | `aethergenix_session` | 登录用户 Cookie 名 |
+| `GUEST_COOKIE_NAME` | `aethergenix_guest` | 游客 Cookie 名 |
 | `SESSION_TTL_SECONDS` | `2592000` | 登录会话有效期，默认 30 天 |
 | `GUEST_TTL_SECONDS` | `31536000` | 游客身份有效期，默认 365 天 |
 
@@ -452,10 +452,10 @@ docker compose build
 
 ## 作者与交流
 
-- 项目品牌：JokoAI / joko-image
-- 作者 / 站主：Joko
+- 项目品牌：AetherGenix
+- 作者 / 站主：AetherGenix Maintainers
 - QQ：935764227
-- Telegram：https://t.me/jokoacoount
+- Telegram：待补充
 - 交流群：1076496247 (私我领免费生图额度
 - 演示站 ：https://image.get-money.locker
 
