@@ -619,7 +619,7 @@ export default function Config() {
                       <>
                         <TextInputControl
                           className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
-                          placeholder={siteSettings.upstream?.effective_recharge_url || 'https://ai.get-money.locker'}
+                          placeholder={siteSettings.upstream?.effective_recharge_url || siteSettings.upstream?.effective_auth_base_url || 'https://sub2api.example.com'}
                           value={siteDraft.recharge_url}
                           onChange={(event) => setSiteDraft((current) => ({ ...current, recharge_url: event.target.value }))}
                         />
