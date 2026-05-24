@@ -38,7 +38,7 @@ Cloudflare / DNS
   |
   v
 宿主机 Nginx :443
-/etc/nginx/sites-enabled/image.get-money.locker.conf
+/etc/nginx/sites-enabled/aethergenix.example.conf
   |
   v
 127.0.0.1:18080
@@ -165,11 +165,11 @@ cp deploy/aethergenix-image.env.example .env
 ```env
 SUB2API_BASE_URL=http://host.docker.internal:9878/v1
 SUB2API_AUTH_BASE_URL=http://host.docker.internal:9878
-CORS_ORIGINS=https://image.get-money.locker
+CORS_ORIGINS=https://aethergenix.example.com
 COOKIE_SECURE=true
 ```
 
-如果你的域名不是 `image.get-money.locker`，需要同时改：
+如果你的域名不是 `aethergenix.example.com`，需要同时改：
 
 - `.env` 里的 `CORS_ORIGINS`
 - 宿主机 Nginx 配置里的 `server_name`
@@ -194,13 +194,13 @@ web       127.0.0.1:18080->80
 项目内提供了宿主机 Nginx 示例：
 
 ```text
-deploy/nginx-image.get-money.locker.conf
+deploy/nginx-aethergenix.example.conf
 ```
 
 复制到 Nginx 站点目录：
 
 ```bash
-cp deploy/nginx-image.get-money.locker.conf /etc/nginx/sites-enabled/image.get-money.locker.conf
+cp deploy/nginx-aethergenix.example.conf /etc/nginx/sites-enabled/aethergenix.example.conf
 nginx -t
 systemctl reload nginx
 ```
@@ -216,8 +216,8 @@ location / {
 ### 4. 验证
 
 ```bash
-curl -k https://image.get-money.locker/api/health
-curl -k -I https://image.get-money.locker/
+curl -k https://aethergenix.example.com/api/health
+curl -k -I https://aethergenix.example.com/
 docker compose logs --tail=100 backend web
 ```
 
@@ -309,7 +309,7 @@ Docker Compose 默认挂载：
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `CORS_ORIGINS` | `https://image.get-money.locker,http://127.0.0.1:18080` | 允许访问 API 的前端来源 |
+| `CORS_ORIGINS` | `https://aethergenix.example.com,http://127.0.0.1:18080` | 允许访问 API 的前端来源 |
 | `COOKIE_SECURE` | `true` | HTTPS 部署必须为 `true` |
 | `SESSION_COOKIE_NAME` | `aethergenix_session` | 登录用户 Cookie 名 |
 | `GUEST_COOKIE_NAME` | `aethergenix_guest` | 游客 Cookie 名 |
@@ -397,7 +397,7 @@ docker compose down
 ```bash
 nginx -t
 systemctl reload nginx
-nginx -T | grep -n "image.get-money.locker" -A20
+nginx -T | grep -n "aethergenix.example.com" -A20
 ```
 
 查看端口：
@@ -457,7 +457,7 @@ docker compose build
 - QQ：935764227
 - Telegram：待补充
 - 交流群：1076496247 (私我领免费生图额度
-- 演示站 ：https://image.get-money.locker
+- 演示站 ：https://aethergenix.example.com
 
 ## 开源协议
 

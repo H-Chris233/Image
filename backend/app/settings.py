@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,7 +16,15 @@ DEFAULT_INSPIRATION_SOURCE_URLS = [
     "https://raw.githubusercontent.com/EvoLinkAI/awesome-gpt-image-2-prompts/main/README.md",
     "https://raw.githubusercontent.com/YouMind-OpenLab/awesome-gpt-image-2/main/README.md",
 ]
-LEGACY_RECHARGE_URLS = {"https://ai.get-money.locker"}
+
+DEPRECATED_RECHARGE_URL_HASHES = {"8daf226841e5a119bed86f6cd5cf9c560727b9f3deebb4c87e5555684b62be3d"}
+
+
+def is_deprecated_recharge_url(value: str) -> bool:
+    normalized = value.strip().rstrip("/")
+    if not normalized:
+        return False
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest() in DEPRECATED_RECHARGE_URL_HASHES
 
 
 def _env_path(name: str, default: Path) -> Path:
@@ -102,7 +111,7 @@ class Settings:
         configured_recharge_url = os.getenv("RECHARGE_URL", "").strip().rstrip("/")
         recharge_url = (
             auth_base_url
-            if not configured_recharge_url or configured_recharge_url in LEGACY_RECHARGE_URLS
+            if not configured_recharge_url or is_deprecated_recharge_url(configured_recharge_url)
             else configured_recharge_url
         )
         return cls(
