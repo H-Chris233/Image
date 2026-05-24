@@ -2,6 +2,7 @@ import { CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 import type { NoticeToast } from '../tasks';
+import { IconButton } from './design-system';
 
 export default function TaskToastStack() {
   const { t } = useSite();
@@ -38,26 +39,25 @@ export default function TaskToastStack() {
             <div className="flex items-start gap-3">
               <div className="mt-0.5 shrink-0">
                 {succeeded ? (
-                  <CheckCircle2 size={18} className="text-tertiary" />
+                  <CheckCircle2 aria-hidden="true" size={18} className="text-tertiary" />
                 ) : errored ? (
-                  <XCircle size={18} className="text-error" />
+                  <XCircle aria-hidden="true" size={18} className="text-error" />
                 ) : (
-                  <Info size={18} className="text-primary" />
+                  <Info aria-hidden="true" size={18} className="text-primary" />
                 )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-semibold text-on-surface">{title}</div>
-                <p className="mt-1 line-clamp-3 text-sm text-on-surface-variant">{body}</p>
-                {isTaskToast && toast.error && body !== toast.error ? <div className="mt-2 text-xs text-error">{toast.error}</div> : null}
+                <p className="mt-1 line-clamp-3 break-words text-sm text-on-surface-variant [overflow-wrap:anywhere]">{body}</p>
+                {isTaskToast && toast.error && body !== toast.error ? <div className="mt-2 break-words text-xs text-error [overflow-wrap:anywhere]">{toast.error}</div> : null}
               </div>
-              <button
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
+              <IconButton
+                label={`${t('modal_close')} ${title}`}
+                icon={<X aria-hidden="true" size={14} />}
+                className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 type="button"
                 onClick={() => dismissToast(toast.id)}
-                title={t('modal_close')}
-              >
-                <X size={14} />
-              </button>
+              />
             </div>
           </div>
         );

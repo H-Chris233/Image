@@ -2,6 +2,7 @@ import { ImageOff, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { ImgHTMLAttributes } from 'react';
 import { useSite } from '../site';
+import { Button } from './design-system';
 
 type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
   src?: string | null;
@@ -34,13 +35,17 @@ export default function RetryImage({ src, alt = '', className = '', onError, onL
     return (
       <div className={`flex min-h-24 flex-col items-center justify-center gap-2 border border-[#E3FF74]/15 bg-[#14120f] p-3 text-center text-[#f0ede8]/65 ${className}`}>
         <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#E3FF74]/20 bg-[#E3FF74]/10">
-          <ImageOff size={17} className="text-[#E3FF74]/75" />
+          <ImageOff aria-hidden="true" size={17} className="text-[#E3FF74]/75" />
         </div>
         <div className="text-xs font-medium">{t('image_load_failed')}</div>
         {src ? (
-          <button
-            className="flex h-8 items-center gap-2 rounded-full border border-[#E3FF74]/25 bg-[#E3FF74]/10 px-3 text-xs font-semibold text-[#E3FF74] transition-colors hover:bg-[#E3FF74]/15"
+          <Button
+            variant="lime"
+            size="sm"
+            className="flex min-h-11 items-center gap-2 rounded-full border border-[#E3FF74]/25 bg-[#E3FF74]/10 px-4 text-xs font-semibold text-[#E3FF74] transition-colors hover:bg-[#E3FF74]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
             type="button"
+            aria-label={t('image_retry')}
+            title={t('image_retry')}
             onClick={(event) => {
               event.stopPropagation();
               setFailed(false);
@@ -48,9 +53,9 @@ export default function RetryImage({ src, alt = '', className = '', onError, onL
               setAttempt((current) => current + 1);
             }}
           >
-            <RefreshCw size={12} />
+            <RefreshCw aria-hidden="true" size={12} />
             {t('image_retry')}
-          </button>
+          </Button>
         ) : null}
       </div>
     );

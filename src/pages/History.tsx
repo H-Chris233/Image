@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Search, Filter, Download, Trash2, RefreshCw, ArrowDown, Loader2, Maximize2, Globe2, Archive, AlertCircle, LogIn, Sparkles, X } from 'lucide-react';
+import { Search, Download, Trash2, RefreshCw, ArrowDown, Loader2, Maximize2, Globe2, Archive, AlertCircle, LogIn, Sparkles, X, ImageOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { deleteHistory, formatDate, generateImage, getHistory, HistoryItem, publishHistory, taskDownloadUrl, unpublishHistory } from '../api';
 import { useAuth } from '../auth';
@@ -8,6 +8,7 @@ import { useAuthModal } from '../authModal';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import MasonryGrid from '../components/MasonryGrid';
 import RetryImage from '../components/RetryImage';
+import { Button, IconButton, Pressable, TextInputControl } from '../components/design-system';
 import { groupHistoryItems, HistoryGroup, mergeHistoryItems } from '../historyGroups';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
@@ -76,16 +77,43 @@ function WorkSurfaceState({
   );
 }
 
+function HistoryLoadingGrid() {
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-live="polite">
+      {Array.from({ length: 8 }).map((_, index) => (
+        <div
+          className="overflow-hidden rounded-lg border border-outline-variant/60 bg-surface-container-low/70"
+          key={index}
+        >
+          <div className="aspect-[4/5] animate-skeleton bg-[linear-gradient(110deg,rgba(240,237,232,0.04),rgba(227,255,116,0.12),rgba(240,237,232,0.04))] bg-[length:220%_100%]" />
+          <div className="space-y-3 border-t border-white/10 p-4">
+            <div className="h-3 w-1/2 animate-skeleton rounded-full bg-white/15" />
+            <div className="h-3 w-full animate-skeleton rounded-full bg-white/10" />
+            <div className="h-3 w-4/5 animate-skeleton rounded-full bg-white/10" />
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <div className="h-10 animate-skeleton rounded-lg bg-white/10" />
+              <div className="h-10 animate-skeleton rounded-lg bg-white/10" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function History() {
   const { viewer } = useAuth();
   const { openAuthModal } = useAuthModal();
   const { t } = useSite();
   const { addTask, openDrawer, taskHistoryItems } = useTasks();
-  const { notifyError } = useNotifier();
+  const { notifyError, notifySuccess } = useNotifier();
   const navigate = useNavigate();
+  const loadRequestRef = useRef(0);
+  const searchDebounceRef = useRef<number | null>(null);
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [query, setQuery] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState('');
   const [offset, setOffset] = useState(0);
   const [previewItem, setPreviewItem] = useState<{
     imageUrl?: string | null;
@@ -98,18 +126,25 @@ export default function History() {
   const [loadError, setLoadError] = useState(false);
   const [hasMore, setHasMore] = useState(false);
 
-  async function load(nextOffset = 0, append = false, searchQuery = query) {
+  const isAuthenticated = Boolean(viewer?.authenticated);
+
+  async function load(nextOffset = 0, append = false, searchQuery = submittedQuery) {
+    const requestId = ++loadRequestRef.current;
     if (!viewer?.authenticated) {
       setItems([]);
       setOffset(0);
       setHasMore(false);
       setLoadError(false);
+      setLoading(false);
       return;
     }
     setLoading(true);
     setLoadError(false);
     try {
       const data = await getHistory({ limit: HISTORY_PAGE_SIZE, offset: nextOffset, q: searchQuery.trim() || undefined });
+      if (requestId !== loadRequestRef.current) {
+        return;
+      }
       if (!append) {
         window.scrollTo({ top: 0, behavior: 'auto' });
       }
@@ -120,23 +155,59 @@ export default function History() {
       setOffset(nextOffset + data.items.length);
       setHasMore(data.items.length === HISTORY_PAGE_SIZE);
     } catch (err) {
+      if (requestId !== loadRequestRef.current) {
+        return;
+      }
       setLoadError(true);
       setHasMore(false);
       notifyError(err);
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }
 
   useEffect(() => {
-    load(0, false);
-  }, [viewer?.owner_id]);
+    if (searchDebounceRef.current) {
+      window.clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+    if (!viewer?.authenticated) {
+      setQuery('');
+      setSubmittedQuery('');
+      setRemovedIds([]);
+      setPreviewItem(null);
+      setPublishingIds([]);
+      load(0, false, '').catch(() => undefined);
+      return undefined;
+    }
+
+    const nextQuery = query.trim();
+    searchDebounceRef.current = window.setTimeout(() => {
+      setSubmittedQuery(nextQuery);
+      load(0, false, nextQuery).catch(() => undefined);
+    }, 350);
+
+    return () => {
+      if (searchDebounceRef.current) {
+        window.clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+    };
+  }, [query, viewer?.authenticated, viewer?.owner_id]);
 
   async function handleDelete(group: HistoryGroup) {
     const ids = group.items.map((item) => item.id);
-    await Promise.all(ids.map((id) => deleteHistory(id)));
-    setItems((current) => current.filter((item) => !ids.includes(item.id)));
-    setRemovedIds((current) => [...new Set([...current, ...ids])]);
+    try {
+      await Promise.all(ids.map((id) => deleteHistory(id)));
+      setItems((current) => current.filter((item) => !ids.includes(item.id)));
+      setRemovedIds((current) => [...new Set([...current, ...ids])]);
+      notifySuccess(t('toast_success'));
+    } catch (err) {
+      notifyError(err);
+      throw err;
+    }
   }
 
   async function handleRegenerate(group: HistoryGroup) {
@@ -190,18 +261,63 @@ export default function History() {
     }
   }
 
+  const activeSearch = submittedQuery.trim();
+  const normalizedSearch = activeSearch.toLowerCase();
   const visibleGroups = groupHistoryItems(
-    mergeHistoryItems([...taskHistoryItems, ...items]).filter((item) => !removedIds.includes(item.id)),
+    mergeHistoryItems([...taskHistoryItems, ...items])
+      .filter((item) => !removedIds.includes(item.id))
+      .filter((item) => {
+        if (!normalizedSearch) {
+          return true;
+        }
+        return [item.prompt, item.task_prompt, item.revised_prompt, item.error]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(normalizedSearch));
+      }),
   );
-  const hasSearch = query.trim().length > 0;
+  const hasSearch = activeSearch.length > 0;
+
+  function handleApplySearch() {
+    if (searchDebounceRef.current) {
+      window.clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+    const nextQuery = query.trim();
+    setSubmittedQuery(nextQuery);
+    load(0, false, nextQuery).catch(() => undefined);
+  }
 
   function handleClearSearch() {
+    if (searchDebounceRef.current) {
+      window.clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
     setQuery('');
+    setSubmittedQuery('');
     load(0, false, '').catch(() => undefined);
   }
 
+  function openPreview(group: HistoryGroup, imageId?: string) {
+    if (group.images.length === 0) {
+      return;
+    }
+    const initialIndex = imageId
+      ? Math.max(0, group.images.findIndex((image) => image.id === imageId))
+      : 0;
+    setPreviewItem({
+      images: group.images.map((galleryImage, galleryIndex) => ({
+        id: galleryImage.id,
+        url: galleryImage.url,
+        prompt: galleryImage.prompt,
+        title: `${group.title}-${galleryIndex + 1}`,
+      })),
+      initialIndex,
+      prompt: group.taskPrompt,
+    });
+  }
+
   return (
-    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:pb-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6 border-b border-white/10 pb-6">
         <div className="flex flex-col gap-2">
            <div className="flex items-center gap-2 text-[10px] text-primary uppercase font-bold tracking-widest">
@@ -211,42 +327,53 @@ export default function History() {
           <p className="text-white/50 text-sm">{t('history_subtitle')}</p>
         </div>
 
-        <div className="flex gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/50" size={16} />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') load(0, false);
-              }}
-              className="w-full rounded-lg bg-surface-container-low border border-outline-variant focus:border-primary text-on-surface pl-10 py-2 transition-colors placeholder:text-on-surface-variant/50 outline-none text-sm"
-              placeholder={t('history_search')}
-              type="text"
-            />
+        {isAuthenticated ? (
+          <div className="flex gap-3 w-full md:w-auto">
+            <label className="relative flex-1 md:w-72">
+              <span className="sr-only">{t('history_search')}</span>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/50" size={16} />
+              <TextInputControl
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleApplySearch();
+                  }
+                }}
+                className="min-h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low py-2 pl-10 pr-12 text-sm text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/50 focus:border-primary"
+                placeholder={t('history_search')}
+                type="text"
+              />
+              {query.trim() ? (
+                <IconButton
+                  label={t('history_clear_search')}
+                  icon={<X size={14} />}
+                  className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  onClick={handleClearSearch}
+                  type="button"
+                />
+              ) : null}
+            </label>
           </div>
-          <button
-            aria-label={t('history_apply_filter')}
-            onClick={() => load(0, false)}
-            className="flex h-10 items-center justify-center rounded-lg border border-outline-variant px-3 text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
-            type="button"
-          >
-            <Filter size={16} className="text-primary" />
-          </button>
-        </div>
+        ) : (
+          <div className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant/70 bg-surface-container-low px-4 text-sm text-on-surface-variant">
+            <LogIn size={16} className="text-primary/70" />
+            {t('history_login_title')}
+          </div>
+        )}
       </div>
 
-      {!viewer?.authenticated ? (
+      {!isAuthenticated ? (
         <WorkSurfaceState
           accent="primary"
           description={t('history_login_desc')}
           icon={<LogIn size={24} />}
           title={t('history_login_title')}
           action={(
-            <button className="btn-primary" type="button" onClick={() => openAuthModal('login')}>
-              <LogIn size={16} />
+            <Button variant="primary" className="min-h-11" type="button" onClick={() => openAuthModal('login', '/history', 'history')} iconStart={<LogIn size={16} />}>
               {t('top_login')}
-            </button>
+            </Button>
           )}
         />
       ) : loadError && visibleGroups.length === 0 ? (
@@ -256,18 +383,13 @@ export default function History() {
           icon={<AlertCircle size={24} />}
           title={t('history_error_title')}
           action={(
-            <button className="btn-primary" type="button" onClick={() => load(0, false).catch(() => undefined)}>
-              <RefreshCw size={16} />
+            <Button variant="primary" className="min-h-11" type="button" onClick={() => load(0, false).catch(() => undefined)} iconStart={<RefreshCw size={16} />}>
               {t('history_retry')}
-            </button>
+            </Button>
           )}
         />
       ) : loading && visibleGroups.length === 0 ? (
-        <WorkSurfaceState
-          description={t('history_subtitle')}
-          icon={<Loader2 className="animate-spin" size={24} />}
-          title={t('history_loading')}
-        />
+        <HistoryLoadingGrid />
       ) : visibleGroups.length === 0 ? (
         <WorkSurfaceState
           accent={hasSearch ? 'secondary' : 'primary'}
@@ -275,19 +397,19 @@ export default function History() {
           icon={hasSearch ? <Search size={24} /> : <Sparkles size={24} />}
           title={hasSearch ? t('history_search_empty_title') : t('history_empty_title')}
           action={hasSearch ? (
-            <button
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
+            <Button
+              variant="ghost"
+              iconStart={<X size={16} />}
+              className="inline-flex h-11 items-center gap-2 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
               type="button"
               onClick={handleClearSearch}
             >
-              <X size={16} />
               {t('history_clear_search')}
-            </button>
+            </Button>
           ) : (
-            <button className="btn-primary" type="button" onClick={() => navigate('/create')}>
-              <Sparkles size={16} />
+            <Button variant="primary" className="min-h-11" type="button" onClick={() => navigate('/create')} iconStart={<Sparkles size={16} />}>
               {t('history_create_action')}
-            </button>
+            </Button>
           )}
         />
       ) : (
@@ -295,162 +417,30 @@ export default function History() {
           <MasonryGrid
             items={visibleGroups}
             getKey={(group) => group.key}
-            renderItem={(group, index) => {
-          const item = group.first;
-          const colors = getColorClasses(index % 2 === 0 ? 'primary' : 'secondary');
-          const isBatch = group.images.length > 1;
-          const previewImage = group.images[0]?.url || item.image_url;
-          const publishDisabled = publishingIds.includes(group.key) || group.images.length === 0;
-          return (
-          <div
-            className={`overflow-hidden bg-black border border-white/10 ${colors.borderHover} transition-all duration-300`}
-          >
-            {isBatch ? (
-              <div className="grid grid-cols-3 gap-1 bg-black p-1">
-                {group.images.map((image, imageIndex) => (
-                  <button
-                    key={image.id}
-                    className="relative aspect-square cursor-zoom-in overflow-hidden bg-black text-left"
-                    type="button"
-                    onClick={() => setPreviewItem({
-                      images: group.images.map((galleryImage, galleryIndex) => ({
-                        id: galleryImage.id,
-                        url: galleryImage.url,
-                        prompt: galleryImage.prompt,
-                        title: `${group.title}-${galleryIndex + 1}`,
-                      })),
-                      initialIndex: imageIndex,
-                      prompt: image.prompt,
-                    })}
-                  >
-                    <RetryImage
-                      alt={`${item.id}-${imageIndex + 1}`}
-                      className="h-full w-full object-cover opacity-95 transition-opacity duration-300 hover:opacity-100"
-                      loading="lazy"
-                      src={image.url}
-                    />
-                  </button>
-                ))}
-              </div>
-            ) : previewImage ? (
-              <button
-                className="block w-full cursor-zoom-in bg-black text-left"
-                type="button"
-                onClick={() => setPreviewItem({ imageUrl: previewImage, prompt: item.prompt })}
-              >
-                <RetryImage
-                  alt={item.prompt}
-                  className="block h-auto w-full opacity-95 transition-opacity duration-300 hover:opacity-100"
-                  src={previewImage}
-                />
-              </button>
-            ) : (
-              <div className="flex min-h-64 w-full items-center justify-center px-6 text-center text-xs uppercase text-error/60">
-                {item.error || t('history_failed')}
-              </div>
+            renderItem={(group, index) => (
+              <HistoryCard
+                group={group}
+                index={index}
+                isPublishing={publishingIds.includes(group.key)}
+                onDelete={() => handleDelete(group)}
+                onPreview={(imageId) => openPreview(group, imageId)}
+                onRegenerate={() => handleRegenerate(group)}
+                onTogglePublish={() => handleTogglePublish(group)}
+              />
             )}
-
-            <div className="border-t border-white/10 bg-surface-container-low/80 p-4">
-              <div className="mb-3 flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-wider text-white/40">
-                <span className={colors.textId}>ID:{item.id.slice(0, 4).toUpperCase()}</span>
-                <span>{formatDate(item.created_at)}</span>
-                <span>{item.size}</span>
-                {item.aspect_ratio ? <span>{item.aspect_ratio}</span> : null}
-                {isBatch ? <span>x{group.images.length}</span> : null}
-                {group.allPublished ? (
-                  <span className="text-tertiary">{t('history_published')}</span>
-                ) : group.publishedCount > 0 ? (
-                  <span className="text-tertiary">{t('history_published')} {group.publishedCount}/{group.images.length}</span>
-                ) : null}
-              </div>
-              <p className={`mb-3 line-clamp-3 text-sm ${colors.textId} transition-colors`}>
-                {group.taskPrompt}
-              </p>
-              <button
-                className={`mb-2 flex h-10 w-full items-center justify-center gap-2 border px-3 text-xs font-black uppercase transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 ${
-                  item.published
-                    ? 'border-tertiary/40 bg-tertiary/10 text-tertiary hover:bg-tertiary/20'
-                    : 'border-primary/30 bg-primary/10 text-primary hover:border-primary hover:bg-primary/20'
-                }`}
-                type="button"
-                onClick={() => handleTogglePublish(group)}
-                disabled={publishDisabled}
-              >
-                {publishingIds.includes(group.key) ? <Loader2 className="animate-spin" size={14} /> : <Globe2 size={14} />}
-                {group.allPublished ? t('history_unpublish_case') : t('history_publish_case')}
-              </button>
-              <div className="grid grid-cols-4 gap-2 sm:grid-cols-[44px_44px_44px_44px_1fr]">
-                <button
-                  className="flex h-10 items-center justify-center border border-white/20 bg-white/5 text-white transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-35"
-                  type="button"
-                  title={t('history_preview')}
-                  onClick={() => setPreviewItem({
-                    imageUrl: previewImage || null,
-                    images: group.images.length > 0
-                      ? group.images.map((galleryImage, galleryIndex) => ({
-                        id: galleryImage.id,
-                        url: galleryImage.url,
-                        prompt: galleryImage.prompt,
-                        title: `${group.title}-${galleryIndex + 1}`,
-                      }))
-                      : undefined,
-                    initialIndex: 0,
-                    prompt: group.taskPrompt,
-                  })}
-                  disabled={!previewImage}
-                >
-                  <Maximize2 size={14} />
-                </button>
-                <a
-                  href={previewImage || '#'}
-                  download
-                  className={`flex h-10 items-center justify-center border border-white/20 bg-white/5 text-white transition-all hover:border-primary hover:text-primary ${previewImage ? '' : 'pointer-events-none opacity-35'}`}
-                  title={t('history_download')}
-                >
-                  <Download size={14} />
-                </a>
-                <a
-                  href={isBatch && item.task_id ? taskDownloadUrl(item.task_id) : '#'}
-                  className={`flex h-10 items-center justify-center border border-white/20 bg-white/5 text-white transition-all hover:border-primary hover:text-primary ${
-                    isBatch && item.task_id ? '' : 'pointer-events-none opacity-35'
-                  }`}
-                  title={t('history_download_zip')}
-                >
-                  <Archive size={14} />
-                </a>
-                <button
-                  onClick={() => handleDelete(group)}
-                  className="flex h-10 items-center justify-center border border-error/20 bg-error/5 text-error transition-all hover:bg-error/20"
-                  title={t('history_delete')}
-                  type="button"
-                >
-                  <Trash2 size={14} />
-                </button>
-                <button
-                  onClick={() => handleRegenerate(group)}
-                  className={`col-span-4 flex h-10 min-w-0 items-center justify-center gap-2 px-3 text-xs font-black uppercase sm:col-span-1 ${colors.btnBg} ${colors.btnText} ${colors.btnShadow} shadow-white/40 transition-all duration-300 hover:border-white/80 hover:brightness-110`}
-                  type="button"
-                >
-                  <RefreshCw size={14} />
-                  {t('history_regenerate')}
-                </button>
-              </div>
-            </div>
-          </div>
-          );
-            }}
           />
 
           {hasMore ? (
             <div className="mt-12 flex justify-center">
-              <button
+              <Button
+                variant="ghost"
+                iconStart={loading ? <Loader2 className="animate-spin" size={14} /> : <ArrowDown size={14} />}
                 onClick={() => load(offset, true)}
                 disabled={loading}
-                className="rounded-lg border border-outline-variant hover:bg-surface-container text-on-surface-variant px-8 py-3 transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
+                className="flex min-h-11 items-center gap-2 rounded-lg border border-outline-variant px-8 py-3 text-sm text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-50"
               >
-                {loading ? <Loader2 className="animate-spin" size={14} /> : <ArrowDown size={14} />}
                 {t('history_load_more')}
-              </button>
+              </Button>
             </div>
           ) : null}
         </>
@@ -465,5 +455,330 @@ export default function History() {
         onClose={() => setPreviewItem(null)}
       />
     </div>
+  );
+}
+
+function HistoryCard({
+  group,
+  index,
+  isPublishing,
+  onDelete,
+  onPreview,
+  onRegenerate,
+  onTogglePublish,
+}: {
+  group: HistoryGroup;
+  index: number;
+  isPublishing: boolean;
+  onDelete: () => Promise<void>;
+  onPreview: (imageId?: string) => void;
+  onRegenerate: () => void;
+  onTogglePublish: () => void;
+}) {
+  const { t } = useSite();
+  const cancelDeleteRef = useRef<HTMLButtonElement | null>(null);
+  const confirmDeleteRef = useRef<HTMLButtonElement | null>(null);
+  const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
+  const deleteDialogTitleId = useId();
+  const deleteDialogDescId = useId();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const item = group.first;
+  const colors = getColorClasses(index % 2 === 0 ? 'primary' : 'secondary');
+  const isBatch = group.items.length > 1;
+  const deleteCount = group.items.length;
+  const previewImage = group.images[0]?.url || item.image_url;
+  const issueCount = group.items.filter((historyItem) => historyItem.status === 'failed' || !historyItem.image_url).length;
+  const errorText = group.items.find((historyItem) => historyItem.error)?.error || (issueCount > 0 ? t('history_failed') : '');
+  const visibleSlots = isBatch ? group.items.slice(0, 6) : [item];
+  const hiddenSlotCount = Math.max(0, group.items.length - visibleSlots.length);
+  const publishDisabled = isPublishing || group.images.length === 0;
+  const downloadHref = isBatch && item.task_id ? taskDownloadUrl(item.task_id) : previewImage || '';
+  const downloadLabel = isBatch ? t('history_download_zip') : t('history_download');
+  const downloadIcon = isBatch ? <Archive size={14} /> : <Download size={14} />;
+  const deleteTitle = deleteCount === 1
+    ? t('history_delete_title_one')
+    : t('history_delete_title_many', { count: deleteCount });
+  const deleteConsequence = deleteCount === 1
+    ? t('history_delete_consequence_one')
+    : t('history_delete_consequence_many', { count: deleteCount });
+  const deleteConfirmLabel = deleteCount === 1
+    ? t('history_delete_confirm_one')
+    : t('history_delete_confirm_many', { count: deleteCount });
+
+  useEffect(() => {
+    if (!confirmingDelete) {
+      return undefined;
+    }
+
+    cancelDeleteRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !deleting) {
+        event.preventDefault();
+        closeDeleteConfirm();
+        return;
+      }
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const focusable = [cancelDeleteRef.current, confirmDeleteRef.current].filter(
+        (element): element is HTMLButtonElement => Boolean(element) && !element.disabled,
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [confirmingDelete, deleting]);
+
+  function closeDeleteConfirm() {
+    if (deleting) {
+      return;
+    }
+    setConfirmingDelete(false);
+    window.setTimeout(() => deleteButtonRef.current?.focus(), 0);
+  }
+
+  async function confirmDelete() {
+    setDeleting(true);
+    try {
+      await onDelete();
+      setConfirmingDelete(false);
+    } catch {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <article
+      className={`overflow-hidden rounded-lg border border-white/10 bg-black/80 ${colors.borderHover} transition-all duration-300`}
+    >
+      <div className={isBatch ? 'grid grid-cols-3 gap-1 bg-black p-1' : 'bg-black'}>
+        {visibleSlots.map((slot, slotIndex) => {
+          const hasImage = Boolean(slot.image_url);
+          const hiddenLabel = hiddenSlotCount > 0 && slotIndex === visibleSlots.length - 1 ? `+${hiddenSlotCount}` : null;
+          if (hasImage) {
+            return (
+              <Pressable
+                key={slot.id}
+                aria-label={`${t('history_preview')} ${slotIndex + 1}`}
+                className={`group relative block w-full cursor-zoom-in overflow-hidden bg-black text-left ${
+                  isBatch ? 'aspect-square' : ''
+                }`}
+                type="button"
+                onClick={() => onPreview(slot.id)}
+                title={t('history_preview')}
+              >
+                <RetryImage
+                  alt={slot.prompt}
+                  className={isBatch ? 'h-full w-full object-cover opacity-95 transition-opacity duration-300 group-hover:opacity-100' : 'block h-auto w-full opacity-95 transition-opacity duration-300 group-hover:opacity-100'}
+                  loading="lazy"
+                  src={slot.image_url}
+                />
+                <span className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded-lg border border-white/15 bg-black/55 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                  <span className="inline-flex min-w-0 items-center gap-1.5">
+                    <Maximize2 size={12} />
+                    {t('history_preview')}
+                  </span>
+                  {hiddenLabel ? <span className="shrink-0 text-lime">{hiddenLabel}</span> : null}
+                </span>
+              </Pressable>
+            );
+          }
+
+          return (
+            <div
+              className={`relative flex min-h-48 flex-col items-center justify-center overflow-hidden bg-[#14120f] px-4 py-6 text-center ${
+                isBatch ? 'aspect-square min-h-0' : ''
+              }`}
+              key={slot.id}
+              role="img"
+              aria-label={slot.status === 'failed' ? t('history_failed') : t('image_load_failed')}
+              title={slot.status === 'failed' ? t('history_failed') : t('image_load_failed')}
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-error/20 bg-error/10 text-error">
+                {slot.status === 'failed' ? <AlertCircle size={19} /> : <ImageOff size={19} />}
+              </div>
+              {isBatch ? null : (
+                <div className="mt-3 w-full max-w-full break-words text-[11px] font-bold uppercase tracking-wider text-error/80">
+                  {slot.status === 'failed' ? t('history_failed') : t('image_load_failed')}
+                </div>
+              )}
+              {slot.error && !isBatch ? (
+                <div className="mt-2 line-clamp-3 max-w-full break-words text-[11px] leading-4 text-white/45">
+                  {slot.error}
+                </div>
+              ) : null}
+              {hiddenLabel ? <div className="absolute right-2 top-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold text-lime">{hiddenLabel}</div> : null}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="border-t border-white/10 bg-surface-container-low/90 p-4">
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] uppercase tracking-wider text-white/40">
+          <span className={colors.textId}>ID:{item.id.slice(0, 4).toUpperCase()}</span>
+          <span>{formatDate(item.created_at)}</span>
+          <span>{item.size}</span>
+          {item.aspect_ratio ? <span>{item.aspect_ratio}</span> : null}
+          {isBatch ? <span>{group.images.length}/{group.items.length}</span> : null}
+          {issueCount > 0 ? <span className="text-error">{issueCount} {t('history_failed')}</span> : null}
+          {group.allPublished ? (
+            <span className="text-tertiary">{t('history_published')}</span>
+          ) : group.publishedCount > 0 ? (
+            <span className="text-tertiary">{t('history_published')} {group.publishedCount}/{group.images.length}</span>
+          ) : null}
+        </div>
+        <p className={`mb-3 line-clamp-4 break-words text-sm leading-6 ${colors.textId} transition-colors`}>
+          {group.taskPrompt}
+        </p>
+        {errorText ? (
+          <div className="mb-3 flex gap-2 rounded-lg border border-error/20 bg-error/10 p-3 text-xs leading-5 text-error/90">
+            <AlertCircle className="mt-0.5 shrink-0" size={14} />
+            <span className="min-w-0 break-words line-clamp-4">{errorText}</span>
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 gap-2">
+          {downloadHref ? (
+            <a
+              aria-label={downloadLabel}
+              className="flex h-11 min-w-0 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 text-xs font-bold uppercase tracking-wide text-white transition-all hover:border-primary hover:text-primary"
+              download={!isBatch}
+              href={downloadHref}
+              title={downloadLabel}
+            >
+              {downloadIcon}
+              <span>{downloadLabel}</span>
+            </a>
+          ) : (
+            <Button
+              variant="ghost"
+              aria-label={downloadLabel}
+              className="flex h-11 min-w-0 cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-bold uppercase tracking-wide text-white/35"
+              disabled
+              type="button"
+              title={downloadLabel}
+            >
+              {downloadIcon}
+              <span>{downloadLabel}</span>
+            </Button>
+          )}
+          <Button
+            variant={index % 2 === 0 ? 'primary' : 'orange'}
+            iconStart={<RefreshCw size={14} />}
+            onClick={onRegenerate}
+            className={`flex h-11 min-w-0 items-center justify-center gap-2 rounded-lg px-3 text-xs font-black uppercase tracking-wide ${colors.btnBg} ${colors.btnText} ${colors.btnShadow} transition-all duration-300 hover:brightness-110`}
+            type="button"
+          >
+            <span>{t('history_regenerate')}</span>
+          </Button>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2 border-t border-white/10 pt-3">
+          <Button
+            variant={group.allPublished ? 'plain' : 'ghost'}
+            iconStart={isPublishing ? <Loader2 className="animate-spin" size={14} /> : <Globe2 size={14} />}
+            aria-label={group.allPublished ? t('history_unpublish_case') : t('history_publish_case')}
+            className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border px-3 text-[11px] font-bold uppercase tracking-wide transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+              group.allPublished
+                ? 'border-tertiary/35 bg-tertiary/10 text-tertiary hover:bg-tertiary/20'
+                : 'border-white/15 bg-white/5 text-white/60 hover:border-tertiary/35 hover:text-tertiary'
+            }`}
+            type="button"
+            onClick={onTogglePublish}
+            disabled={publishDisabled}
+          >
+            <span className="truncate">{group.allPublished ? t('history_unpublish_case') : t('history_publish_case')}</span>
+          </Button>
+          <IconButton
+            ref={deleteButtonRef}
+            label={t('history_delete')}
+            icon={<Trash2 size={14} />}
+            onClick={() => setConfirmingDelete(true)}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-error/35 bg-error/10 text-error transition-all hover:border-error hover:bg-error/20"
+            disabled={confirmingDelete || deleting}
+            type="button"
+          />
+        </div>
+
+        {confirmingDelete ? (
+          <div
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 px-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-6 backdrop-blur-sm sm:items-center sm:p-6"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                closeDeleteConfirm();
+              }
+            }}
+          >
+            <div
+              aria-describedby={deleteDialogDescId}
+              aria-labelledby={deleteDialogTitleId}
+              aria-modal="true"
+              className="flex max-h-[min(82vh,28rem)] w-full max-w-md flex-col overflow-hidden rounded-xl border border-error/40 bg-surface-container-low shadow-[0_28px_90px_rgba(0,0,0,0.5)] sm:rounded-2xl"
+              role="alertdialog"
+            >
+              <div className="flex min-h-0 flex-1 items-start gap-3 overflow-y-auto p-4 sm:p-5">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-error text-on-error">
+                  <Trash2 size={16} />
+                </div>
+                <div className="min-w-0">
+                  <h2
+                    className="break-words text-base font-semibold leading-6 text-error [overflow-wrap:anywhere]"
+                    id={deleteDialogTitleId}
+                  >
+                    {deleteTitle}
+                  </h2>
+                  <p
+                    className="mt-2 break-words text-sm leading-6 text-on-surface-variant [overflow-wrap:anywhere]"
+                    id={deleteDialogDescId}
+                  >
+                    {deleteConsequence}
+                  </p>
+                </div>
+              </div>
+              <div className="grid shrink-0 grid-cols-1 gap-2 border-t border-outline-variant/70 bg-surface-container px-4 py-3 sm:grid-cols-2 sm:p-4">
+                <Button
+                  ref={cancelDeleteRef}
+                  variant="ghost"
+                  className="inline-flex h-11 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
+                  type="button"
+                  disabled={deleting}
+                  onClick={closeDeleteConfirm}
+                >
+                  {t('history_delete_cancel')}
+                </Button>
+                <Button
+                  ref={confirmDeleteRef}
+                  variant="danger"
+                  iconStart={deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-error bg-error px-3 text-sm font-black uppercase text-on-error transition-colors hover:bg-error/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => confirmDelete().catch(() => undefined)}
+                >
+                  <span className="truncate">{deleteConfirmLabel}</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </article>
   );
 }

@@ -1,15 +1,17 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Heart, History, PenLine, UserCircle } from 'lucide-react';
+import { Heart, ListTodo, PenLine, UserCircle } from 'lucide-react';
 import { useSite } from '../site';
+import { useTasks } from '../tasks';
 import { isAccountCenterPath } from './AccountCenterHeader';
 
 export default function BottomTabBar() {
   const location = useLocation();
   const { t } = useSite();
+  const { activeCount } = useTasks();
 
   const tabs = [
     { name: t('bottom_create'), path: '/create', icon: PenLine },
-    { name: t('bottom_history'), path: '/history', icon: History },
+    { name: t('bottom_tasks'), path: '/tasks', icon: ListTodo, badge: activeCount },
     { name: t('bottom_favorites'), path: '/favorites', icon: Heart },
     { name: t('bottom_me'), path: '/account', icon: UserCircle, isActive: isAccountCenterPath },
   ];
@@ -27,7 +29,14 @@ export default function BottomTabBar() {
               isActive ? 'text-[#E3FF74]' : 'text-[#8a8680]'
             }`}
           >
-            <item.icon size={20} />
+            <span className="relative">
+              <item.icon aria-hidden="true" size={20} />
+              {item.badge && item.badge > 0 ? (
+                <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-[#E3FF74] px-1 text-[10px] font-bold leading-4 tabular-nums text-[#1a1917]">
+                  {item.badge}
+                </span>
+              ) : null}
+            </span>
             <span className="max-w-full truncate text-[10px] font-medium">{item.name}</span>
           </Link>
         );
