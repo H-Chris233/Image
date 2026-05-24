@@ -48,6 +48,8 @@ const required = [
   [staticPreview.includes('data-static-design-system-preview'), 'static preview must expose the static preview marker'],
   [staticPreview.includes('--color-background: #111110'), 'static preview must define warm charcoal background token'],
   [staticPreview.includes('Cream for primary work'), 'static preview must show button semantics'],
+  [!/\bfont-size:\s*clamp\([^)]*vw/i.test(staticPreview), 'static preview must not scale font size with viewport width'],
+  [staticPreview.includes('prefers-reduced-motion: reduce'), 'static preview must include reduced-motion behavior'],
   [app.includes('path="/design-system"'), 'App.tsx must register /design-system'],
   [page.includes('data-design-system-preview'), 'DesignSystem page must expose the preview marker'],
   [index.includes("export { Button }"), 'design-system index must export Button'],

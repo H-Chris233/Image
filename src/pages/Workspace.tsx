@@ -26,7 +26,7 @@ import {
 } from '../api';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import RetryImage from '../components/RetryImage';
-import { Button, Pressable } from '../components/design-system';
+import { Button, ConfirmDialog, Pressable } from '../components/design-system';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
@@ -108,6 +108,11 @@ const WORKSPACE_COPY = {
     publishSelected: '发布选中',
     unpublishSelected: '取消发布',
     publishingSelected: '更新中',
+    publishConfirmTitle: '\u53d1\u5e03\u9009\u4e2d\u751f\u6210\u7ed3\u679c\uff1f',
+    publishConfirmDescription: '\u8fd9\u4f1a\u5c06\u9009\u4e2d\u56fe\u50cf\u516c\u5f00\u5230\u6848\u4f8b\u5c55\u793a\u533a\uff0c\u5176\u4ed6\u8bbf\u5ba2\u53ef\u4ee5\u770b\u5230\u5bf9\u5e94\u8f93\u51fa\u3002',
+    unpublishConfirmTitle: '\u53d6\u6d88\u53d1\u5e03\u9009\u4e2d\u751f\u6210\u7ed3\u679c\uff1f',
+    unpublishConfirmDescription: '\u8fd9\u4f1a\u4ece\u516c\u5f00\u6848\u4f8b\u4e2d\u79fb\u9664\u9009\u4e2d\u56fe\u50cf\uff0c\u4f46\u4e0d\u4f1a\u5220\u9664\u5f53\u524d\u4efb\u52a1\u6216\u5386\u53f2\u8bb0\u5f55\u3002',
+    cancelAction: '\u53d6\u6d88',
     unpublished: '未发布',
     selectAsset: (index: number) => `选择第 ${index} 张`,
     currentTask: '当前任务',
@@ -201,6 +206,11 @@ const WORKSPACE_COPY = {
     publishSelected: 'Publish selected',
     unpublishSelected: 'Unpublish selected',
     publishingSelected: 'Updating selected',
+    publishConfirmTitle: 'Publish selected generated asset?',
+    publishConfirmDescription: 'This makes the selected image public in the case gallery so visitors can view the output.',
+    unpublishConfirmTitle: 'Unpublish selected generated asset?',
+    unpublishConfirmDescription: 'This removes the selected image from the public case gallery but keeps the current task and history record intact.',
+    cancelAction: 'Cancel',
     unpublished: 'Not published',
     selectAsset: (index: number) => `Select asset ${index}`,
     currentTask: 'Current task',
@@ -574,7 +584,7 @@ function SucceededWorkbench({
   onRegenerateSelected: () => void;
   onReuseSelectedPrompt: () => void;
   onSelectImage: (id: string) => void;
-  onToggleSelectedPublish: () => void;
+  onToggleSelectedPublish: () => Promise<void>;
   publishedCount: number;
   publishableCount: number;
   publishingImageId: string | null;
@@ -590,11 +600,24 @@ function SucceededWorkbench({
       : copy.selectedAsset;
   const selectedIsPublishable = selectedImage?.status === 'succeeded' && Boolean(selectedImage.image_url);
   const selectedIsPublishing = selectedImage ? publishingImageId === selectedImage.id : false;
+  const [confirmingPublish, setConfirmingPublish] = useState(false);
   const isAlbum = images.length > 1;
   const seriesPlan = isAlbum ? getSeriesPlan(task, images) : null;
   const selectedPlanItem = selectedImageIndex >= 0
     ? seriesPlan?.items.find((item) => item.index === selectedImageIndex + 1) ?? seriesPlan?.items[selectedImageIndex]
     : undefined;
+  const publishConfirmTitle = selectedImage?.published ? copy.unpublishConfirmTitle : copy.publishConfirmTitle;
+  const publishConfirmDescription = selectedImage?.published ? copy.unpublishConfirmDescription : copy.publishConfirmDescription;
+  const publishConfirmLabel = selectedImage?.published ? copy.unpublishSelected : copy.publishSelected;
+
+  async function confirmSelectedPublish() {
+    try {
+      await onToggleSelectedPublish();
+      setConfirmingPublish(false);
+    } catch {
+      setConfirmingPublish(false);
+    }
+  }
 
   return (
     <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#151412] shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
@@ -818,7 +841,7 @@ function SucceededWorkbench({
                 variant={selectedImage?.published ? 'plain' : 'ghost'}
                 iconStart={selectedIsPublishing ? <Loader2 className="animate-spin" size={15} /> : <Globe2 size={15} />}
                 type="button"
-                onClick={onToggleSelectedPublish}
+                onClick={() => setConfirmingPublish(true)}
                 disabled={selectedIsPublishing || !selectedIsPublishable}
                 className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3 text-center text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
                   selectedImage?.published
@@ -832,6 +855,19 @@ function SucceededWorkbench({
               </Button>
             </div>
           </div>
+
+          <ConfirmDialog
+            open={confirmingPublish}
+            title={publishConfirmTitle}
+            description={publishConfirmDescription}
+            cancelLabel={copy.cancelAction}
+            confirmLabel={publishConfirmLabel}
+            icon={<Globe2 size={16} />}
+            tone="publish"
+            busy={selectedIsPublishing}
+            onCancel={() => setConfirmingPublish(false)}
+            onConfirm={() => confirmSelectedPublish().catch(() => undefined)}
+          />
 
           <div className="mt-6">
             <TaskMetaGrid compact copy={copy} expectedCount={expectedCount} task={task} />

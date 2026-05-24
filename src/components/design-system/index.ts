@@ -1,5 +1,7 @@
 export { Button } from './Button';
 export type { ButtonProps } from './Button';
+export { ConfirmDialog } from './ConfirmDialog';
+export type { ConfirmDialogProps } from './ConfirmDialog';
 export {
   CheckboxControl,
   Field,

@@ -353,7 +353,7 @@ export default function Config() {
               <div className="border-t border-secondary/10 pt-4">
                 <Field label={t('site_inspiration_sources_body')}>
                   <TextareaControl
-                    className="min-h-28 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50 resize-y"
+                    className="min-h-28 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50 resize-y"
                     value={siteDraft.inspiration_sources}
                     onChange={(event) => setSiteDraft((current) => ({ ...current, inspiration_sources: event.target.value }))}
                   />
@@ -378,7 +378,7 @@ export default function Config() {
               <>
                 <Field label={t('config_user_name')}>
                   <TextInputControl
-                    className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                    className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
                     disabled={config?.managed_by_auth}
                     value={config?.user_name || ''}
                     onChange={(event) => setConfig((current) => current && { ...current, user_name: event.target.value })}
@@ -387,12 +387,12 @@ export default function Config() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Field label={t('config_model')}>
-                    <TextInputControl className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50" value={config?.model || 'gpt-image-2'} onChange={(event) => setConfig((current) => current && { ...current, model: event.target.value })} />
+                    <TextInputControl className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50" value={config?.model || 'gpt-image-2'} onChange={(event) => setConfig((current) => current && { ...current, model: event.target.value })} />
                   </Field>
                   <Field label={t('config_size')}>
                     <>
                       <TextInputControl
-                        className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                        className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
                         list="image-size-options"
                         value={config?.default_size || '2K'}
                         onChange={(event) => setConfig((current) => current && { ...current, default_size: event.target.value })}
@@ -405,7 +405,7 @@ export default function Config() {
                     </>
                   </Field>
                   <Field label={t('config_quality')}>
-                    <SelectControl className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50" value={config?.default_quality || 'auto'} onChange={(event) => setConfig((current) => current && { ...current, default_quality: event.target.value })}>
+                    <SelectControl className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50" value={config?.default_quality || 'auto'} onChange={(event) => setConfig((current) => current && { ...current, default_quality: event.target.value })}>
                       <option>low</option>
                       <option>medium</option>
                       <option>high</option>
@@ -420,7 +420,7 @@ export default function Config() {
               <label className="text-secondary text-[10px] uppercase tracking-widest font-bold mb-1" htmlFor="api_key">{t('config_api_key')}</label>
               <div className="relative">
                 <TextInputControl
-                  className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50 pr-12"
+                  className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50 pr-12"
                   id="api_key"
                   placeholder={config?.api_key_set ? config.api_key_hint : 'sk-...'}
                   type="password"
@@ -541,7 +541,7 @@ export default function Config() {
             <div className="space-y-5">
               <Field label={t('lang_label')}>
                 <SelectControl
-                  className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                  className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
                   value={siteDraft.default_locale}
                   onChange={(event) => handleLocaleChange(event.target.value as LocaleValue)}
                 >
@@ -590,7 +590,7 @@ export default function Config() {
                     <Field label={t('site_provider_base_url')}>
                       <>
                         <TextInputControl
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                          className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
                           placeholder={siteSettings.upstream?.effective_provider_base_url || 'https://example.com/v1'}
                           value={siteDraft.provider_base_url}
                           onChange={(event) => setSiteDraft((current) => ({ ...current, provider_base_url: event.target.value }))}
@@ -604,7 +604,7 @@ export default function Config() {
                     <Field label={t('site_auth_base_url')}>
                       <>
                         <TextInputControl
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                          className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
                           placeholder={siteSettings.upstream?.effective_auth_base_url || 'https://example.com'}
                           value={siteDraft.auth_base_url}
                           onChange={(event) => setSiteDraft((current) => ({ ...current, auth_base_url: event.target.value }))}
@@ -618,7 +618,7 @@ export default function Config() {
                     <Field label={t('site_recharge_url')}>
                       <>
                         <TextInputControl
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                          className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
                           placeholder={siteSettings.upstream?.effective_recharge_url || 'https://ai.get-money.locker'}
                           value={siteDraft.recharge_url}
                           onChange={(event) => setSiteDraft((current) => ({ ...current, recharge_url: event.target.value }))}
@@ -632,7 +632,7 @@ export default function Config() {
                     <Field label={t('site_admin_token')}>
                       <>
                         <TextInputControl
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                          className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
                           placeholder={siteSettings.upstream?.sub2api_admin_token_hint || 'admin-...'}
                           type="password"
                           value={siteDraft.sub2api_admin_token}
@@ -647,7 +647,7 @@ export default function Config() {
                     <Field label={t('site_admin_jwt')}>
                       <>
                         <TextInputControl
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                          className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
                           placeholder={siteSettings.upstream?.sub2api_admin_jwt_hint || 'eyJ...'}
                           type="password"
                           value={siteDraft.sub2api_admin_jwt}
@@ -662,7 +662,7 @@ export default function Config() {
                     <Field label={t('site_trial_balance_usd')}>
                       <>
                         <TextInputControl
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                          className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
                           min="0"
                           step="0.01"
                           type="number"
@@ -699,7 +699,7 @@ export default function Config() {
                   <div className="space-y-4">
                     <Field label={t('site_announcement_title')}>
                       <TextInputControl
-                        className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                        className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50"
                         value={siteDraft.announcement_title}
                         onChange={(event) => setSiteDraft((current) => ({ ...current, announcement_title: event.target.value }))}
                       />
@@ -707,7 +707,7 @@ export default function Config() {
 
                     <Field label={t('site_announcement_body')}>
                       <TextareaControl
-                        className="min-h-32 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50 resize-y"
+                        className="min-h-32 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-lime/45 focus:ring-2 focus:ring-lime/20 transition-colors placeholder:text-on-surface-variant/50 resize-y"
                         value={siteDraft.announcement_body}
                         onChange={(event) => setSiteDraft((current) => ({ ...current, announcement_body: event.target.value }))}
                       />
@@ -763,7 +763,6 @@ export default function Config() {
     </div>
   );
 }
-
 function isEstimatedUsageLogEntry(item: UsageLogEntry) {
   const source = String(item.metadata?.cost_source || '');
   return source.startsWith('local_image_price');

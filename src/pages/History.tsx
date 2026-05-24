@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Search, Download, Trash2, RefreshCw, ArrowDown, Loader2, Maximize2, Globe2, Archive, AlertCircle, LogIn, Sparkles, X, ImageOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { useAuthModal } from '../authModal';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import MasonryGrid from '../components/MasonryGrid';
 import RetryImage from '../components/RetryImage';
-import { Button, IconButton, Pressable, TextInputControl } from '../components/design-system';
+import { Button, ConfirmDialog, IconButton, Pressable, TextInputControl } from '../components/design-system';
 import { groupHistoryItems, HistoryGroup, mergeHistoryItems } from '../historyGroups';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
@@ -341,7 +341,7 @@ export default function History() {
                     handleApplySearch();
                   }
                 }}
-                className="min-h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low py-2 pl-10 pr-12 text-sm text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/50 focus:border-primary"
+                className="min-h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low py-2 pl-10 pr-12 text-sm text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/50 focus:border-lime/45 focus:ring-2 focus:ring-lime/20"
                 placeholder={t('history_search')}
                 type="text"
               />
@@ -357,7 +357,7 @@ export default function History() {
             </label>
           </div>
         ) : (
-          <div className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant/70 bg-surface-container-low px-4 text-sm text-on-surface-variant">
+          <div className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-outline-variant/70 bg-surface-container-low px-4 text-sm text-on-surface-variant">
             <LogIn size={16} className="text-primary/70" />
             {t('history_login_title')}
           </div>
@@ -473,15 +473,11 @@ function HistoryCard({
   onDelete: () => Promise<void>;
   onPreview: (imageId?: string) => void;
   onRegenerate: () => void;
-  onTogglePublish: () => void;
+  onTogglePublish: () => Promise<void>;
 }) {
   const { t } = useSite();
-  const cancelDeleteRef = useRef<HTMLButtonElement | null>(null);
-  const confirmDeleteRef = useRef<HTMLButtonElement | null>(null);
-  const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
-  const deleteDialogTitleId = useId();
-  const deleteDialogDescId = useId();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingPublish, setConfirmingPublish] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const item = group.first;
   const colors = getColorClasses(index % 2 === 0 ? 'primary' : 'secondary');
@@ -505,53 +501,19 @@ function HistoryCard({
   const deleteConfirmLabel = deleteCount === 1
     ? t('history_delete_confirm_one')
     : t('history_delete_confirm_many', { count: deleteCount });
-
-  useEffect(() => {
-    if (!confirmingDelete) {
-      return undefined;
-    }
-
-    cancelDeleteRef.current?.focus();
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !deleting) {
-        event.preventDefault();
-        closeDeleteConfirm();
-        return;
-      }
-      if (event.key !== 'Tab') {
-        return;
-      }
-
-      const focusable = [cancelDeleteRef.current, confirmDeleteRef.current].filter(
-        (element): element is HTMLButtonElement => Boolean(element) && !element.disabled,
-      );
-      if (focusable.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [confirmingDelete, deleting]);
+  const publishTitle = group.allPublished
+    ? t('history_unpublish_title', { count: group.images.length })
+    : t('history_publish_title', { count: group.images.length });
+  const publishConsequence = group.allPublished
+    ? t('history_unpublish_consequence', { count: group.images.length })
+    : t('history_publish_consequence', { count: group.images.length });
+  const publishConfirmLabel = group.allPublished ? t('history_unpublish_case') : t('history_publish_case');
 
   function closeDeleteConfirm() {
     if (deleting) {
       return;
     }
     setConfirmingDelete(false);
-    window.setTimeout(() => deleteButtonRef.current?.focus(), 0);
   }
 
   async function confirmDelete() {
@@ -561,6 +523,15 @@ function HistoryCard({
       setConfirmingDelete(false);
     } catch {
       setDeleting(false);
+    }
+  }
+
+  async function confirmPublish() {
+    try {
+      await onTogglePublish();
+      setConfirmingPublish(false);
+    } catch {
+      setConfirmingPublish(false);
     }
   }
 
@@ -701,13 +672,12 @@ function HistoryCard({
                 : 'border-white/15 bg-white/5 text-white/60 hover:border-tertiary/35 hover:text-tertiary'
             }`}
             type="button"
-            onClick={onTogglePublish}
+            onClick={() => setConfirmingPublish(true)}
             disabled={publishDisabled}
           >
             <span className="truncate">{group.allPublished ? t('history_unpublish_case') : t('history_publish_case')}</span>
           </Button>
           <IconButton
-            ref={deleteButtonRef}
             label={t('history_delete')}
             icon={<Trash2 size={14} />}
             onClick={() => setConfirmingDelete(true)}
@@ -716,68 +686,30 @@ function HistoryCard({
             type="button"
           />
         </div>
-
-        {confirmingDelete ? (
-          <div
-            className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 px-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-6 backdrop-blur-sm sm:items-center sm:p-6"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                closeDeleteConfirm();
-              }
-            }}
-          >
-            <div
-              aria-describedby={deleteDialogDescId}
-              aria-labelledby={deleteDialogTitleId}
-              aria-modal="true"
-              className="flex max-h-[min(82vh,28rem)] w-full max-w-md flex-col overflow-hidden rounded-xl border border-error/40 bg-surface-container-low shadow-[0_28px_90px_rgba(0,0,0,0.5)] sm:rounded-2xl"
-              role="alertdialog"
-            >
-              <div className="flex min-h-0 flex-1 items-start gap-3 overflow-y-auto p-4 sm:p-5">
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-error text-on-error">
-                  <Trash2 size={16} />
-                </div>
-                <div className="min-w-0">
-                  <h2
-                    className="break-words text-base font-semibold leading-6 text-error [overflow-wrap:anywhere]"
-                    id={deleteDialogTitleId}
-                  >
-                    {deleteTitle}
-                  </h2>
-                  <p
-                    className="mt-2 break-words text-sm leading-6 text-on-surface-variant [overflow-wrap:anywhere]"
-                    id={deleteDialogDescId}
-                  >
-                    {deleteConsequence}
-                  </p>
-                </div>
-              </div>
-              <div className="grid shrink-0 grid-cols-1 gap-2 border-t border-outline-variant/70 bg-surface-container px-4 py-3 sm:grid-cols-2 sm:p-4">
-                <Button
-                  ref={cancelDeleteRef}
-                  variant="ghost"
-                  className="inline-flex h-11 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
-                  type="button"
-                  disabled={deleting}
-                  onClick={closeDeleteConfirm}
-                >
-                  {t('history_delete_cancel')}
-                </Button>
-                <Button
-                  ref={confirmDeleteRef}
-                  variant="danger"
-                  iconStart={deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-error bg-error px-3 text-sm font-black uppercase text-on-error transition-colors hover:bg-error/90 disabled:cursor-not-allowed disabled:opacity-60"
-                  type="button"
-                  disabled={deleting}
-                  onClick={() => confirmDelete().catch(() => undefined)}
-                >
-                  <span className="truncate">{deleteConfirmLabel}</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : null}
+        <ConfirmDialog
+          open={confirmingPublish}
+          title={publishTitle}
+          description={publishConsequence}
+          cancelLabel={t('history_delete_cancel')}
+          confirmLabel={publishConfirmLabel}
+          icon={<Globe2 size={16} />}
+          tone="publish"
+          busy={isPublishing}
+          onCancel={() => setConfirmingPublish(false)}
+          onConfirm={() => confirmPublish().catch(() => undefined)}
+        />
+        <ConfirmDialog
+          open={confirmingDelete}
+          title={deleteTitle}
+          description={deleteConsequence}
+          cancelLabel={t('history_delete_cancel')}
+          confirmLabel={deleteConfirmLabel}
+          icon={<Trash2 size={16} />}
+          tone="danger"
+          busy={deleting}
+          onCancel={closeDeleteConfirm}
+          onConfirm={() => confirmDelete().catch(() => undefined)}
+        />
       </div>
     </article>
   );

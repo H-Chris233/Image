@@ -2080,6 +2080,19 @@ async function runSmokeChecks(page, baseUrl) {
     ]);
   });
 
+  await runCheck('/history publish confirmation keeps blocking dialog contract', async () => {
+    await page.navigate('/history?smoke_auth=1', { width: 390, height: 844 });
+    await page.waitFor(() => /First smoke preview image/i.test(document.body.innerText), '/history fixture item before publish confirm');
+    await clickMainControl(page, '^Publish Case$', '/history publish confirm trigger');
+    await page.waitFor(() => document.querySelector('[role="alertdialog"]') && /Publish 2 generated assets/i.test(document.body.innerText), '/history publish confirmation');
+    await assertNoHorizontalOverflow(page, '/history publish confirmation mobile');
+    await assertFocusContained(page, '/history publish confirmation');
+    await assertNamedControlsMinTarget(page, '/history publish confirmation actions', [
+      '^Cancel$',
+      '^Publish Case$',
+    ]);
+  });
+
   await runCheck('/history card preview has dialog semantics and closes with Escape', async () => {
     await page.navigate('/history?smoke_auth=1', { width: 1280, height: 900 });
     await page.waitFor(() => /First smoke preview image/i.test(document.body.innerText), '/history fixture item for preview');
@@ -2441,6 +2454,16 @@ async function runSmokeChecks(page, baseUrl) {
     await clickMainControl(page, '^Select asset 2$', '/workspace select second asset for publish');
     await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
     await clickMainControl(page, '^Publish selected$', '/workspace publish selected');
+    await page.waitFor(() => document.querySelector('[role="alertdialog"]') && /Publish selected generated asset/i.test(document.body.innerText), '/workspace publish confirmation');
+    await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const dialog = document.querySelector('[role="alertdialog"]');
+      const control = Array.from(dialog?.querySelectorAll('button') || [])
+        .map((element) => ({ element, name: accessibleName(element) }))
+        .find((item) => /^Publish selected$/i.test(item.name));
+      if (!control) throw new Error('publish confirmation button missing');
+      control.element.click();
+    }, domSnapshotHelpers().text);
     await page.waitFor(() => /Unpublish selected|Published/i.test(document.body.innerText), '/workspace selected asset published');
     const publishCalls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
     const publishScoped = publishCalls.filter((call) => call.type === 'history-publish');
@@ -2450,6 +2473,16 @@ async function runSmokeChecks(page, baseUrl) {
 
     await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
     await clickMainControl(page, '^Unpublish selected$', '/workspace unpublish selected');
+    await page.waitFor(() => document.querySelector('[role="alertdialog"]') && /Unpublish selected generated asset/i.test(document.body.innerText), '/workspace unpublish confirmation');
+    await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const dialog = document.querySelector('[role="alertdialog"]');
+      const control = Array.from(dialog?.querySelectorAll('button') || [])
+        .map((element) => ({ element, name: accessibleName(element) }))
+        .find((item) => /^Unpublish selected$/i.test(item.name));
+      if (!control) throw new Error('unpublish confirmation button missing');
+      control.element.click();
+    }, domSnapshotHelpers().text);
     await page.waitFor(() => /Publish selected|Not published/i.test(document.body.innerText), '/workspace selected asset unpublished');
     const unpublishCalls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
     const unpublishScoped = unpublishCalls.filter((call) => call.type === 'history-publish');
