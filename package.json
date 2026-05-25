@@ -10,6 +10,8 @@
     "test:account": "tsx src/accountDomain.test.ts && tsx src/rechargeDomain.test.ts && tsx src/accountCenterRegression.test.ts",
     "check:brand": "node scripts/check-brand-residuals.mjs",
     "preview": "vite preview",
+    "smoke:ui": "node scripts/ui-smoke.mjs",
+    "capture:backend": "node scripts/backend-recapture.mjs",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "cap:sync": "npm run build && npx cap sync",
