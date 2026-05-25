@@ -27,9 +27,11 @@ import { BatchDownloadBar } from '../components/ecommerce/BatchDownloadBar';
 import { BatchResultPanel, type BatchResult } from '../components/ecommerce/BatchResultPanel';
 import { CountChips } from '../components/ecommerce/CountChips';
 import { CreditEstimate } from '../components/ecommerce/CreditEstimate';
+import { CustomStyleModal, loadCustomTemplates, saveCustomTemplates, type CustomStyleTemplate } from '../components/ecommerce/CustomStyleModal';
 import { FormatPicker } from '../components/ecommerce/FormatPicker';
 import { GenerationProgress } from '../components/ecommerce/GenerationProgress';
 import { HistorySearchBar } from '../components/ecommerce/HistorySearchBar';
+import { ModelPicker } from '../components/ecommerce/ModelPicker';
 import { ResultPanel } from '../components/ecommerce/ResultPanel';
 import { SampleGallery } from '../components/ecommerce/SampleGallery';
 import { TemplatePicker } from '../components/ecommerce/TemplatePicker';
@@ -120,6 +122,56 @@ const STYLE_TEMPLATES = [
     scenarios: '节假日大促场景，礼品礼盒展示，年节活动',
     previewGradient: 'linear-gradient(135deg, #6b1200 0%, #cc3300 50%, #ff8c00 100%)',
     exampleImageUrl: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=400&h=400&fit=crop&auto=format&q=80',
+  },
+  {
+    id: 'product_closeup',
+    emoji: '🔍',
+    name: '产品特写',
+    desc: '极近景，细节毕现',
+    style: '极近景微距摄影风格，产品细节清晰可见，柔和侧光，高质感材质表现',
+    scenarios: '产品材质特写，表面纹理，精工细节，品质感展示',
+    previewGradient: 'linear-gradient(135deg, #1a1a1a 0%, #3a3a3a 55%, #6a6a6a 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=400&h=400&fit=crop&auto=format&q=80',
+  },
+  {
+    id: 'brand_hero',
+    emoji: '⚡',
+    name: '品牌大片',
+    desc: '戏剧光影，高端品牌感',
+    style: '品牌广告大片风格，深色背景，强烈戏剧性光影，高对比度，奢侈品质感',
+    scenarios: '品牌主视觉，黑色或深灰背景，单点光源，强阴影对比',
+    previewGradient: 'linear-gradient(135deg, #0a0a0a 0%, #1c1c1c 50%, #2d2d00 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&h=400&fit=crop&auto=format&q=80',
+  },
+  {
+    id: 'autumn_winter',
+    emoji: '🍂',
+    name: '秋冬氛围',
+    desc: '暖棕色系，质感丰富',
+    style: '秋冬温暖氛围，棕色暖调，毛织物、干花、深色木质背景，舒适质感',
+    scenarios: '秋冬场景，毛绒织物背景，暖色灯光，木质桌面，干花装饰',
+    previewGradient: 'linear-gradient(135deg, #3d1a00 0%, #7a4020 55%, #c07840 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1509023464722-18d996393ca8?w=400&h=400&fit=crop&auto=format&q=80',
+  },
+  {
+    id: 'summer_fresh',
+    emoji: '🌊',
+    name: '夏日清爽',
+    desc: '明亮蓝白，清新海边感',
+    style: '夏日清爽明亮风格，白色蓝色调，海边阳光感，清新通透',
+    scenarios: '夏日场景，白色沙滩，蓝天，清水，海边石子，清新水果',
+    previewGradient: 'linear-gradient(135deg, #003060 0%, #0060a0 50%, #60c0ff 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=400&fit=crop&auto=format&q=80',
+  },
+  {
+    id: 'dark_luxury',
+    emoji: '💎',
+    name: '暗色奢华',
+    desc: '深色大理石，高端品牌调',
+    style: '暗色奢华风格，深色大理石纹理背景，金属光泽点缀，精致高端',
+    scenarios: '深色大理石台面，金属装饰，高端奢侈品场景，低调华贵',
+    previewGradient: 'linear-gradient(135deg, #0d0d0d 0%, #1a1a2e 50%, #16213e 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=400&fit=crop&auto=format&q=80',
   },
 ];
 
@@ -229,6 +281,9 @@ export default function Ecommerce() {
   const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [selectedGroupKeys, setSelectedGroupKeys] = useState<Set<string>>(new Set());
   const [batchDownloading, setBatchDownloading] = useState(false);
+  // M5: custom styles
+  const [customTemplates, setCustomTemplates] = useState<CustomStyleTemplate[]>(() => loadCustomTemplates());
+  const [showCustomModal, setShowCustomModal] = useState(false);
   const { markSubmitStart, markSubmitSuccess, markSubmitFailed, markFirstValue } = useGenerationMetrics({
     awaitingTaskId,
   });
@@ -570,13 +625,15 @@ export default function Ecommerce() {
   }
 
   function applyStyleTemplate(templateId: string) {
-    const tpl = STYLE_TEMPLATES.find((t) => t.id === templateId);
+    const builtIn = STYLE_TEMPLATES.find((t) => t.id === templateId);
+    const custom = customTemplates.find((t) => t.id === templateId);
+    const tpl = builtIn ?? custom;
     if (!tpl) return;
     setSelectedTemplate(templateId);
     setForm((current) => ({
       ...current,
       style: tpl.style,
-      scenarios: tpl.scenarios,
+      scenarios: 'scenarios' in tpl ? tpl.scenarios : '',
     }));
     setAnalysisResult(null);
     setSelectedPlan(null);
@@ -696,12 +753,14 @@ export default function Ecommerce() {
     // Capture template IDs at submission time to ensure stable ordering
     const submittedIds = [...selectedTemplateIds];
 
+    const allTemplates = [...STYLE_TEMPLATES, ...customTemplates];
+
     const settled = await Promise.allSettled(
       submittedIds.map(async (templateId) => {
-        const tpl = STYLE_TEMPLATES.find((t) => t.id === templateId);
+        const tpl = allTemplates.find((t) => t.id === templateId);
         if (!tpl) throw new Error(`Unknown template: ${templateId}`);
         const task = await generateEcommerceImages(
-          { ...basePayload, style: tpl.style, scenarios: tpl.scenarios },
+          { ...basePayload, style: tpl.style, scenarios: 'scenarios' in tpl ? tpl.scenarios : '' },
           references,
         );
         return { templateId, task };
@@ -715,7 +774,7 @@ export default function Ecommerce() {
 
     // Single setBatchResults call — all taskIds populated upfront so polling guard works immediately
     const finalResults: BatchResult[] = submittedIds.map((templateId, idx) => {
-      const tpl = STYLE_TEMPLATES.find((t) => t.id === templateId)!;
+      const tpl = allTemplates.find((t) => t.id === templateId)!;
       const s = settled[idx];
       if (s.status === 'fulfilled') {
         return { templateId, templateName: tpl.name, taskId: s.value.task.id, status: 'pending', imageUrls: [] };
@@ -1011,28 +1070,50 @@ export default function Ecommerce() {
 
         {/* ① 选择场景风格 — Template-First Step 4 */}
         <div>
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between gap-2">
             <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--ag-lime)' }}>
               ① 选择场景风格
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setBatchMode((m) => !m);
-                setSelectedTemplateIds([]);
-              }}
-              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-all duration-150"
-              style={{
-                border: batchMode ? '1px solid var(--ag-lime)' : '1px solid rgba(255,255,255,0.15)',
-                color: batchMode ? 'var(--ag-lime)' : 'rgba(255,255,255,0.4)',
-                background: batchMode ? 'rgba(227,255,116,0.08)' : 'transparent',
-              }}
-            >
-              批量
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-all duration-150"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.4)',
+                }}
+                onClick={() => setShowCustomModal(true)}
+              >
+                + 自定义
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBatchMode((m) => !m);
+                  setSelectedTemplateIds([]);
+                }}
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-all duration-150"
+                style={{
+                  border: batchMode ? '1px solid var(--ag-lime)' : '1px solid rgba(255,255,255,0.15)',
+                  color: batchMode ? 'var(--ag-lime)' : 'rgba(255,255,255,0.4)',
+                  background: batchMode ? 'rgba(227,255,116,0.08)' : 'transparent',
+                }}
+              >
+                批量
+              </button>
+            </div>
           </div>
           <TemplatePicker
-            templates={STYLE_TEMPLATES}
+            templates={[
+              ...STYLE_TEMPLATES,
+              ...customTemplates.map((ct) => ({
+                id: ct.id,
+                emoji: '✏️',
+                name: ct.name,
+                desc: ct.desc,
+                previewGradient: 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
+              })),
+            ]}
             value={batchMode ? null : selectedTemplate}
             onChange={batchMode ? () => undefined : applyStyleTemplate}
             recommendedIds={recommendedTemplateIds}
@@ -1175,7 +1256,9 @@ export default function Ecommerce() {
               <CompactInput label={t('home_ecom_materials')} value={form.materials} onChange={(value) => setForm((current) => ({ ...current, materials: value }))} />
               <CompactInput label={t('home_ecom_selling_points')} value={form.sellingPoints} onChange={(value) => setForm((current) => ({ ...current, sellingPoints: value }))} />
               <CompactInput label={t('home_ecom_scenarios')} value={form.scenarios} onChange={(value) => setForm((current) => ({ ...current, scenarios: value }))} />
-              <GenerationSelect label={t('home_quality')} value={imageQuality} onChange={setImageQuality} options={QUALITY_OPTIONS} />
+              <div className="col-span-2">
+                <ModelPicker value={imageQuality} onChange={setImageQuality} batchMode={batchMode} />
+              </div>
               <label className="col-span-2 min-w-0">
                 <span className="mb-0.5 block truncate text-[8px] uppercase tracking-[0.18em] text-white/40">{t('home_ecom_extra')}</span>
                 <input
@@ -1409,6 +1492,16 @@ export default function Ecommerce() {
         downloading={batchDownloading}
         onDownload={() => void handleBatchDownload()}
         onClear={() => setSelectedGroupKeys(new Set())}
+      />
+      <CustomStyleModal
+        open={showCustomModal}
+        onClose={() => setShowCustomModal(false)}
+        onSave={(template) => {
+          const updated = [...customTemplates, template];
+          setCustomTemplates(updated);
+          saveCustomTemplates(updated);
+          applyStyleTemplate(template.id);
+        }}
       />
 
           <ImagePreviewModal
