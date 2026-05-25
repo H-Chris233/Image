@@ -9,14 +9,22 @@ import {
   formatDate,
   generateEcommercePublishCopy,
   generateEcommerceImages,
+  getAccount,
   getConfig,
   getHistory,
   taskDownloadUrl,
+  type AccountInfo,
   type EcommerceAnalyzeResult,
   type EcommercePublishCopyResult,
   type EcommerceRecommendedPlan,
   HistoryItem,
 } from '../api';
+import { CountChips } from '../components/ecommerce/CountChips';
+import { FormatPicker } from '../components/ecommerce/FormatPicker';
+import { GenerationProgress } from '../components/ecommerce/GenerationProgress';
+import { ResultPanel } from '../components/ecommerce/ResultPanel';
+import { SampleGallery } from '../components/ecommerce/SampleGallery';
+import { TemplatePicker } from '../components/ecommerce/TemplatePicker';
 import CompactInput from '../components/CompactInput';
 import GenerationSelect from '../components/GenerationSelect';
 import ImagePreviewModal from '../components/ImagePreviewModal';
@@ -25,6 +33,7 @@ import PromptEditorModal from '../components/PromptEditorModal';
 import RetryImage from '../components/RetryImage';
 import { copyTextToClipboard } from '../clipboard';
 import { groupHistoryItems, HistoryGroup, mergeHistoryItems } from '../historyGroups';
+import { useGenerationMetrics } from '../hooks/useGenerationMetrics';
 import {
   ASPECT_RATIO_OPTIONS,
   IMAGE_COUNT_OPTIONS,
@@ -51,6 +60,8 @@ const STYLE_TEMPLATES = [
     desc: '电商标准白底，主图必备',
     style: '纯白色背景，产品居中，边缘干净，专业电商白底风格，无阴影',
     scenarios: '电商平台商品主图，白底背景',
+    previewGradient: 'linear-gradient(135deg, #f8f8f6 0%, #e8e5e0 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop&auto=format&q=80',
   },
   {
     id: 'minimal_gradient',
@@ -59,6 +70,8 @@ const STYLE_TEMPLATES = [
     desc: '淡雅渐变，高级质感',
     style: '简约淡色渐变背景，高级干净，极简现代感',
     scenarios: '品牌官网展示，高端电商场景图',
+    previewGradient: 'linear-gradient(135deg, #dce8f8 0%, #ede6f8 50%, #f8e6f0 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=400&h=400&fit=crop&auto=format&q=80',
   },
   {
     id: 'indoor_scene',
@@ -67,6 +80,8 @@ const STYLE_TEMPLATES = [
     desc: '居家氛围，种草利器',
     style: '温馨真实室内生活场景，自然日光，高质感生活气息',
     scenarios: '室内生活场景，桌面摆拍，沙发旁，生活化陈设',
+    previewGradient: 'linear-gradient(135deg, #3d2a20 0%, #6b4a35 55%, #9a7055 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1554995207-c18c203602cb?w=400&h=400&fit=crop&auto=format&q=80',
   },
   {
     id: 'outdoor_nature',
@@ -75,6 +90,8 @@ const STYLE_TEMPLATES = [
     desc: '清新自然光，格调提升',
     style: '自然户外场景，清新明亮，真实自然光',
     scenarios: '户外自然场景，草地、石板路、木质桌面等自然背景',
+    previewGradient: 'linear-gradient(135deg, #1a4a2e 0%, #2d8a4a 55%, #52c875 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=400&fit=crop&auto=format&q=80',
   },
   {
     id: 'commercial_poster',
@@ -83,6 +100,8 @@ const STYLE_TEMPLATES = [
     desc: '视觉冲击，促销利器',
     style: '商业海报风格，高对比度，视觉冲击感强，现代设计感',
     scenarios: '活动促销海报，品牌主视觉，详情页 banner',
+    previewGradient: 'linear-gradient(135deg, #0d0d0b 0%, #242220 55%, #E3FF74 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop&auto=format&q=80',
   },
   {
     id: 'festive',
@@ -91,13 +110,38 @@ const STYLE_TEMPLATES = [
     desc: '暖色氛围，大促必备',
     style: '节日喜庆氛围，温暖橙红色调，活动感强，礼物感',
     scenarios: '节假日大促场景，礼品礼盒展示，年节活动',
+    previewGradient: 'linear-gradient(135deg, #6b1200 0%, #cc3300 50%, #ff8c00 100%)',
+    exampleImageUrl: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=400&h=400&fit=crop&auto=format&q=80',
   },
 ];
+
+const FREEMIUM_CHIP_STYLE = {
+  borderColor: 'rgba(227,255,116,0.3)',
+  background: 'rgba(227,255,116,0.05)',
+} as const;
+
+const FREEMIUM_DOT_STYLE = { backgroundColor: 'var(--ag-lime)' } as const;
+const FREEMIUM_TEXT_STYLE = { color: 'var(--ag-lime)' } as const;
 
 export default function Ecommerce() {
   const { viewer } = useAuth();
   const { t } = useSite();
-  const { addTask, openDrawer, taskHistoryItems } = useTasks();
+  const [account, setAccount] = useState<AccountInfo | null>(null);
+  useEffect(() => {
+    if (!viewer?.authenticated) { setAccount(null); return; }
+    let cancelled = false;
+    getAccount()
+      .then((data) => { if (!cancelled) setAccount(data); })
+      .catch(() => { if (!cancelled) setAccount(null); });
+    return () => { cancelled = true; };
+  }, [viewer?.authenticated, viewer?.owner_id]);
+  const isOutOfCredits = Boolean(
+    viewer?.authenticated &&
+    account?.balance?.ok === true &&
+    typeof account.balance.remaining === 'number' &&
+    account.balance.remaining <= 0,
+  );
+  const { addTask, closeDrawer, taskHistoryItems } = useTasks();
   const { notifyError, notifySuccess, notifyInfo } = useNotifier();
   const [productImage, setProductImage] = useState<File | null>(null);
   const [productPreview, setProductPreview] = useState<{ name: string; url: string } | null>(null);
@@ -141,9 +185,17 @@ export default function Ecommerce() {
   const [dragging, setDragging] = useState(false);
   const [editReferenceDragging, setEditReferenceDragging] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [latestImages, setLatestImages] = useState<string[]>([]);
+  const [awaitingTaskId, setAwaitingTaskId] = useState<string | null>(null);
+  const { markSubmitStart, markSubmitSuccess, markSubmitFailed, markFirstValue } = useGenerationMetrics({
+    awaitingTaskId,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editReferenceInputRef = useRef<HTMLInputElement>(null);
   const productReferenceInputRef = useRef<HTMLInputElement>(null);
+  const historySectionRef = useRef<HTMLElement>(null);
+  const seenTaskIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -217,6 +269,33 @@ export default function Ecommerce() {
   useEffect(() => {
     loadHistory().catch(() => undefined);
   }, [loadHistory]);
+
+  // 记录挂载时已有的 task_id，避免初始 taskHistoryItems 填充时误更新结果面板
+  useEffect(() => {
+    seenTaskIds.current = new Set(taskHistoryItems.map((item) => item.task_id ?? item.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 仅执行一次
+
+  // 监听新完成的电商任务，将结果内联展示在结果面板
+  useEffect(() => {
+    if (!awaitingTaskId) return;
+    const newEcomItems = taskHistoryItems.filter(
+      (item) => Boolean(item.task_request?.ecommerce) && !seenTaskIds.current.has(item.task_id ?? item.id),
+    );
+    if (newEcomItems.length === 0) return;
+    const taskItems = newEcomItems.filter((item) => item.task_id === awaitingTaskId);
+    if (taskItems.length === 0) return;
+    const urls = taskItems
+      .filter((item) => item.image_url)
+      .sort((a, b) => (a.batch_index || 0) - (b.batch_index || 0))
+      .map((item) => item.image_url as string);
+    if (urls.length > 0) {
+      markFirstValue(awaitingTaskId, urls.length);
+      setLatestImages(urls);
+      setAwaitingTaskId(null);
+      taskItems.forEach((item) => seenTaskIds.current.add(item.task_id ?? item.id));
+    }
+  }, [taskHistoryItems, awaitingTaskId, markFirstValue]);
 
   const mergedHistory = mergeHistoryItems([
     ...taskHistoryItems.filter((item) => Boolean(item.task_request?.ecommerce)),
@@ -366,9 +445,22 @@ export default function Ecommerce() {
       notifyError(t('ecom_generation_login_required'));
       return;
     }
+    if (isOutOfCredits) {
+      notifyError('免费额度已用完，升级继续');
+      return;
+    }
     setLoading(true);
     const sentMessage = t('home_ecom_sent');
     notifyInfo(sentMessage);
+    markSubmitStart({
+      imageCount: Math.max(1, Math.min(9, Number(imageCount) || 4)),
+      aspectRatio,
+      imageScale,
+      imageQuality,
+      hasReferences: productReferences.length > 0,
+      usedTemplate: selectedTemplate,
+      usedAnalysisPlan: selectedPlan !== null,
+    });
     try {
       const task = await generateEcommerceImages(
         {
@@ -400,12 +492,15 @@ export default function Ecommerce() {
           })),
         ],
       );
+      markSubmitSuccess(task.id);
       setSelectedPlan(null);
       addTask(task);
-      openDrawer();
-      const nextMessage = task.status === 'queued' ? t('home_message_queued') : t('home_message_processing');
-      notifyInfo(nextMessage);
+      closeDrawer(); // addTask 内部会打开抽屉，立即关闭以保持用户在当前页
+      setLatestImages([]);       // 清空上次结果，ResultPanel 进入 skeleton 状态
+      setAwaitingTaskId(task.id); // 标记正在等待此任务的结果
+      notifyInfo('✓ 正在生成…结果将显示在下方');
     } catch (err) {
+      markSubmitFailed(err);
       notifyError(err);
     } finally {
       setLoading(false);
@@ -563,7 +658,6 @@ export default function Ecommerce() {
         note: reference.note,
       })));
       addTask(task);
-      openDrawer();
       setEditingItem(null);
       setEditPrompt('');
       setEditReferences([]);
@@ -627,6 +721,13 @@ export default function Ecommerce() {
             <ModelBadge />
             <p className="text-sm text-white/50">{t('ecom_subtitle')}</p>
           </div>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1" style={FREEMIUM_CHIP_STYLE}>
+            <span className="h-1.5 w-1.5 rounded-full" style={FREEMIUM_DOT_STYLE} aria-hidden />
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={FREEMIUM_TEXT_STYLE}>Free Tier</span>
+            <span className="text-[11px] text-white/55">
+              {isOutOfCredits ? '本月免费额度已用完' : '每月 5 次免费生成 · 无需信用卡'}
+            </span>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-2 md:w-[320px]">
           <Link className="flex h-10 items-center justify-center border border-primary/35 text-xs font-bold uppercase tracking-widest text-primary hover:bg-primary/10" to="/create">
@@ -638,8 +739,35 @@ export default function Ecommerce() {
         </div>
       </div>
 
+      {selectedGroup ? (
+        <section ref={historySectionRef}>
+          <button
+            className="mb-4 flex h-10 items-center gap-2 border border-primary/25 px-4 text-xs uppercase tracking-widest text-primary hover:bg-primary/10"
+            type="button"
+            onClick={() => setSelectedGroupKey(null)}
+          >
+            <ArrowLeft size={14} />
+            {t('ecom_back_projects')}
+          </button>
+          <ProjectDetail
+            group={selectedGroup}
+            onPreview={setPreviewItem}
+            onDeleteItem={(item) => handleDeleteItem(item).catch(notifyError)}
+            onEdit={beginEdit}
+            onCopy={(prompt) => copyPrompt(prompt).catch(() => undefined)}
+            onCopyText={(text) => copyPublishText(text).catch(() => undefined)}
+            publishCopy={publishCopies[selectedGroup.key] || null}
+            publishCopyLoading={publishCopyLoadingKey === selectedGroup.key}
+            onGeneratePublishCopy={() => generatePublishCopy(selectedGroup)}
+            t={t}
+          />
+        </section>
+      ) : (
+        <div className="lg:grid lg:grid-cols-[360px_1fr] lg:gap-6 lg:items-start">
+          {/* Left column: config + AI analysis — Step 2 */}
+          <div className="mb-8 space-y-3 lg:mb-0">
       <section
-        className={`mb-8 grid grid-cols-1 gap-3 border bg-black/55 p-3 transition-colors lg:grid-cols-[220px_1fr_auto] ${
+        className={`flex flex-col gap-4 border bg-black/55 p-3 transition-colors ${
           dragging ? 'border-secondary bg-secondary/10' : 'border-primary/20'
         }`}
         onDragEnter={handleDragOver}
@@ -649,19 +777,36 @@ export default function Ecommerce() {
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        <div className="min-w-0">
-          <input ref={fileInputRef} className="hidden" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleProductImageChange} />
-          <input
-            ref={productReferenceInputRef}
-            className="hidden"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            multiple
-            onChange={handleProductReferenceChange}
+        <input ref={fileInputRef} className="hidden" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleProductImageChange} />
+        <input
+          ref={productReferenceInputRef}
+          className="hidden"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          multiple
+          onChange={handleProductReferenceChange}
+        />
+
+        {/* ① 选择场景风格 — Template-First Step 4 */}
+        <div>
+          <div className="mb-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--ag-lime)' }}>
+            ① 选择场景风格
+          </div>
+          <TemplatePicker
+            templates={STYLE_TEMPLATES}
+            value={selectedTemplate}
+            onChange={applyStyleTemplate}
           />
+        </div>
+
+        {/* ② 上传商品图 */}
+        <div>
+          <div className="mb-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--ag-lime)' }}>
+            ② 上传商品图
+          </div>
           <div className="relative">
             <button
-              className="group relative flex h-32 w-full items-center justify-center overflow-hidden border border-dashed border-primary/25 bg-black hover:bg-primary/5"
+              className="group relative flex h-40 w-full items-center justify-center overflow-hidden border border-dashed border-primary/25 bg-black hover:bg-primary/5"
               type="button"
               onClick={() => fileInputRef.current?.click()}
             >
@@ -693,6 +838,15 @@ export default function Ecommerce() {
               </button>
             ) : null}
           </div>
+          {!productPreview && (
+            <button
+              type="button"
+              className="mt-1.5 w-full text-[9px] text-white/35 transition-colors hover:text-primary"
+              onClick={() => notifyInfo('示例商品功能即将上线，请上传您的商品图开始体验')}
+            >
+              → 没有商品图？先用示例体验
+            </button>
+          )}
           {productPreview ? (
             <div className="mt-2 grid grid-cols-1 gap-1.5">
               <label className="block">
@@ -722,50 +876,74 @@ export default function Ecommerce() {
           ) : null}
         </div>
 
-        <div className="flex min-w-0 flex-col gap-3">
+        {/* 输出格式 */}
+        <div>
+          <div className="mb-2 text-[9px] font-bold uppercase tracking-widest text-white/35">{t('home_aspect_ratio')}</div>
+          <FormatPicker value={aspectRatio} onChange={setAspectRatio} />
+        </div>
 
-          <div>
-            <div className="mb-1.5 text-[9px] font-bold uppercase tracking-widest text-white/35">快速风格选择</div>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {STYLE_TEMPLATES.map((tpl) => (
-                <button
-                  key={tpl.id}
-                  type="button"
-                  onClick={() => applyStyleTemplate(tpl.id)}
-                  className={`flex shrink-0 flex-col items-start gap-0.5 border px-3 py-2 text-left transition-colors ${
-                    selectedTemplate === tpl.id
-                      ? 'border-secondary bg-secondary/15 text-secondary'
-                      : 'border-white/10 bg-white/[0.02] text-white/60 hover:border-white/25 hover:text-white/80'
-                  }`}
-                >
-                  <span className="text-base leading-none">{tpl.emoji}</span>
-                  <span className="mt-1 text-[10px] font-bold leading-none">{tpl.name}</span>
-                  <span className="mt-0.5 text-[8px] leading-none opacity-60">{tpl.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* 生成数量 */}
+        <div className="flex items-center gap-4">
+          <div className="text-[9px] font-bold uppercase tracking-widest text-white/35">{t('home_image_count')}</div>
+          <CountChips
+            value={parseInt(imageCount, 10)}
+            onChange={(n) => setImageCount(String(n))}
+          />
+        </div>
 
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-          <CompactInput label={t('home_ecom_product_name')} value={form.productName} onChange={(value) => setForm((current) => ({ ...current, productName: value }))} />
-          <CompactInput label={t('home_ecom_platform')} value={form.platform} onChange={(value) => setForm((current) => ({ ...current, platform: value }))} />
-          <CompactInput label={t('home_ecom_style')} value={form.style} onChange={(value) => setForm((current) => ({ ...current, style: value }))} />
-          <GenerationSelect label={t('home_image_count')} value={imageCount} onChange={setImageCount} options={IMAGE_COUNT_OPTIONS} />
-          <CompactInput label={t('home_ecom_materials')} value={form.materials} onChange={(value) => setForm((current) => ({ ...current, materials: value }))} />
-          <CompactInput label={t('home_ecom_selling_points')} value={form.sellingPoints} onChange={(value) => setForm((current) => ({ ...current, sellingPoints: value }))} />
-          <CompactInput label={t('home_ecom_scenarios')} value={form.scenarios} onChange={(value) => setForm((current) => ({ ...current, scenarios: value }))} />
-          <GenerationSelect label={t('home_size')} value={imageScale} onChange={setImageScale} options={SIZE_OPTIONS} getOptionLabel={(option) => SIZE_LABELS[option] || option} isOptionDisabled={(option) => !isSupportedImagePreset(option, aspectRatio)} />
-          <GenerationSelect label={t('home_aspect_ratio')} value={aspectRatio} onChange={setAspectRatio} options={ASPECT_RATIO_OPTIONS} />
-          <GenerationSelect label={t('home_quality')} value={imageQuality} onChange={setImageQuality} options={QUALITY_OPTIONS} />
-          <label className="col-span-2 min-w-0 lg:col-span-2">
-            <span className="mb-0.5 block truncate text-[8px] uppercase tracking-[0.18em] text-white/40">{t('home_ecom_extra')}</span>
+        {/* 参数 */}
+        <div className="grid grid-cols-2 gap-2">
+          <label className="min-w-0">
+            <span className="mb-0.5 flex items-center gap-1 text-[10px] font-medium text-on-surface-variant">
+              <span className="font-bold leading-none" style={{ color: 'var(--ag-lime)' }}>★</span>
+              {t('home_ecom_product_name')}
+            </span>
             <input
-              className="h-9 w-full border border-primary/20 bg-black px-2 text-xs text-primary outline-none focus:border-primary"
-              value={form.extraRequirements}
-              onChange={(event) => setForm((current) => ({ ...current, extraRequirements: event.target.value }))}
+              className="h-9 w-full rounded-lg border border-outline-variant bg-surface-container-low px-2 text-xs text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+              value={form.productName}
+              onChange={(event) => setForm((current) => ({ ...current, productName: event.target.value }))}
+              placeholder="如：手冲咖啡壶"
             />
           </label>
-          <div className="col-span-2 min-w-0 lg:col-span-4">
+          <CompactInput label={t('home_ecom_platform')} value={form.platform} onChange={(value) => setForm((current) => ({ ...current, platform: value }))} />
+          <CompactInput label={t('home_ecom_style')} value={form.style} onChange={(value) => setForm((current) => ({ ...current, style: value }))} />
+          <GenerationSelect label={t('home_size')} value={imageScale} onChange={setImageScale} options={SIZE_OPTIONS} getOptionLabel={(option) => SIZE_LABELS[option] || option} isOptionDisabled={(option) => !isSupportedImagePreset(option, aspectRatio)} />
+
+          {/* Advanced options toggle */}
+          <div className="col-span-2">
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest transition-colors"
+              style={{ color: showAdvanced ? 'rgba(240,237,232,0.6)' : 'rgba(240,237,232,0.35)' }}
+              onClick={() => setShowAdvanced((v) => !v)}
+            >
+              <span
+                className="inline-block transition-transform duration-200"
+                style={{ transform: showAdvanced ? 'rotate(90deg)' : 'rotate(0deg)' }}
+              >
+                ▶
+              </span>
+              高级选项
+            </button>
+          </div>
+
+          {showAdvanced && (
+            <>
+              <CompactInput label={t('home_ecom_materials')} value={form.materials} onChange={(value) => setForm((current) => ({ ...current, materials: value }))} />
+              <CompactInput label={t('home_ecom_selling_points')} value={form.sellingPoints} onChange={(value) => setForm((current) => ({ ...current, sellingPoints: value }))} />
+              <CompactInput label={t('home_ecom_scenarios')} value={form.scenarios} onChange={(value) => setForm((current) => ({ ...current, scenarios: value }))} />
+              <GenerationSelect label={t('home_quality')} value={imageQuality} onChange={setImageQuality} options={QUALITY_OPTIONS} />
+              <label className="col-span-2 min-w-0">
+                <span className="mb-0.5 block truncate text-[8px] uppercase tracking-[0.18em] text-white/40">{t('home_ecom_extra')}</span>
+                <input
+                  className="h-9 w-full border border-primary/20 bg-black px-2 text-xs text-primary outline-none focus:border-primary"
+                  value={form.extraRequirements}
+                  onChange={(event) => setForm((current) => ({ ...current, extraRequirements: event.target.value }))}
+                />
+              </label>
+            </>
+          )}
+          <div className="col-span-2 min-w-0">
             <div className="mb-2 flex items-center justify-between gap-3">
               <div className="text-[9px] uppercase tracking-widest text-white/35">{t('ecom_edit_references')}</div>
               <button
@@ -801,20 +979,34 @@ export default function Ecommerce() {
               <div className="border border-dashed border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-white/35">{t('ecom_edit_reference_tip')}</div>
             )}
           </div>
-          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 lg:h-full lg:w-36 lg:grid-cols-1">
+        {/* 生成按钮 — 4b: disabled 状态提示 */}
+        <div className="flex flex-col gap-2">
           <button
-            className="flex h-12 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-40 lg:h-auto lg:flex-1"
+            className="btn-commerce w-full h-12"
             type="button"
-            disabled={loading || !productImage}
+            disabled={loading || !productImage || isOutOfCredits}
             onClick={handleSubmit}
+            title={!productImage ? '请先上传商品图（步骤②）' : isOutOfCredits ? '免费额度已用完，升级继续 →' : undefined}
           >
-            {loading ? <Loader2 className="animate-spin" size={22} /> : t('home_execute')}
+            {loading ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : !productImage ? (
+              <>请先上传商品图 ↑</>
+            ) : isOutOfCredits ? (
+              <>额度已用完 · 升级继续 →</>
+            ) : (
+              <>✦ 生成场景图 ({imageCount})</>
+            )}
           </button>
+          {loading && (
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+              <GenerationProgress active={loading} />
+            </div>
+          )}
           <button
-            className="flex h-12 items-center justify-center gap-2 border border-white/15 bg-white/[0.03] px-3 text-[10px] font-black uppercase tracking-widest text-white/60 hover:border-secondary hover:text-secondary disabled:opacity-40 lg:h-11"
+            className="btn-commerce-secondary"
             type="button"
             disabled={loading || analyzing}
             onClick={resetEcommerceForm}
@@ -825,82 +1017,86 @@ export default function Ecommerce() {
         </div>
       </section>
 
-      <section className="mb-8 border border-secondary/20 bg-black/55 p-4">
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-secondary">
-              <Sparkles size={14} />
-              {t('ecom_ai_designer')}
-            </div>
-            <p className="text-xs leading-5 text-white/50">{t('ecom_ai_designer_hint')}</p>
+            <details className="group border border-secondary/20 bg-black/55 open:pb-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between p-4 [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-secondary">
+                  <Sparkles size={14} />
+                  {t('ecom_ai_designer')}
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    className="flex h-8 items-center justify-center gap-2 bg-secondary px-3 text-[10px] font-black uppercase tracking-widest text-black hover:bg-white disabled:opacity-50"
+                    type="button"
+                    disabled={analyzing || !productImage}
+                    onClick={(e) => { e.preventDefault(); handleAnalyzeProduct(); }}
+                  >
+                    {analyzing ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+                    {analyzing ? t('ecom_analyzing') : t('ecom_analyze_product')}
+                  </button>
+                  <span className="text-white/30 transition-transform group-open:rotate-180">▾</span>
+                </div>
+              </summary>
+              <div className="px-4">
+                {analysisResult ? (
+                  <EcommerceAnalysisPanel result={analysisResult} onApplyPlan={applyPlan} t={t} />
+                ) : (
+                  <div className="border border-dashed border-white/10 bg-white/[0.02] p-4 text-xs leading-6 text-white/45">{t('ecom_analysis_empty')}</div>
+                )}
+              </div>
+            </details>
           </div>
-          <button
-            className="flex h-10 items-center justify-center gap-2 bg-secondary px-4 text-[10px] font-black uppercase tracking-widest text-black hover:bg-white disabled:opacity-50"
-            type="button"
-            disabled={analyzing || !productImage}
-            onClick={handleAnalyzeProduct}
-          >
-            {analyzing ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
-            {analyzing ? t('ecom_analyzing') : t('ecom_analyze_product')}
-          </button>
-        </div>
-        {analysisResult ? (
-          <EcommerceAnalysisPanel result={analysisResult} onApplyPlan={applyPlan} t={t} />
-        ) : (
-          <div className="border border-dashed border-white/10 bg-white/[0.02] p-4 text-xs leading-6 text-white/45">{t('ecom_analysis_empty')}</div>
-        )}
-      </section>
+          {/* Right column: ResultPanel + history — Step 2 */}
+          <div className="space-y-6">
+            <ResultPanel
+              images={latestImages}
+              loading={awaitingTaskId !== null}
+              expectedCount={parseInt(imageCount, 10)}
+              onPreview={(url, index) =>
+                setPreviewItem({ imageUrl: url, prompt: `生成图 ${index + 1}` })
+              }
+              onRetry={latestImages.length > 0 ? () => { handleSubmit().catch(() => undefined); } : undefined}
+              onDownload={(url) => window.open(url, '_blank')}
+              uploadedImageUrl={productPreview?.url}
+              selectedTemplateName={selectedTemplate ? STYLE_TEMPLATES.find((t) => t.id === selectedTemplate)?.name : undefined}
+            />
 
-      {selectedGroup ? (
-        <section>
-          <button
-            className="mb-4 flex h-10 items-center gap-2 border border-primary/25 px-4 text-xs uppercase tracking-widest text-primary hover:bg-primary/10"
-            type="button"
-            onClick={() => setSelectedGroupKey(null)}
-          >
-            <ArrowLeft size={14} />
-            {t('ecom_back_projects')}
-          </button>
-          <ProjectDetail
-            group={selectedGroup}
-            onPreview={setPreviewItem}
-            onDeleteItem={(item) => handleDeleteItem(item).catch(notifyError)}
-            onEdit={beginEdit}
-            onCopy={(prompt) => copyPrompt(prompt).catch(() => undefined)}
-            onCopyText={(text) => copyPublishText(text).catch(() => undefined)}
-            publishCopy={publishCopies[selectedGroup.key] || null}
-            publishCopyLoading={publishCopyLoadingKey === selectedGroup.key}
-            onGeneratePublishCopy={() => generatePublishCopy(selectedGroup)}
-            t={t}
-          />
-        </section>
-      ) : (
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-black tracking-tight text-white">{t('ecom_projects')}</h2>
-            <button className="flex h-9 items-center gap-2 border border-white/10 px-3 text-[10px] uppercase tracking-widest text-white/60 hover:border-primary hover:text-primary" type="button" onClick={() => loadHistory().catch(() => undefined)}>
-              {historyLoading ? <Loader2 className="animate-spin" size={13} /> : <RefreshCw size={13} />}
-              {t('config_sync_cases')}
-            </button>
+            <section ref={historySectionRef}>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-black tracking-tight text-white">{t('ecom_projects')}</h2>
+                <button className="flex h-9 items-center gap-2 border border-white/10 px-3 text-[10px] uppercase tracking-widest text-white/60 hover:border-primary hover:text-primary" type="button" onClick={() => loadHistory().catch(() => undefined)}>
+                  {historyLoading ? <Loader2 className="animate-spin" size={13} /> : <RefreshCw size={13} />}
+                  {t('config_sync_cases')}
+                </button>
+              </div>
+              {groups.length > 0 ? (
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  {groups.map((group) => (
+                    <ProjectCard
+                      key={group.key}
+                      group={group}
+                      onOpen={() => openProject(group).catch(notifyError)}
+                      onDelete={() => handleDeleteGroup(group).catch(notifyError)}
+                      t={t}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-primary/20 bg-black/50 p-5">
+                  {historyLoading ? (
+                    <div className="flex min-h-[200px] items-center justify-center text-sm text-white/45">
+                      {t('home_loading_feed')}
+                    </div>
+                  ) : (
+                    <SampleGallery
+                      title="效果示例"
+                      subtitle="上传商品图，一键生成专业场景图，首次生成后将在此展示"
+                    />
+                  )}
+                </div>
+              )}
+            </section>
           </div>
-          {groups.length > 0 ? (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {groups.map((group) => (
-                <ProjectCard
-                  key={group.key}
-                  group={group}
-                  onOpen={() => openProject(group).catch(notifyError)}
-                  onDelete={() => handleDeleteGroup(group).catch(notifyError)}
-                  t={t}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex min-h-[260px] items-center justify-center border border-primary/20 bg-black/50 px-6 text-center text-sm text-white/45">
-              {historyLoading ? t('home_loading_feed') : t('ecom_empty')}
-            </div>
-          )}
-        </section>
+        </div>
       )}
 
           <ImagePreviewModal
