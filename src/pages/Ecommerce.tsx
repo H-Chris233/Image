@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Download, ImagePlus, Loader2, Maximize2, Paperclip, PencilLine, RefreshCw, Sparkles, Trash2, X } from 'lucide-react';
 import {
   analyzeEcommerceProduct,
+  cancelImageTask,
   deleteHistory,
   editHistoryImage,
   formatDate,
@@ -12,6 +13,7 @@ import {
   getAccount,
   getConfig,
   getHistory,
+  removeBackground,
   taskDownloadUrl,
   type AccountInfo,
   type EcommerceAnalyzeResult,
@@ -19,8 +21,10 @@ import {
   type EcommerceRecommendedPlan,
   HistoryItem,
 } from '../api';
-import { CountChips } from '../components/ecommerce/CountChips';
+import { BackgroundRemovalPreview } from '../components/ecommerce/BackgroundRemovalPreview';
 import { BatchResultPanel, type BatchResult } from '../components/ecommerce/BatchResultPanel';
+import { CountChips } from '../components/ecommerce/CountChips';
+import { CreditEstimate } from '../components/ecommerce/CreditEstimate';
 import { FormatPicker } from '../components/ecommerce/FormatPicker';
 import { GenerationProgress } from '../components/ecommerce/GenerationProgress';
 import { ResultPanel } from '../components/ecommerce/ResultPanel';
@@ -216,6 +220,8 @@ export default function Ecommerce() {
   // Ref kept in sync so the polling effect can read the latest value without adding
   // batchResults to its dependency array (which would cause re-entry after every update).
   const batchResultsRef = useRef<BatchResult[]>([]);
+  const [removedBgUrl, setRemovedBgUrl] = useState<string | null>(null);
+  const [removingBg, setRemovingBg] = useState(false);
   const { markSubmitStart, markSubmitSuccess, markSubmitFailed, markFirstValue } = useGenerationMetrics({
     awaitingTaskId,
   });
@@ -326,9 +332,15 @@ export default function Ecommerce() {
       markFirstValue(awaitingTaskId, urls.length);
       setLatestImages(urls);
       setAwaitingTaskId(null);
+      setRemovedBgUrl(null);
       taskItems.forEach((item) => seenTaskIds.current.add(item.task_id ?? item.id));
+      if (viewer?.authenticated) {
+        getAccount()
+          .then((data) => setAccount(data))
+          .catch(() => undefined);
+      }
     }
-  }, [taskHistoryItems, awaitingTaskId, markFirstValue]);
+  }, [taskHistoryItems, awaitingTaskId, markFirstValue, viewer?.authenticated]);
 
   // 监听批量任务完成
   // batchResultsRef is kept in sync via render assignment; reading it here avoids adding
@@ -355,7 +367,12 @@ export default function Ecommerce() {
       }),
     );
     toMark.forEach((id) => seenTaskIds.current.add(id));
-  }, [taskHistoryItems]);
+    if (toMark.length > 0 && viewer?.authenticated) {
+      getAccount()
+        .then((data) => setAccount(data))
+        .catch(() => undefined);
+    }
+  }, [taskHistoryItems, viewer?.authenticated]);
 
   const mergedHistory = mergeHistoryItems([
     ...taskHistoryItems.filter((item) => Boolean(item.task_request?.ecommerce)),
@@ -481,6 +498,35 @@ export default function Ecommerce() {
     setEditPrompt('');
     setEditReferences([]);
     notifyInfo(t('ecom_form_reset'));
+  }
+
+  async function handleCancelGeneration() {
+    if (!awaitingTaskId) return;
+    try {
+      await cancelImageTask(awaitingTaskId);
+      notifyInfo('生成已取消');
+    } catch (err) {
+      notifyError(err);
+    } finally {
+      setAwaitingTaskId(null);
+    }
+  }
+
+  async function handleRemoveBg() {
+    if (!latestImages[0] || removingBg) return;
+    setRemovingBg(true);
+    try {
+      const response = await fetch(latestImages[0], { credentials: 'include' });
+      if (!response.ok) throw new Error(response.statusText);
+      const blob = await response.blob();
+      const file = new File([blob], 'product.png', { type: blob.type || 'image/png' });
+      const result = await removeBackground(file);
+      setRemovedBgUrl(result.url);
+    } catch (err) {
+      notifyError(err);
+    } finally {
+      setRemovingBg(false);
+    }
   }
 
   function applyStyleTemplate(templateId: string) {
@@ -1172,11 +1218,19 @@ export default function Ecommerce() {
               <>✦ 生成场景图 ({imageCount})</>
             )}
           </button>
-          {loading && (
+          {(loading || awaitingTaskId !== null) && !batchMode && (
             <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
-              <GenerationProgress active={loading} />
+              <GenerationProgress
+                active={loading || awaitingTaskId !== null}
+                onCancel={awaitingTaskId ? () => void handleCancelGeneration() : undefined}
+              />
             </div>
           )}
+          <CreditEstimate
+            balance={account?.balance ?? null}
+            imageCount={parseInt(imageCount, 10)}
+            quality={imageQuality}
+          />
           <button
             className="btn-commerce-secondary"
             type="button"
@@ -1231,6 +1285,15 @@ export default function Ecommerce() {
               uploadedImageUrl={productPreview?.url}
               selectedTemplateName={selectedTemplate ? STYLE_TEMPLATES.find((t) => t.id === selectedTemplate)?.name : undefined}
             />
+
+            {latestImages.length > 0 && (
+              <BackgroundRemovalPreview
+                originalUrl={latestImages[0]}
+                removedUrl={removedBgUrl}
+                removing={removingBg}
+                onRemove={() => void handleRemoveBg()}
+              />
+            )}
 
             {batchResults.length > 0 && (
               <BatchResultPanel
