@@ -137,18 +137,9 @@
   50% { opacity: 1; }
 }
 
-/* ─── Utilities ─── */
-@layer utilities {
-  .animate-skeleton {
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
-  }
-  .animate-fade-in {
-    animation: fade-in 0.25s var(--ag-ease-out);
-  }
-  .animate-glow-breathe {
-    animation: glow-breathe 3s ease-in-out infinite;
-  }
-
+/* ─── Components ─── */
+/* btn-* 必须在 components 层，让 h-11/h-12 等 utility 高度类能正确覆盖默认 2.5rem。 */
+@layer components {
   /* ── 白色胶囊主按钮（Lovart 风格）── */
   .btn-primary {
     display: inline-flex;
@@ -204,6 +195,19 @@
     box-shadow: var(--ag-glow-lime);
   }
   .btn-lime:hover { background-color: #f0ff9c; }
+}
+
+/* ─── Utilities ─── */
+@layer utilities {
+  .animate-skeleton {
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  }
+  .animate-fade-in {
+    animation: fade-in 0.25s var(--ag-ease-out);
+  }
+  .animate-glow-breathe {
+    animation: glow-breathe 3s ease-in-out infinite;
+  }
 
   /* ── 暖炭底卡片 ── */
   .card-warm {
