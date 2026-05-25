@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,6 +16,15 @@ DEFAULT_INSPIRATION_SOURCE_URLS = [
     "https://raw.githubusercontent.com/EvoLinkAI/awesome-gpt-image-2-prompts/main/README.md",
     "https://raw.githubusercontent.com/YouMind-OpenLab/awesome-gpt-image-2/main/README.md",
 ]
+
+DEPRECATED_RECHARGE_URL_HASHES = {"8daf226841e5a119bed86f6cd5cf9c560727b9f3deebb4c87e5555684b62be3d"}
+
+
+def is_deprecated_recharge_url(value: str) -> bool:
+    normalized = value.strip().rstrip("/")
+    if not normalized:
+        return False
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest() in DEPRECATED_RECHARGE_URL_HASHES
 
 
 def _env_path(name: str, default: Path) -> Path:
@@ -81,6 +91,7 @@ class Settings:
     def from_env(cls) -> "Settings":
         backend_dir = Path(__file__).resolve().parents[1]
         provider_base_url = os.getenv("SUB2API_BASE_URL", "http://127.0.0.1:9878/v1").rstrip("/")
+        auth_base_url = os.getenv("SUB2API_AUTH_BASE_URL", _derive_auth_base_url(provider_base_url)).rstrip("/")
         cors_origins = [
             origin.strip()
             for origin in os.getenv(
@@ -97,12 +108,18 @@ class Settings:
         )
         if not source_urls:
             source_urls = DEFAULT_INSPIRATION_SOURCE_URLS
+        configured_recharge_url = os.getenv("RECHARGE_URL", "").strip().rstrip("/")
+        recharge_url = (
+            auth_base_url
+            if not configured_recharge_url or is_deprecated_recharge_url(configured_recharge_url)
+            else configured_recharge_url
+        )
         return cls(
             backend_dir=backend_dir,
             database_path=_env_path("DATABASE_PATH", backend_dir / "data" / "app.sqlite3"),
             storage_dir=_env_path("STORAGE_DIR", backend_dir / "storage"),
             provider_base_url=provider_base_url,
-            auth_base_url=os.getenv("SUB2API_AUTH_BASE_URL", _derive_auth_base_url(provider_base_url)).rstrip("/"),
+            auth_base_url=auth_base_url,
             provider_usage_path=os.getenv("SUB2API_USAGE_PATH", "/v1/usage"),
             image_model=os.getenv("IMAGE_MODEL", "gpt-image-2"),
             prompt_optimizer_model=os.getenv("PROMPT_OPTIMIZER_MODEL", "gpt-5.5"),
@@ -131,7 +148,7 @@ class Settings:
             trial_balance_usd=float(os.getenv("TRIAL_BALANCE_USD", "2")),
             sub2api_admin_token=os.getenv("SUB2API_ADMIN_TOKEN", "").strip(),
             sub2api_admin_jwt=os.getenv("SUB2API_ADMIN_JWT", "").strip(),
-            recharge_url=os.getenv("RECHARGE_URL", "https://ai.get-money.locker").strip(),
+            recharge_url=recharge_url,
             inspiration_source_urls=source_urls,
         )
 

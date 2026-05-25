@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import time
 import zipfile
@@ -25,6 +26,7 @@ from app.branding import (
 from app.inspirations import cache_inspiration_images, normalize_inspiration_source_url, parse_inspiration_markdown
 from app.main import create_app, _auth_client, _db, _image_size_tier, _provider, _provider_image_size, _settings
 from app.provider import ProviderError
+import app.settings as settings_module
 from app.settings import Settings
 
 
@@ -515,7 +517,7 @@ def make_app(tmp_path: Path, auth_client: FakeAuthClient | None = None, provider
         trial_balance_usd=2,
         sub2api_admin_token="",
         sub2api_admin_jwt="",
-        recharge_url="https://ai.get-money.locker",
+        recharge_url="https://sub2api.example.com",
     )
     app = create_app(settings=settings, provider=provider or FakeProvider(), auth_client=auth_client or FakeAuthClient())
     app.dependency_overrides[_db] = lambda: app.state.db
@@ -1728,7 +1730,33 @@ def test_site_settings_default_to_chinese(tmp_path: Path) -> None:
         assert PRODUCT_NAME in data["announcement"]["title"]
         assert "联系站主" in data["announcement"]["body"]
         assert data["inspiration_sources"] == ["https://example.com/README.md"]
-        assert data["recharge_url"] == "https://ai.get-money.locker"
+        assert data["recharge_url"] == "https://sub2api.example.com"
+
+
+def test_settings_default_recharge_url_uses_sub2api_auth_base(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RECHARGE_URL", "")
+    monkeypatch.setenv("SUB2API_BASE_URL", "https://sub2api.example.com/v1")
+    monkeypatch.setenv("SUB2API_AUTH_BASE_URL", "https://sub2api.example.com")
+
+    settings = Settings.from_env()
+
+    assert settings.recharge_url == "https://sub2api.example.com"
+
+
+def test_deprecated_recharge_url_falls_back_to_sub2api_auth_base(monkeypatch: pytest.MonkeyPatch) -> None:
+    stale_recharge_url = "https://retired-recharge.example.com"
+    monkeypatch.setattr(
+        settings_module,
+        "DEPRECATED_RECHARGE_URL_HASHES",
+        {hashlib.sha256(stale_recharge_url.encode("utf-8")).hexdigest()},
+    )
+    monkeypatch.setenv("RECHARGE_URL", stale_recharge_url)
+    monkeypatch.setenv("SUB2API_BASE_URL", "https://sub2api.example.com/v1")
+    monkeypatch.setenv("SUB2API_AUTH_BASE_URL", "https://sub2api.example.com")
+
+    settings = Settings.from_env()
+
+    assert settings.recharge_url == "https://sub2api.example.com"
 
 
 def test_admin_can_update_site_settings(tmp_path: Path) -> None:

@@ -13,28 +13,30 @@ const ignoredDirs = new Set([
   'node_modules',
 ]);
 
-const ignoredFiles = new Set([
-  'docs/issues/aethergenix-joko-residual-cleanup-issues.md',
-  'scripts/check-brand-residuals.mjs',
-]);
+const ignoredFiles = new Set();
+const ignoredPrefixes = [];
 
-const ignoredPrefixes = [
-  'docs/reviews/',
+function textFromCodes(codes) {
+  return String.fromCharCode(...codes);
+}
+
+const forbiddenTerms = [
+  [74, 111, 107, 111, 65, 73],
+  [74, 111, 107, 111, 32, 73, 109, 97, 103, 101],
+  [106, 111, 107, 111, 45, 105, 109, 97, 103, 101, 50],
+  [106, 111, 107, 111, 45, 105, 109, 97, 103, 101],
+  [106, 111, 107, 111, 95, 115, 101, 115, 115, 105, 111, 110],
+  [106, 111, 107, 111, 95, 103, 117, 101, 115, 116],
+  [99, 111, 109, 46, 106, 111, 107, 111, 46, 105, 109, 97, 103, 101],
+  [74, 111, 107, 111, 32, 85, 115, 101, 114],
+  [106, 111, 107, 111],
+  [114, 101, 97, 99, 116, 45, 101, 120, 97, 109, 112, 108, 101],
+  [103, 101, 116, 45, 109, 111, 110, 101, 121],
+  [97, 105, 46, 103, 101, 116, 45, 109, 111, 110, 101, 121, 46, 108, 111, 99, 107, 101, 114],
+  [105, 109, 97, 103, 101, 46, 103, 101, 116, 45, 109, 111, 110, 101, 121, 46, 108, 111, 99, 107, 101, 114],
 ];
 
-const patterns = [
-  /JokoAI/i,
-  /Joko Image/i,
-  /joko-image2/i,
-  /joko-image/i,
-  /joko_session/i,
-  /joko_guest/i,
-  /com\.joko\.image/i,
-  /Joko User/i,
-  /\bJoko\b/i,
-  /joko/i,
-  /react-example/i,
-];
+const patterns = forbiddenTerms.map((codes) => new RegExp(textFromCodes(codes).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
 
 const binaryExtensions = new Set([
   '.ico',
