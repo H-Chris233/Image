@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 interface TemplateItem {
   id: string;
   emoji: string;
@@ -18,6 +20,8 @@ interface TemplatePickerProps {
   onMultiChange?: (ids: string[]) => void;
 }
 
+const DEFAULT_VISIBLE = 6;
+
 export function TemplatePicker({
   templates,
   value,
@@ -27,9 +31,25 @@ export function TemplatePicker({
   selectedIds,
   onMultiChange,
 }: TemplatePickerProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Always show selected / recommended items even when collapsed
+  const visibleTemplates = expanded
+    ? templates
+    : templates.filter((tpl, idx) => {
+        if (idx < DEFAULT_VISIBLE) return true;
+        if (value === tpl.id) return true;
+        if (multiSelect && (selectedIds ?? []).includes(tpl.id)) return true;
+        if (recommendedIds?.includes(tpl.id)) return true;
+        return false;
+      });
+
+  const hiddenCount = templates.length - visibleTemplates.length;
+
   return (
+    <div className="space-y-1.5">
     <div className="grid grid-cols-3 gap-1.5 sm:gap-2 min-w-0">
-      {templates.map((tpl) => {
+      {visibleTemplates.map((tpl) => {
         const isSelected = multiSelect
           ? (selectedIds ?? []).includes(tpl.id)
           : value === tpl.id;
@@ -131,6 +151,19 @@ export function TemplatePicker({
           </button>
         );
       })}
+    </div>
+    {templates.length > DEFAULT_VISIBLE && (
+      <button
+        type="button"
+        className="w-full py-1 text-[9px] font-bold uppercase tracking-widest transition-colors"
+        style={{ color: 'rgba(240,237,232,0.35)' }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--ag-lime)'; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(240,237,232,0.35)'; }}
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {expanded ? '收起 ↑' : `展开全部风格 (${hiddenCount} 更多) ↓`}
+      </button>
+    )}
     </div>
   );
 }

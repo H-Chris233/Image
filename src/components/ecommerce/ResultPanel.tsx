@@ -1,6 +1,5 @@
 import { Download, Maximize2, RotateCcw } from 'lucide-react';
 import RetryImage from '../RetryImage';
-import { SampleGallery } from './SampleGallery';
 
 interface ResultPanelProps {
   images: string[];
@@ -58,19 +57,42 @@ export function ResultPanel({
   // 完全空状态（无图片，无上传）
   if (!loading && images.length === 0) {
     return (
-      <div className="min-h-[200px] rounded-xl border border-white/8 bg-white/[0.02] p-4">
+      <div className="min-h-[200px] rounded-xl border border-white/8 bg-white/[0.02] p-5">
         {selectedTemplateName && (
-          <div className="mb-3 flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5">
+          <div className="mb-4 flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5">
             <span className="text-[10px] font-semibold" style={{ color: 'var(--ag-lime)' }}>
               ✓ 已选「{selectedTemplateName}」
             </span>
             <span className="text-[10px] text-white/40">— 上传商品图后点击生成</span>
           </div>
         )}
-        <SampleGallery
-          title="效果示例"
-          subtitle="选择风格 → 上传商品图 → 点击生成，结果将显示在这里"
-        />
+        <div className="flex flex-col items-center justify-center gap-5 py-4 text-center">
+          <div className="flex items-center gap-2">
+            {[
+              { step: '①', label: '上传商品图', done: false },
+              { step: '②', label: '选择风格', done: Boolean(selectedTemplateName) },
+              { step: '③', label: '点击生成', done: false },
+            ].map((s, i) => (
+              <div key={s.step} className="flex items-center gap-2">
+                <div className="flex flex-col items-center gap-1">
+                  <div
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black"
+                    style={{
+                      background: s.done ? 'rgba(227,255,116,0.12)' : 'rgba(255,255,255,0.06)',
+                      color: s.done ? 'var(--ag-lime)' : 'rgba(240,237,232,0.3)',
+                      border: s.done ? '1px solid rgba(227,255,116,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    {s.done ? '✓' : s.step}
+                  </div>
+                  <span className="text-[9px] text-white/35">{s.label}</span>
+                </div>
+                {i < 2 && <span className="mb-4 text-white/15">→</span>}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-white/30">生成后的图片将显示在这里</p>
+        </div>
       </div>
     );
   }

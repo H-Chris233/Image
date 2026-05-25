@@ -1070,65 +1070,10 @@ export default function Ecommerce() {
           onChange={handleProductReferenceChange}
         />
 
-        {/* ① 选择场景风格 — Template-First Step 4 */}
-        <div>
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--ag-lime)' }}>
-              ① 选择场景风格
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-all duration-150"
-                style={{
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: 'rgba(255,255,255,0.4)',
-                }}
-                onClick={() => setShowCustomModal(true)}
-              >
-                + 自定义
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setBatchMode((m) => !m);
-                  setSelectedTemplateIds([]);
-                }}
-                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-all duration-150"
-                style={{
-                  border: batchMode ? '1px solid var(--ag-lime)' : '1px solid rgba(255,255,255,0.15)',
-                  color: batchMode ? 'var(--ag-lime)' : 'rgba(255,255,255,0.4)',
-                  background: batchMode ? 'rgba(227,255,116,0.08)' : 'transparent',
-                }}
-              >
-                批量
-              </button>
-            </div>
-          </div>
-          <TemplatePicker
-            templates={[
-              ...STYLE_TEMPLATES,
-              ...customTemplates.map((ct) => ({
-                id: ct.id,
-                emoji: '✏️',
-                name: ct.name,
-                desc: ct.desc,
-                previewGradient: 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
-              })),
-            ]}
-            value={batchMode ? null : selectedTemplate}
-            onChange={batchMode ? () => undefined : applyStyleTemplate}
-            recommendedIds={recommendedTemplateIds}
-            multiSelect={batchMode}
-            selectedIds={selectedTemplateIds}
-            onMultiChange={setSelectedTemplateIds}
-          />
-        </div>
-
-        {/* ② 上传商品图 */}
+        {/* ① 上传商品图 */}
         <div>
           <div className="mb-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--ag-lime)' }}>
-            ② 上传商品图
+            ① 上传商品图
           </div>
           <div className="relative">
             <button
@@ -1202,6 +1147,61 @@ export default function Ecommerce() {
           ) : null}
         </div>
 
+        {/* ② 选择场景风格 */}
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--ag-lime)' }}>
+              ② 选择场景风格
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-all duration-150"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.4)',
+                }}
+                onClick={() => setShowCustomModal(true)}
+              >
+                + 自定义
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBatchMode((m) => !m);
+                  setSelectedTemplateIds([]);
+                }}
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-all duration-150"
+                style={{
+                  border: batchMode ? '1px solid var(--ag-lime)' : '1px solid rgba(255,255,255,0.15)',
+                  color: batchMode ? 'var(--ag-lime)' : 'rgba(255,255,255,0.4)',
+                  background: batchMode ? 'rgba(227,255,116,0.08)' : 'transparent',
+                }}
+              >
+                批量
+              </button>
+            </div>
+          </div>
+          <TemplatePicker
+            templates={[
+              ...STYLE_TEMPLATES,
+              ...customTemplates.map((ct) => ({
+                id: ct.id,
+                emoji: '✏️',
+                name: ct.name,
+                desc: ct.desc,
+                previewGradient: 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
+              })),
+            ]}
+            value={batchMode ? null : selectedTemplate}
+            onChange={batchMode ? () => undefined : applyStyleTemplate}
+            recommendedIds={recommendedTemplateIds}
+            multiSelect={batchMode}
+            selectedIds={selectedTemplateIds}
+            onMultiChange={setSelectedTemplateIds}
+          />
+        </div>
+
         {/* 输出格式 */}
         <div>
           <div className="mb-2 text-[9px] font-bold uppercase tracking-widest text-white/35">{t('home_aspect_ratio')}</div>
@@ -1232,7 +1232,7 @@ export default function Ecommerce() {
             />
           </label>
           <CompactInput label={t('home_ecom_platform')} value={form.platform} onChange={(value) => setForm((current) => ({ ...current, platform: value }))} />
-          <CompactInput label={t('home_ecom_style')} value={form.style} onChange={(value) => setForm((current) => ({ ...current, style: value }))} />
+          <CompactInput label={t('home_ecom_style')} value={form.style} onChange={(value) => setForm((current) => ({ ...current, style: value }))} title="AI 生成时的视觉风格描述，选择上方模板后自动填入，也可手动修改" />
           <GenerationSelect label={t('home_size')} value={imageScale} onChange={setImageScale} options={SIZE_OPTIONS} getOptionLabel={(option) => SIZE_LABELS[option] || option} isOptionDisabled={(option) => !isSupportedImagePreset(option, aspectRatio)} />
 
           {/* Advanced options toggle */}
@@ -1255,9 +1255,9 @@ export default function Ecommerce() {
 
           {showAdvanced && (
             <>
-              <CompactInput label={t('home_ecom_materials')} value={form.materials} onChange={(value) => setForm((current) => ({ ...current, materials: value }))} />
-              <CompactInput label={t('home_ecom_selling_points')} value={form.sellingPoints} onChange={(value) => setForm((current) => ({ ...current, sellingPoints: value }))} />
-              <CompactInput label={t('home_ecom_scenarios')} value={form.scenarios} onChange={(value) => setForm((current) => ({ ...current, scenarios: value }))} />
+              <CompactInput label={t('home_ecom_materials')} value={form.materials} onChange={(value) => setForm((current) => ({ ...current, materials: value }))} placeholder="如：不锈钢、磨砂玻璃" title="商品的材质或用料，有助于生成更准确的材质质感" />
+              <CompactInput label={t('home_ecom_selling_points')} value={form.sellingPoints} onChange={(value) => setForm((current) => ({ ...current, sellingPoints: value }))} placeholder="如：轻量、防水、可折叠" title="商品的核心卖点，AI 会在图中突出展示" />
+              <CompactInput label={t('home_ecom_scenarios')} value={form.scenarios} onChange={(value) => setForm((current) => ({ ...current, scenarios: value }))} placeholder="如：木质桌面、户外草地" title="场景中的背景道具描述，选择模板后自动填入" />
               <div className="col-span-2">
                 <ModelPicker value={imageQuality} onChange={setImageQuality} batchMode={batchMode} />
               </div>
