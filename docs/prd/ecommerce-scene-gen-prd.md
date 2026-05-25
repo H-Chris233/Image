@@ -288,32 +288,429 @@
 
 ---
 
-## 9. 里程碑规划（草稿）
+## 9. 里程碑规划
 
 ```
 2026-05 当前（Blueprint 完成）
   ├─ DONE：3步路径、内联结果、双栏布局、上传即响应
   └─ DONE：竞品 Teardown 完成
 
-2026-06 M1（Quick Wins）
-  ├─ P0：填入 exampleImageUrl（6张模板示例图）
-  ├─ P0：数据埋点上线（生成成功率、TTFV）
-  └─ P0：Freemium 定价公示
+2026-06 M1（Quick Wins）✅ 已完成
+  ├─ DONE：填入 exampleImageUrl（6张模板示例图，Unsplash CDN）
+  ├─ DONE：数据埋点上线（useGenerationMetrics，TTFV + 成功率）
+  └─ DONE：Freemium 定价公示（积分余额芯片 + 按钮 disabled 状态）
 
-2026-07 M2（差距填补）
-  ├─ P1：批量生成 MVP
-  ├─ P1：AI 分析 → 自动推荐模板
-  └─ P1：移动端布局修复
+2026-07 M2（差距填补）✅ 已完成
+  ├─ DONE：批量生成 MVP（TemplatePicker 多选 + BatchResultPanel + Promise.allSettled）
+  ├─ DONE：AI 分析 → 自动推荐模板（TEMPLATE_KEYWORDS + AI 角标）
+  └─ DONE：移动端布局修复（aspect-[4/3]、grid-cols-1 sm:grid-cols-2、FormatPicker 响应式）
 
-2026-08~09 M3（护城河建设）
-  ├─ P2：自动背景抠图
-  ├─ P2：Shopify 商品图直拉（MVP）
-  └─ P2：结果社区画廊（种子内容）
+2026-08 M3（生成管道强化 + 信用透明化）
+  ├─ P0：积分消耗透明（每次生成预估费用 + 余额动态更新）
+  ├─ P0：生成进度增强（真实 % 进度 + 取消任务 + 队列位置）
+  └─ P1：自动背景抠图（上传后触发，主图去白底预览）
 
-2026-Q4 M4（战略布局）
-  ├─ P3：卖点图 / 营销素材
+2026-09 M4（用户资产管理升级）
+  ├─ P1：历史搜索 / 筛选（按商品名、日期、模板）
+  ├─ P1：参数复用（从历史项目一键复制配置）
+  └─ P1：批量下载（多项目 ZIP + 单图格式选择）
+
+2026-10 M5（多模型路由 + 风格扩展）
+  ├─ P2：模型选择器（速度 / 质量 / 成本三角可见）
+  ├─ P2：风格模板扩展（6 → 12+，支持自定义）
+  └─ P2：Shopify 商品图直拉（MVP OAuth 授权）
+
+2026-Q4 M6（共享 + 发布生态）
+  ├─ P2：分享链接（单图 / 项目公开链接）
+  ├─ P2：品牌水印（Logo 叠加，位置可配置）
   └─ P3：Agent 模式原型（「告诉我商品，我给你生成套图」）
 ```
+
+---
+
+## 10. 系统架构设计
+
+> 本章记录 v0.1 PRD 遗漏的 8 个系统层的完整设计，作为 M3-M6 的实现基线。
+
+### 10.1 生成管道（Generation Pipeline）
+
+**当前状态：** 前端每 1500ms 轮询 `/api/tasks/{id}`，任务状态为 `queued → running → succeeded/failed`。  
+**缺失：** 进度百分比、取消 API、队列位置、用户可见超时计时。
+
+**数据流：**
+```
+用户点击「生成」
+  → generateEcommerceImages() → POST /api/ecommerce/generate → { task_id }
+  → setAwaitingTaskId(task_id)
+  → useTasks 轮询 /api/tasks/{task_id} 每 1500ms
+  → ImageTask.status: queued → running → succeeded
+      ↓
+  taskHistoryItems 更新 → Ecommerce.tsx useEffect 检测到完成
+  → latestImages 更新 → ResultPanel 渲染结果
+```
+
+**M3 新增的数据流：**
+```
+running 状态 → 后端返回 progress_pct (0-100) 字段
+  → GenerationProgress 组件显示真实 %
+  → 超时计时器（60s 无进度 → 显示「生成中，请稍候…已等待 Xs」）
+  → 取消按钮 → DELETE /api/tasks/{task_id} → 前端清空 awaitingTaskId
+```
+
+**新增 API 契约：**
+```typescript
+// ImageTask 扩展（M3）
+interface ImageTask {
+  // 现有字段...
+  progress_pct?: number;       // 0-100，running 时由后端填充
+  queue_position?: number;     // queued 时显示队列位置
+  estimated_seconds?: number;  // 预估剩余秒数
+}
+
+// 取消任务（M3）
+// DELETE /api/tasks/{taskId}
+// → { ok: boolean }
+```
+
+**前端集成点：** `src/tasks.tsx`（轮询结果），`src/components/ecommerce/GenerationProgress.tsx`（展示进度），`src/pages/Ecommerce.tsx`（取消按钮）
+
+---
+
+### 10.2 信用/配额系统（Credits & Quota）
+
+**当前状态：** 后端已完整实现 `LedgerEntry`、`PaymentPlan`、`PaymentOrder`、`BalanceInfo`。前端仅显示「免费额度已用完」的 boolean 状态。  
+**缺失：** 单次消耗显示、余额动态刷新、套餐升级 CTA。
+
+**数据流：**
+```
+用户余额：getAccount() → AccountInfo.balance.remaining (USD 小数)
+生成1次消耗：约 $0.04~$0.10（取决于模型和 n）
+账单明细：getLedger() → LedgerEntry[]
+套餐信息：getPaymentCheckoutInfo() → PaymentPlan[]
+充值：createPaymentOrder() → 支付链接
+```
+
+**新增 UI 契约（M3 实现）：**
+```typescript
+// 电商页生成按钮区域新增「积分预估」组件
+interface CreditEstimateProps {
+  n: number;               // 生成张数
+  quality: string;         // 'hd' | 'standard'
+  model: string;           // 模型 ID
+  balance: number | null;  // 当前余额（USD）
+}
+// → 显示「预计消耗 $0.06，余额 $1.23 → 生成后余额 $1.17」
+
+// 生成完成后自动刷新余额
+// → 重新调用 getAccount()，更新 account state
+```
+
+**前端集成点：**
+- `src/pages/Ecommerce.tsx`：生成按钮旁显示积分预估
+- `src/components/ecommerce/CreditEstimate.tsx`（新建）
+- 生成成功后触发 `getAccount()` 刷新余额
+
+---
+
+### 10.3 图像后处理（Image Post-Processing）
+
+**当前状态：** 生成结果直接显示原始图 URL，无后处理能力。  
+**关键场景：** 商品图白底去除（抠图）→ 合成场景更自然。
+
+**数据流：**
+```
+上传商品图
+  → 可选：前端调用后端抠图 API（/api/images/remove-background）
+  → 返回去底图 URL（PNG with alpha）
+  → 替换 productImage 上传到生成 API
+  → 生成结果更自然（商品无白边）
+```
+
+**新增 API 契约（M3 实现）：**
+```typescript
+// POST /api/images/remove-background
+// Content-Type: multipart/form-data
+// 请求体：{ image: File }
+// 响应：{ url: string; width: number; height: number }
+
+export function removeBackground(image: File): Promise<{ url: string }> {
+  const form = new FormData();
+  form.set('image', image);
+  return request('/api/images/remove-background', { method: 'POST', body: form });
+}
+```
+
+**前端集成点：**
+- `src/pages/Ecommerce.tsx`：上传区增加「自动抠图」开关
+- `src/components/ecommerce/BackgroundRemovalPreview.tsx`（新建）：显示原图 vs 抠图对比
+
+**降级策略：** 后端抠图 API 不可用时，静默跳过，使用原图继续生成。
+
+---
+
+### 10.4 用户资产管理（Asset Management）
+
+**当前状态：** 历史按 task_id 分组，支持删除和发布，但无搜索/筛选/标签/批量操作。
+
+**数据流（M4 扩展）：**
+```
+搜索：getHistory({ q: '手机壳' }) → 后端全文搜索 task_request.ecommerce.product_name
+筛选：getHistory({ limit: 20, offset: 0, status: 'succeeded' })
+参数复用：从 HistoryGroup.first.task_request.ecommerce 提取参数 → 填入当前表单
+批量下载：taskDownloadUrl(taskId) → ZIP（现有） + 多项目 ZIP（新增）
+```
+
+**新增 API 契约（M4 实现）：**
+```typescript
+// 多项目批量下载（新增）
+// POST /api/tasks/batch-download
+// 请求体：{ task_ids: string[] }
+// 响应：{ download_url: string }（合并 ZIP，限制 max 20 个任务）
+
+// 现有 getHistory 扩展（已支持 q 参数，确认后端是否实现）
+export function getHistory(params: {
+  limit?: number;
+  offset?: number;
+  q?: string;            // 全文搜索
+  ecommerce_only?: boolean; // 只返回电商任务（M4 新增参数）
+}): Promise<{ items: HistoryItem[] }>;
+```
+
+**前端集成点：**
+- `src/pages/Ecommerce.tsx`：历史区增加搜索框 + 筛选 dropdown
+- 「复用此配置」按钮：点击后将 `task_request.ecommerce` 的字段回填到表单
+- 「批量下载（已选 N 项）」浮动操作栏
+
+---
+
+### 10.5 Prompt 工程系统（Prompt Engineering）
+
+**当前状态：** 6 个固定模板，`style` + `scenarios` 字符串由模板预填或用户手动输入。  
+**缺失：** 扩展风格库、Prompt 预览、自定义模板。
+
+**M5 设计（风格扩展）：**
+```typescript
+// 现有 STYLE_TEMPLATES（6个）→ 扩展至 12+
+// 新增类别：产品特写 / 白色极简 / 品牌大片 / 秋冬氛围 / 夏日清爽 / 东南亚异域
+
+// 自定义模板（M5）
+interface CustomStyleTemplate {
+  id: string;           // 'custom_' + uuid
+  name: string;
+  style: string;        // 用户自定义 style prompt
+  scenarios: string;
+  savedAt: string;
+  // 持久化：localStorage（MVP）→ 后端用户设置（M6）
+}
+```
+
+**前端集成点：**
+- `src/pages/Ecommerce.tsx`：STYLE_TEMPLATES 数组扩展
+- `src/components/ecommerce/TemplatePicker.tsx`：支持「自定义风格」入口（输入 → 保存为自定义模板）
+
+---
+
+### 10.6 多模型路由（Multi-Model Routing）
+
+**当前状态：** `EcommerceGeneratePayload.model` 字段存在但前端无选择器，默认使用后端配置的模型。  
+**场景映射：**
+
+| 场景 | 推荐模型 | 原因 |
+|------|---------|------|
+| 快速预览（批量生成） | gpt-image-1 standard | 速度快，成本低 |
+| 正式主图（单张精出） | gpt-image-1 hd | 质量最高 |
+| 高细节商品（珠宝/手表）| 模型 TBD | 细节保留 |
+
+**M5 UI 设计：**
+```typescript
+// 生成参数区新增模型选择器
+interface ModelOption {
+  id: string;           // API model ID
+  name: string;         // 显示名称：「标准」「高清」
+  costMultiplier: number; // 相对成本倍数（用于预估显示）
+  speed: 'fast' | 'medium' | 'slow';
+  badge?: string;       // 「推荐」「最快」「最高质」
+}
+```
+
+---
+
+### 10.7 共享与发布（Sharing & Publishing）
+
+**当前状态：** `publishHistory` 将图片发布到站内灵感图库（inspiration）。  
+**缺失：** 外部分享链接、嵌入代码、品牌水印。
+
+**M6 API 契约：**
+```typescript
+// 创建公开分享链接
+// POST /api/history/{id}/share
+// → { share_url: string; expires_at: string | null }
+
+// 品牌水印（前端合成，Canvas API）
+interface WatermarkConfig {
+  logoUrl: string;      // 用户上传的 Logo URL
+  position: 'bottom-right' | 'bottom-left' | 'bottom-center';
+  opacity: number;      // 0.1~1.0
+  scale: number;        // Logo 相对图片宽度的比例 0.05~0.25
+}
+// → Canvas 合成 → 导出 PNG/WebP
+```
+
+---
+
+### 10.8 API 契约汇总（API Contract Summary）
+
+> 前端已调用的 API 在 `src/api.ts` 中有类型定义。以下是 M3-M6 新增的接口。
+
+| Milestone | 接口 | 方法 | 说明 |
+|-----------|------|------|------|
+| M3 | `/api/tasks/{id}` | DELETE | 取消生成任务 |
+| M3 | `/api/images/remove-background` | POST | 自动抠图 |
+| M3 | `/api/account` | GET | 生成后刷新余额（现有） |
+| M4 | `/api/history` | GET + `ecommerce_only` param | 电商历史筛选 |
+| M4 | `/api/tasks/batch-download` | POST | 多项目批量下载 |
+| M6 | `/api/history/{id}/share` | POST | 创建分享链接 |
+| M6 | `/api/history/{id}/share` | DELETE | 撤销分享链接 |
+
+---
+
+## 11. Milestone 详细规划（M3-M6）
+
+### M3 — 生成管道强化 + 信用透明 + 抠图（2026-08）
+
+**用户能做到什么：**
+- 点击生成后看到真实进度百分比，而非永动旋转图标
+- 生成前知道本次大约消耗多少积分
+- 生成后余额自动更新，无需刷新页面
+- 上传商品图后一键预览去白底效果，再决定是否用去底图生成
+
+**功能清单：**
+
+| 优先级 | 功能 | 说明 |
+|--------|------|------|
+| P0 | 积分消耗预估 | 按钮旁显示「预计消耗 ~$X.XX」 |
+| P0 | 生成后余额刷新 | 成功完成后重新 getAccount() |
+| P0 | 真实进度条 | 后端返回 progress_pct，GenerationProgress 渲染 |
+| P1 | 取消生成 | 「取消」按钮 → DELETE /api/tasks/{id} |
+| P1 | 自动抠图 | 上传区「去背景」开关 + BackgroundRemovalPreview |
+| P1 | 超时提示 | 60s 无进度变化 → 友好提示而非静默等待 |
+
+**前端文件改动（≤ 6 个）：**
+1. `src/api.ts` — 新增 `cancelImageTask`, `removeBackground`
+2. `src/pages/Ecommerce.tsx` — 积分预估组件集成、取消按钮、余额刷新
+3. `src/components/ecommerce/CreditEstimate.tsx` — 新建：积分消耗预估
+4. `src/components/ecommerce/GenerationProgress.tsx` — 增强：显示 progress_pct + 超时文案
+5. `src/components/ecommerce/BackgroundRemovalPreview.tsx` — 新建：原图 vs 去底对比
+
+**验收标准：**
+- [ ] 生成按钮旁显示预估消耗（基于 n × 单价估算）
+- [ ] 生成完成后 `AccountInfo.balance.remaining` 自动更新
+- [ ] 后端返回 `progress_pct` 时 GenerationProgress 显示真实百分比
+- [ ] 超过 60s 未完成时显示「已等待 Xs，生成仍在进行中」
+- [ ] 「去背景」开关打开时，上传图后调用 `/api/images/remove-background`，显示去底预览
+- [ ] 抠图 API 不可用时静默降级，不阻塞生成流程
+
+**预估工作量：** 3~4 天
+
+---
+
+### M4 — 用户资产管理升级（2026-09）
+
+**用户能做到什么：**
+- 在历史记录中搜索「手机壳」找到所有相关项目
+- 一键「复用此配置」将历史项目的商品参数填回表单
+- 选中多个项目后批量下载为 ZIP
+
+**功能清单：**
+
+| 优先级 | 功能 | 说明 |
+|--------|------|------|
+| P1 | 历史搜索 | getHistory({ q }) + 搜索框 UI |
+| P1 | 参数复用 | ProjectCard 增加「复用配置」按钮 |
+| P1 | 批量下载 | 历史区浮动操作栏 + /api/tasks/batch-download |
+| P2 | 筛选（模板/日期）| 按 style 字段分类筛选 |
+| P2 | 项目重命名 | 编辑 product_name |
+
+**前端文件改动（≤ 5 个）：**
+1. `src/api.ts` — `getHistory` 增加 `ecommerce_only` 参数，新增 `batchDownload`
+2. `src/pages/Ecommerce.tsx` — 历史区增加搜索框、复用按钮逻辑
+3. `src/components/ecommerce/HistorySearchBar.tsx` — 新建
+4. `src/components/ecommerce/BatchDownloadBar.tsx` — 新建：浮动多选操作栏
+
+**验收标准：**
+- [ ] 搜索框输入商品名后，历史区过滤显示匹配结果（客户端过滤或服务端 q 参数）
+- [ ] ProjectCard 出现「复用配置」按钮，点击后将 `task_request.ecommerce` 字段回填表单
+- [ ] 多选历史项目后出现浮动操作栏，「批量下载（N）」按钮可用
+- [ ] `taskDownloadUrl` 下载单项 ZIP 保持原有功能不变
+
+**预估工作量：** 2~3 天
+
+---
+
+### M5 — 多模型路由 + 风格扩展（2026-10）
+
+**用户能做到什么：**
+- 选择「快速」（便宜）或「高清」（贵）模式，清楚知道成本差异
+- 从 12+ 个场景风格中选择，或保存自定义风格
+- 批量生成时自动使用「快速」模式降低成本
+
+**功能清单：**
+
+| 优先级 | 功能 | 说明 |
+|--------|------|------|
+| P2 | 模型选择器 | 速度 / 质量 / 成本三维显示 |
+| P2 | 风格扩展（6→12+）| 新增：产品特写、品牌大片、秋冬氛围等 |
+| P2 | 自定义风格 | 输入 style prompt → 保存到 localStorage |
+| P2 | 批量模式自动降速 | 批量生成时建议切换到 standard 质量 |
+| P3 | Shopify 商品图直拉 | OAuth 授权后从 Shopify 商品库选图 |
+
+**前端文件改动（≤ 6 个）：**
+1. `src/pages/Ecommerce.tsx` — STYLE_TEMPLATES 数组扩展，集成模型选择器
+2. `src/components/ecommerce/ModelPicker.tsx` — 新建：模型选择 UI
+3. `src/components/ecommerce/TemplatePicker.tsx` — 增加「自定义」入口和 localStorage 持久化
+4. `src/components/ecommerce/CustomStyleModal.tsx` — 新建：自定义风格编辑弹窗
+
+**验收标准：**
+- [ ] 生成参数区显示模型选择器（「标准 ~$0.04」/ 「高清 ~$0.08」）
+- [ ] 选择模型后积分预估（M3 实现的 CreditEstimate）同步更新
+- [ ] TemplatePicker 显示 12+ 个模板（6 原有 + 6 新增）
+- [ ] 「+ 自定义风格」按钮打开弹窗，保存后出现在 TemplatePicker 末尾
+- [ ] 批量模式激活时，系统提示「建议使用标准质量以节省积分」
+
+**预估工作量：** 3~4 天
+
+---
+
+### M6 — 共享 + 发布生态（2026-Q4）
+
+**用户能做到什么：**
+- 点击「分享」获得一个公开链接，发给客户查看生成结果
+- 下载图片前可叠加品牌 Logo 水印
+- 一键发布到站内灵感图库（现有）或 Shopify 商品图（新增）
+
+**功能清单：**
+
+| 优先级 | 功能 | 说明 |
+|--------|------|------|
+| P2 | 分享链接 | POST /api/history/{id}/share → 公开 URL |
+| P2 | 品牌水印 | Canvas API 本地合成 Logo + 图片 → 导出 |
+| P3 | Shopify 图片推送 | 将生成图直接上传到 Shopify 商品的 images[] |
+| P3 | Agent 模式原型 | 「我的商品是 XX，帮我生成一套主图」对话式 UX |
+
+**前端文件改动（≤ 6 个）：**
+1. `src/api.ts` — 新增 `createShareLink`, `deleteShareLink`
+2. `src/pages/Ecommerce.tsx` — ProjectDetail 增加「分享」按钮
+3. `src/components/ecommerce/SharePanel.tsx` — 新建：分享链接 + 复制 + 过期设置
+4. `src/components/ecommerce/WatermarkEditor.tsx` — 新建：Logo 上传 + 位置调整 + Canvas 合成导出
+
+**验收标准：**
+- [ ] ProjectDetail 出现「分享」按钮，点击后显示可复制的公开链接
+- [ ] 分享链接可访问原图（不含个人信息）
+- [ ] WatermarkEditor 支持上传 Logo PNG，拖拽调整位置，预览后导出
+- [ ] 水印合成完全在前端完成（Canvas API），不上传到服务器
+- [ ] 「撤销分享」删除公开链接
+
+**预估工作量：** 3~4 天
 
 ---
 
@@ -328,4 +725,4 @@
 
 ---
 
-*v0.1 DRAFT — 由 Claude Code 消费现有项目文档自动生成。以上内容是起点，不是终点——请在第8节「待讨论问题」开始打磨。*
+*v0.2 — 由 Claude Code product architect 模式扩展，新增 Section 10（系统架构设计）和 Section 11（M3-M6 详细规划）。M1/M2 已完成，M3 为下一个执行目标。*
