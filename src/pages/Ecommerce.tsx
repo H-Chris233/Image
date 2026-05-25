@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Download, ImagePlus, Loader2, Maximize2, Paperclip, PencilLine, RefreshCw, Sparkles, Trash2, X } from 'lucide-react';
 import {
   analyzeEcommerceProduct,
+  batchDownloadEcommerce,
   cancelImageTask,
   deleteHistory,
   editHistoryImage,
@@ -22,11 +23,13 @@ import {
   HistoryItem,
 } from '../api';
 import { BackgroundRemovalPreview } from '../components/ecommerce/BackgroundRemovalPreview';
+import { BatchDownloadBar } from '../components/ecommerce/BatchDownloadBar';
 import { BatchResultPanel, type BatchResult } from '../components/ecommerce/BatchResultPanel';
 import { CountChips } from '../components/ecommerce/CountChips';
 import { CreditEstimate } from '../components/ecommerce/CreditEstimate';
 import { FormatPicker } from '../components/ecommerce/FormatPicker';
 import { GenerationProgress } from '../components/ecommerce/GenerationProgress';
+import { HistorySearchBar } from '../components/ecommerce/HistorySearchBar';
 import { ResultPanel } from '../components/ecommerce/ResultPanel';
 import { SampleGallery } from '../components/ecommerce/SampleGallery';
 import { TemplatePicker } from '../components/ecommerce/TemplatePicker';
@@ -222,6 +225,10 @@ export default function Ecommerce() {
   const batchResultsRef = useRef<BatchResult[]>([]);
   const [removedBgUrl, setRemovedBgUrl] = useState<string | null>(null);
   const [removingBg, setRemovingBg] = useState(false);
+  // M4: history search + multi-select
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
+  const [selectedGroupKeys, setSelectedGroupKeys] = useState<Set<string>>(new Set());
+  const [batchDownloading, setBatchDownloading] = useState(false);
   const { markSubmitStart, markSubmitSuccess, markSubmitFailed, markFirstValue } = useGenerationMetrics({
     awaitingTaskId,
   });
@@ -526,6 +533,39 @@ export default function Ecommerce() {
       notifyError(err);
     } finally {
       setRemovingBg(false);
+    }
+  }
+
+  function toggleGroupSelection(key: string) {
+    setSelectedGroupKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
+  async function handleBatchDownload() {
+    if (selectedGroupKeys.size === 0 || batchDownloading) return;
+    setBatchDownloading(true);
+    const taskIds = groups
+      .filter((group) => selectedGroupKeys.has(group.key) && group.first.task_id)
+      .map((group) => group.first.task_id as string);
+    try {
+      const result = await batchDownloadEcommerce(taskIds);
+      window.open(result.download_url, '_blank');
+      setSelectedGroupKeys(new Set());
+    } catch {
+      // Fallback: open individual downloads
+      taskIds.forEach((id, index) => {
+        setTimeout(() => window.open(taskDownloadUrl(id), '_blank'), index * 300);
+      });
+      setSelectedGroupKeys(new Set());
+    } finally {
+      setBatchDownloading(false);
     }
   }
 
@@ -1305,25 +1345,46 @@ export default function Ecommerce() {
             )}
 
             <section ref={historySectionRef}>
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
                 <h2 className="text-xl font-black tracking-tight text-white">{t('ecom_projects')}</h2>
-                <button className="flex h-9 items-center gap-2 border border-white/10 px-3 text-[10px] uppercase tracking-widest text-white/60 hover:border-primary hover:text-primary" type="button" onClick={() => loadHistory().catch(() => undefined)}>
-                  {historyLoading ? <Loader2 className="animate-spin" size={13} /> : <RefreshCw size={13} />}
-                  {t('config_sync_cases')}
-                </button>
+                <div className="flex flex-1 items-center gap-2" style={{ minWidth: 180 }}>
+                  <HistorySearchBar value={historySearchQuery} onChange={setHistorySearchQuery} />
+                  <button className="flex h-9 shrink-0 items-center gap-2 border border-white/10 px-3 text-[10px] uppercase tracking-widest text-white/60 hover:border-primary hover:text-primary" type="button" onClick={() => loadHistory().catch(() => undefined)}>
+                    {historyLoading ? <Loader2 className="animate-spin" size={13} /> : <RefreshCw size={13} />}
+                  </button>
+                </div>
               </div>
               {groups.length > 0 ? (
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                  {groups.map((group) => (
-                    <ProjectCard
-                      key={group.key}
-                      group={group}
-                      onOpen={() => openProject(group).catch(notifyError)}
-                      onDelete={() => handleDeleteGroup(group).catch(notifyError)}
-                      t={t}
-                    />
-                  ))}
-                </div>
+                (() => {
+                  const q = historySearchQuery.trim().toLowerCase();
+                  const filtered = q
+                    ? groups.filter(
+                        (g) =>
+                          g.title.toLowerCase().includes(q) ||
+                          (g.taskPrompt || '').toLowerCase().includes(q),
+                      )
+                    : groups;
+                  return filtered.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                      {filtered.map((group) => (
+                        <ProjectCard
+                          key={group.key}
+                          group={group}
+                          selected={selectedGroupKeys.has(group.key)}
+                          onToggleSelect={() => toggleGroupSelection(group.key)}
+                          onOpen={() => openProject(group).catch(notifyError)}
+                          onReuseConfig={() => openProject(group).catch(notifyError)}
+                          onDelete={() => handleDeleteGroup(group).catch(notifyError)}
+                          t={t}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="border border-white/10 bg-black/40 px-4 py-6 text-center text-sm text-white/40">
+                      没有找到「{historySearchQuery}」相关项目
+                    </div>
+                  );
+                })()
               ) : (
                 <div className="border border-primary/20 bg-black/50 p-5">
                   {historyLoading ? (
@@ -1342,6 +1403,13 @@ export default function Ecommerce() {
           </div>
         </div>
       )}
+
+      <BatchDownloadBar
+        selectedCount={selectedGroupKeys.size}
+        downloading={batchDownloading}
+        onDownload={() => void handleBatchDownload()}
+        onClear={() => setSelectedGroupKeys(new Set())}
+      />
 
           <ImagePreviewModal
         imageUrl={previewItem?.imageUrl || null}
@@ -1534,16 +1602,54 @@ function SummaryLine({ label, value }: { label: string; value: unknown }) {
   );
 }
 
-function ProjectCard({ group, onOpen, onDelete, t }: { key?: string; group: HistoryGroup; onOpen: () => void; onDelete: () => void; t: (key: any, vars?: Record<string, string | number>) => string }) {
+function ProjectCard({
+  group,
+  selected,
+  onToggleSelect,
+  onOpen,
+  onReuseConfig,
+  onDelete,
+  t,
+}: {
+  key?: string;
+  group: HistoryGroup;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+  onOpen: () => void;
+  onReuseConfig?: () => void;
+  onDelete: () => void;
+  t: (key: any, vars?: Record<string, string | number>) => string;
+}) {
   return (
-    <div className="overflow-hidden border border-primary/25 bg-black transition-colors hover:border-secondary/50">
-      <button className="grid w-full grid-cols-3 gap-1 bg-black p-1 text-left" type="button" onClick={onOpen}>
-        {group.images.slice(0, 9).map((image) => (
-          <div key={image.id} className="aspect-square overflow-hidden bg-black">
-            <RetryImage alt={group.title} className="h-full w-full object-cover opacity-95" loading="lazy" src={image.url} />
-          </div>
-        ))}
-      </button>
+    <div
+      className="overflow-hidden border bg-black transition-colors"
+      style={{
+        borderColor: selected ? 'var(--ag-lime)' : 'rgba(240,237,232,0.15)',
+      }}
+    >
+      <div className="relative">
+        <button className="grid w-full grid-cols-3 gap-1 bg-black p-1 text-left" type="button" onClick={onOpen}>
+          {group.images.slice(0, 9).map((image) => (
+            <div key={image.id} className="aspect-square overflow-hidden bg-black">
+              <RetryImage alt={group.title} className="h-full w-full object-cover opacity-95" loading="lazy" src={image.url} />
+            </div>
+          ))}
+        </button>
+        {onToggleSelect && (
+          <button
+            type="button"
+            className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center border-2 transition-colors"
+            style={{
+              borderColor: selected ? 'var(--ag-lime)' : 'rgba(255,255,255,0.4)',
+              background: selected ? 'var(--ag-lime)' : 'rgba(0,0,0,0.6)',
+              color: selected ? '#000' : 'transparent',
+            }}
+            onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+          >
+            {selected && <span className="text-[10px] font-black">✓</span>}
+          </button>
+        )}
+      </div>
       <div className="border-t border-white/10 bg-surface-container-low/80 p-4">
         <div className="mb-2 flex items-center justify-between gap-3">
           <h3 className="min-w-0 truncate text-lg font-black text-white">{group.title}</h3>
@@ -1555,10 +1661,20 @@ function ProjectCard({ group, onOpen, onDelete, t }: { key?: string; group: Hist
           {group.first.aspect_ratio ? <span>{group.first.aspect_ratio}</span> : null}
         </div>
         <p className="mb-3 line-clamp-2 text-sm text-white/65">{group.taskPrompt}</p>
-        <div className="grid grid-cols-[1fr_44px] gap-2">
+        <div className="grid grid-cols-[1fr_auto_44px] gap-2">
           <button className="h-10 bg-primary text-xs font-black uppercase tracking-widest text-black hover:bg-white" type="button" onClick={onOpen}>
             {t('ecom_open_project')}
           </button>
+          {onReuseConfig && (
+            <button
+              className="h-10 border border-white/20 px-3 text-[10px] uppercase tracking-widest text-white/55 hover:border-primary hover:text-primary"
+              type="button"
+              title="将此项目参数填入表单"
+              onClick={onReuseConfig}
+            >
+              复用
+            </button>
+          )}
           <button className="flex h-10 items-center justify-center border border-error/25 bg-error/5 text-error hover:bg-error/15" type="button" onClick={onDelete}>
             <Trash2 size={14} />
           </button>

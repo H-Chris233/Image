@@ -631,13 +631,21 @@ export function verifyPaymentOrder(outTradeNo: string) {
   });
 }
 
-export function getHistory(params: { limit?: number; offset?: number; q?: string } = {}) {
+export function getHistory(params: { limit?: number; offset?: number; q?: string; ecommerce_only?: boolean } = {}): Promise<{ items: HistoryItem[] }> {
   const search = new URLSearchParams();
   if (params.limit) search.set('limit', String(params.limit));
   if (params.offset) search.set('offset', String(params.offset));
   if (params.q) search.set('q', params.q);
+  if (params.ecommerce_only) search.set('ecommerce_only', 'true');
   const query = search.toString();
   return request<{ items: HistoryItem[] }>(`/api/history${query ? `?${query}` : ''}`);
+}
+
+export function batchDownloadEcommerce(taskIds: string[]): Promise<{ download_url: string }> {
+  return request<{ download_url: string }>('/api/tasks/batch-download', {
+    method: 'POST',
+    body: JSON.stringify({ task_ids: taskIds }),
+  });
 }
 
 export function getInspirations(params: { limit?: number; offset?: number; q?: string; section?: string } = {}) {
