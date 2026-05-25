@@ -12,6 +12,7 @@ import Config from './pages/Config';
 import Account from './pages/Account';
 import Recharge from './pages/Recharge';
 import Tasks from './pages/Tasks';
+import Ecommerce from './pages/Ecommerce';
 import AnnouncementModal from './components/AnnouncementModal';
 import AuthModal from './components/AuthModal';
 import TaskDrawer from './components/TaskDrawer';
@@ -46,7 +47,7 @@ export default function App() {
             {/* 旧路由兼容重定向 */}
             <Route path="/login" element={<Navigate to="/explore" replace />} />
             <Route path="/register" element={<Navigate to="/explore" replace />} />
-            <Route path="/ecommerce" element={<Navigate to="/create" replace />} />
+            <Route path="/ecommerce" element={<Ecommerce />} />
           </Routes>
         </main>
         <BottomTabBar />

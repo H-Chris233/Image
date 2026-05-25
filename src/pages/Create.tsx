@@ -162,7 +162,7 @@ export default function Create() {
           <button
             key={m}
             type="button"
-            onClick={() => setMode(m)}
+            onClick={() => m === 'ecommerce' ? navigate('/ecommerce') : setMode(m)}
             className={`min-h-11 min-w-0 rounded-md px-3 py-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 ${
               isActive
                 ? 'bg-[#f0ede8] text-[#1a1917] shadow-[0_10px_28px_rgba(240,237,232,0.12)]'

@@ -629,7 +629,7 @@ export default function Ecommerce() {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 md:w-[320px]">
-          <Link className="flex h-10 items-center justify-center border border-primary/35 text-xs font-bold uppercase tracking-widest text-primary hover:bg-primary/10" to="/">
+          <Link className="flex h-10 items-center justify-center border border-primary/35 text-xs font-bold uppercase tracking-widest text-primary hover:bg-primary/10" to="/create">
             {t('home_tab_general')}
           </Link>
           <button className="h-10 border border-secondary bg-secondary/15 text-xs font-bold uppercase tracking-widest text-secondary" type="button">
