@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import httpx
@@ -102,6 +103,26 @@ def _safe_json(response: httpx.Response) -> Any:
         return response.text[:1000]
 
 
+_HTML_TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
+
+
+def _looks_like_html(response: httpx.Response, text: str) -> bool:
+    content_type = (response.headers.get("content-type") or "").lower()
+    if "html" in content_type:
+        return True
+    head = text.lstrip()[:64].lower()
+    return head.startswith(("<!doctype", "<html", "<!--"))
+
+
+def _friendly_upstream_error(response: httpx.Response, text: str) -> str:
+    match = _HTML_TITLE_RE.search(text)
+    if match:
+        title = re.sub(r"\s+", " ", match.group(1)).strip()
+        if title:
+            return f"{UPSTREAM_SERVICE_LABEL} 暂时不可用（HTTP {response.status_code} · {title}），请稍后重试。"
+    return f"{UPSTREAM_SERVICE_LABEL} 暂时不可用（HTTP {response.status_code}），请稍后重试。"
+
+
 def _extract_error_message(response: httpx.Response) -> str:
     payload = _safe_json(response)
     if isinstance(payload, dict):
@@ -112,7 +133,10 @@ def _extract_error_message(response: httpx.Response) -> str:
             return str(payload["message"])
         if payload.get("error"):
             return str(payload["error"])
-    return response.text[:1000] or f"Provider returned HTTP {response.status_code}"
+    text = response.text or ""
+    if _looks_like_html(response, text):
+        return _friendly_upstream_error(response, text)
+    return text[:1000] or f"{UPSTREAM_SERVICE_LABEL} 返回 HTTP {response.status_code}"
 
 
 def _extract_remaining(payload: Any) -> float | None:
