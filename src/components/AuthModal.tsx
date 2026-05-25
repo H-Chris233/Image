@@ -25,14 +25,16 @@ const FOCUSABLE_SELECTOR = [
 ].join(',');
 
 export default function AuthModal() {
-  const { open, tab, pendingPath, closeAuthModal, openAuthModal } = useAuthModal();
+  const { open, tab, pendingPath, actionContext, closeAuthModal, openAuthModal } = useAuthModal();
   const navigate = useNavigate();
   const { t } = useSite();
   const [settings, setSettings] = useState<PublicAuthSettings | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const modalTitleId = 'auth-modal-title';
+  const modalDescriptionId = 'auth-modal-description';
   const modalTitle = tab === 'login' ? t('login_title') : t('register_title');
+  const modalDescription = getAuthModalDescription(actionContext, tab, t);
 
   useEffect(() => {
     if (open) getAuthPublicSettings().then(setSettings).catch(() => setSettings(null));
@@ -129,6 +131,7 @@ export default function AuthModal() {
       {/* 弹窗背景光晕 */}
       <div
         ref={dialogRef}
+        aria-describedby={modalDescriptionId}
         aria-labelledby={modalTitleId}
         aria-modal="true"
         className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col rounded-2xl border border-white/[0.08] bg-[#1a1917] shadow-[0_24px_64px_rgba(0,0,0,0.7)] animate-fade-in overflow-hidden"
@@ -139,7 +142,7 @@ export default function AuthModal() {
         <div className="absolute inset-x-0 top-0 h-px bg-[#E3FF74] opacity-60" />
 
         <button
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-xl text-on-surface-variant hover:bg-[rgba(255,255,255,0.08)] transition-colors z-10"
+          className="absolute right-3 top-3 z-10 flex h-[44px] w-[44px] items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-[rgba(255,255,255,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
           type="button"
           aria-label={t('modal_close')}
           onClick={closeAuthModal}
@@ -149,9 +152,12 @@ export default function AuthModal() {
         </button>
 
         {/* Logo + 标题 */}
-        <div className="shrink-0 px-6 pt-8 pb-4 text-center">
-          <p className="text-sm font-semibold text-gradient-genesis font-display tracking-tight">AetherGenix</p>
-          <h2 className="sr-only" id={modalTitleId}>{modalTitle}</h2>
+        <div className="shrink-0 px-6 pt-8 pb-5 text-center">
+          <p className="font-display text-sm font-semibold tracking-tight text-[#f0ede8]">AetherGenix</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[#f0ede8]" id={modalTitleId}>{modalTitle}</h2>
+          <p id={modalDescriptionId} className="mx-auto mt-2 max-w-sm text-sm leading-6 text-on-surface-variant">
+            {modalDescription}
+          </p>
         </div>
 
         <div className="mx-6 flex shrink-0 border-b border-[rgba(255,255,255,0.08)]">
@@ -159,8 +165,9 @@ export default function AuthModal() {
             <button
               key={t_}
               type="button"
-              onClick={() => openAuthModal(t_, pendingPath)}
-              className={`flex-1 py-3 text-sm font-medium transition-all duration-200 ${
+              onClick={() => openAuthModal(t_, pendingPath, actionContext)}
+              aria-pressed={tab === t_}
+              className={`min-h-11 flex-1 py-3 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 ${
                 tab === t_
                   ? 'text-[#E3FF74] border-b-2 border-[#E3FF74]'
                   : 'text-[#8a8680] hover:text-[#f0ede8]'
@@ -181,6 +188,17 @@ export default function AuthModal() {
       </div>
     </div>
   );
+}
+
+function getAuthModalDescription(
+  actionContext: ReturnType<typeof useAuthModal>['actionContext'],
+  tab: ReturnType<typeof useAuthModal>['tab'],
+  t: ReturnType<typeof useSite>['t'],
+) {
+  if (actionContext === 'history') return t('history_login_desc');
+  if (actionContext === 'favorites') return t('favorites_login_desc');
+  if (actionContext === 'generate' || actionContext === 'reuse-prompt') return t('home_generation_login_required');
+  return tab === 'login' ? t('login_desc') : t('register_desc');
 }
 
 function LoginForm({ settings: _settings, onSuccess }: { settings: PublicAuthSettings | null; onSuccess: () => void }) {
@@ -261,7 +279,7 @@ function LoginForm({ settings: _settings, onSuccess }: { settings: PublicAuthSet
         </>
       )}
       <button className={submitCls} disabled={loading} type="submit">
-        {loading ? <Loader2 className="animate-spin" size={16} /> : tempToken ? <ShieldCheck size={16} /> : <LockKeyhole size={16} />}
+        {loading ? <Loader2 aria-hidden="true" className="animate-spin" size={16} /> : tempToken ? <ShieldCheck aria-hidden="true" size={16} /> : <LockKeyhole aria-hidden="true" size={16} />}
         {tempToken ? t('login_submit_2fa') : t('login_submit')}
       </button>
     </form>
@@ -347,7 +365,7 @@ function RegisterForm({ settings, onSuccess }: { settings: PublicAuthSettings | 
         />
       </Field>
       {settings?.email_verify_enabled && (
-        <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+        <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
           <Field id="auth-register-verify-code" label={t('register_verify_code')}>
             <input
               id="auth-register-verify-code"
@@ -358,12 +376,12 @@ function RegisterForm({ settings, onSuccess }: { settings: PublicAuthSettings | 
             />
           </Field>
           <button
-            className="h-10 px-4 rounded-lg border border-outline-variant text-sm text-on-surface hover:bg-surface-container disabled:opacity-50 transition-colors flex items-center gap-1.5"
+            className="flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-lg border border-outline-variant px-4 text-sm text-on-surface transition-colors hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 disabled:opacity-50"
             disabled={sendingCode || !email.trim() || countdown > 0}
             type="button"
             onClick={handleSendCode}
           >
-            {sendingCode ? <Loader2 className="animate-spin" size={13} /> : <Send size={13} />}
+            {sendingCode ? <Loader2 aria-hidden="true" className="animate-spin" size={13} /> : <Send aria-hidden="true" size={13} />}
             {countdown > 0 ? `${countdown}s` : t('register_send_code')}
           </button>
         </div>
@@ -389,7 +407,7 @@ function RegisterForm({ settings, onSuccess }: { settings: PublicAuthSettings | 
         </Field>
       )}
       <button className={submitCls} disabled={loading || !canRegister} type="submit">
-        {loading ? <Loader2 className="animate-spin" size={16} /> : <MailPlus size={16} />}
+        {loading ? <Loader2 aria-hidden="true" className="animate-spin" size={16} /> : <MailPlus aria-hidden="true" size={16} />}
         {t('register_submit')}
       </button>
     </form>
@@ -398,7 +416,7 @@ function RegisterForm({ settings, onSuccess }: { settings: PublicAuthSettings | 
 
 function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
   return (
-    <div className="space-y-1.5">
+    <div className="min-w-0 space-y-1.5">
       <label className="text-xs font-medium text-on-surface-variant" htmlFor={id}>{label}</label>
       {children}
     </div>
@@ -412,5 +430,5 @@ function getFocusableElements(container: HTMLElement) {
   });
 }
 
-const inputCls = 'h-10 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-[#f0ede8] outline-none focus:border-[#E3FF74]/40 focus:bg-white/[0.06] transition-all placeholder:text-[#4a4844]';
-const submitCls = 'w-full h-11 rounded-full bg-[#f0ede8] text-[#1a1917] font-semibold text-sm hover:bg-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-2';
+const inputCls = 'min-h-[44px] w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-[#f0ede8] outline-none transition-all placeholder:text-[#4a4844] focus:border-[#E3FF74]/40 focus:bg-white/[0.06]';
+const submitCls = 'mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#f0ede8] text-sm font-semibold text-[#1a1917] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 disabled:opacity-50';

@@ -1,13 +1,20 @@
-import { Archive, CheckCircle2, Clock3, ImageIcon, ListFilter, Loader2, Sparkles, X, XCircle } from 'lucide-react';
+import { Clock3, History, ImageIcon, Loader2, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useMemo, useState } from 'react';
-import { formatDate, taskDownloadUrl } from '../api';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { formatDate } from '../api';
 import ImagePreviewModal from './ImagePreviewModal';
 import RetryImage from './RetryImage';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 
-type FilterKey = 'all' | 'active' | 'succeeded' | 'failed';
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
 
 function statusLabel(status: 'queued' | 'running' | 'succeeded' | 'failed', t: ReturnType<typeof useSite>['t']) {
   if (status === 'queued') return t('tasks_status_queued');
@@ -17,16 +24,17 @@ function statusLabel(status: 'queued' | 'running' | 'succeeded' | 'failed', t: R
 }
 
 function statusIcon(status: 'queued' | 'running' | 'succeeded' | 'failed') {
-  if (status === 'queued') return <Clock3 size={14} className="text-[#8a8680]" />;
-  if (status === 'running') return <Loader2 size={14} className="animate-spin text-[#E3FF74]" />;
-  if (status === 'succeeded') return <CheckCircle2 size={14} className="text-[#4ade80]" />;
-  return <XCircle size={14} className="text-[#ff6b6b]" />;
+  if (status === 'queued') return <Clock3 aria-hidden="true" size={14} className="text-[#8a8680]" />;
+  if (status === 'running') return <Loader2 aria-hidden="true" size={14} className="animate-spin text-[#E3FF74]" />;
+  return <Clock3 aria-hidden="true" size={14} className="text-[#8a8680]" />;
 }
 
 export default function TaskDrawer() {
   const { t } = useSite();
   const { tasks, drawerOpen, closeDrawer, activeCount } = useTasks();
-  const [filter, setFilter] = useState<FilterKey>('all');
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const [previewItem, setPreviewItem] = useState<{
     imageUrl?: string | null;
     images?: { id?: string; url: string; prompt?: string | null; title?: string | null }[];
@@ -34,16 +42,76 @@ export default function TaskDrawer() {
     prompt: string;
   } | null>(null);
 
-  const visibleTasks = useMemo(() => {
-    if (filter === 'all') {
-      return tasks;
-    }
-    if (filter === 'active') {
-      return tasks.filter((task) => task.status === 'queued' || task.status === 'running');
-    }
-    return tasks.filter((task) => task.status === filter);
-  }, [filter, tasks]);
-  const hasFilter = filter !== 'all';
+  const activeTasks = useMemo(
+    () => tasks.filter((task) => task.status === 'queued' || task.status === 'running'),
+    [tasks],
+  );
+  const titleId = 'task-drawer-title';
+
+  useEffect(() => {
+    if (!drawerOpen) return undefined;
+    previouslyFocusedElementRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const focusTimer = window.setTimeout(() => {
+      (closeButtonRef.current ?? getFocusableElements(drawerRef.current)[0] ?? drawerRef.current)?.focus();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      const previous = previouslyFocusedElementRef.current;
+      if (previous && document.contains(previous)) previous.focus();
+      previouslyFocusedElementRef.current = null;
+    };
+  }, [drawerOpen]);
+
+  useEffect(() => {
+    if (!drawerOpen || previewItem) return undefined;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeDrawer();
+        return;
+      }
+
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const drawer = drawerRef.current;
+      if (!drawer) return;
+      const focusableElements = getFocusableElements(drawer);
+      if (!focusableElements.length) {
+        event.preventDefault();
+        drawer.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (!(activeElement instanceof HTMLElement) || !drawer.contains(activeElement)) {
+        event.preventDefault();
+        firstElement.focus();
+        return;
+      }
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+        return;
+      }
+
+      if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [closeDrawer, drawerOpen, previewItem]);
 
   return (
     <>
@@ -54,94 +122,67 @@ export default function TaskDrawer() {
         onClick={closeDrawer}
       />
       <aside
+        ref={drawerRef}
+        aria-labelledby={drawerOpen ? titleId : undefined}
         aria-hidden={!drawerOpen}
+        aria-modal={drawerOpen ? 'true' : undefined}
         className={`fixed right-0 top-0 z-[130] h-full w-full max-w-[420px] bg-[#111110] shadow-xl transition-transform duration-300 ${
           drawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
-        inert={drawerOpen ? undefined : ''}
+        inert={drawerOpen ? undefined : true}
+        role={drawerOpen ? 'dialog' : undefined}
+        tabIndex={-1}
       >
         <div className="flex h-full flex-col">
           <div className="flex items-start justify-between border-b border-white/[0.07] px-6 py-5">
             <div>
               <div className="flex items-center gap-2 text-xs text-[#8a8680] mb-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#E3FF74]" />
+                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#E3FF74]" />
                 {t('top_tasks')}
               </div>
-              <h2 className="font-display text-xl font-bold text-[#f0ede8]">{t('tasks_title')}</h2>
+              <h2 className="font-display text-xl font-bold text-[#f0ede8]" id={titleId}>{t('tasks_title')}</h2>
               <p className="mt-1 text-sm text-[#8a8680]">{t('tasks_subtitle')}</p>
             </div>
             <button
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-[#8a8680] transition-colors hover:bg-white/[0.05] hover:text-[#f0ede8]"
+              ref={closeButtonRef}
+              className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-lg text-[#8a8680] transition-colors hover:bg-white/[0.05] hover:text-[#f0ede8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
               type="button"
+              aria-label={t('modal_close')}
               onClick={closeDrawer}
               title={t('modal_close')}
             >
-              <X size={16} />
+              <X aria-hidden="true" size={16} />
             </button>
           </div>
 
-          <div className="flex items-center justify-between border-b border-white/[0.07] px-6 py-3 text-sm text-[#8a8680]">
+          <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-6 py-3 text-sm text-[#8a8680]">
             <span>{activeCount > 0 ? t('tasks_active', { value: activeCount }) : t('tasks_idle')}</span>
             <Link
-              className="font-medium text-[#E3FF74] transition-colors hover:text-[#f0ede8]"
+              className="inline-flex h-11 items-center gap-2 rounded-lg px-2 font-medium text-[#E3FF74] transition-colors hover:bg-white/[0.04] hover:text-[#f0ede8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
               to="/history"
               onClick={closeDrawer}
             >
+              <History aria-hidden="true" size={14} />
               {t('tasks_open_history')}
             </Link>
           </div>
 
-          <div className="flex gap-2 border-b border-white/[0.07] px-4 py-3">
-            {([
-              ['all', t('tasks_filter_all')],
-              ['active', t('tasks_filter_active')],
-              ['succeeded', t('tasks_filter_succeeded')],
-              ['failed', t('tasks_filter_failed')],
-            ] as const).map(([key, label]) => (
-              <button
-                key={key}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                  filter === key
-                    ? 'border border-[rgba(227,255,116,0.15)] bg-[rgba(227,255,116,0.1)] text-[#E3FF74]'
-                    : 'border border-transparent text-[#8a8680] hover:bg-white/[0.04] hover:text-[#f0ede8]'
-                }`}
-                type="button"
-                onClick={() => setFilter(key as FilterKey)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
           <div className="flex-1 overflow-y-auto px-4 py-4">
-            {visibleTasks.length === 0 ? (
+            {activeTasks.length === 0 ? (
               <div className="flex h-full min-h-[260px] items-center justify-center rounded-2xl border border-outline-variant/70 bg-surface/70 px-5 py-8 text-center">
                 <div className="mx-auto flex max-w-xs flex-col items-center">
-                  <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border ${
-                    hasFilter ? 'border-secondary/25 bg-secondary/10 text-secondary' : 'border-primary/25 bg-primary/10 text-primary'
-                  }`}
-                  >
-                    {hasFilter ? <ListFilter size={22} /> : <Sparkles size={22} />}
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
+                    <Sparkles aria-hidden="true" size={22} />
                   </div>
                   <h3 className="text-base font-semibold text-on-surface">
-                    {hasFilter ? t('tasks_filter_empty_title') : t('tasks_empty_title')}
+                    {t('tasks_idle')}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-                    {hasFilter ? t('tasks_filter_empty_desc') : t('tasks_empty_desc')}
+                    {t('tasks_subtitle')}
                   </p>
                   <div className="mt-5 flex flex-wrap justify-center gap-2">
-                    {hasFilter ? (
-                      <button
-                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-variant px-3 text-xs font-medium text-on-surface transition-colors hover:bg-surface-container"
-                        type="button"
-                        onClick={() => setFilter('all')}
-                      >
-                        <ListFilter size={14} />
-                        {t('tasks_clear_filter')}
-                      </button>
-                    ) : null}
-                    <Link className="btn-primary h-9 px-3 text-xs" to="/create" onClick={closeDrawer}>
-                      <Sparkles size={14} />
+                    <Link className="btn-primary min-h-11 px-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35" to="/create" onClick={closeDrawer}>
+                      <Sparkles aria-hidden="true" size={14} />
                       {t('tasks_create_action')}
                     </Link>
                   </div>
@@ -149,7 +190,7 @@ export default function TaskDrawer() {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {visibleTasks.map((task) => {
+                {activeTasks.map((task) => {
                   const previewImages = task.items
                     .filter((item) => item.image_url)
                     .sort((a, b) => (a.batch_index || 0) - (b.batch_index || 0))
@@ -173,13 +214,14 @@ export default function TaskDrawer() {
                       </div>
 
                       <div className="flex gap-3">
-                        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/[0.07] bg-white/[0.03]">
+                        <div className="flex h-[92px] w-[92px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/[0.07] bg-white/[0.03]">
                           {previewImages.length > 1 ? (
                             <div className="grid h-full w-full grid-cols-2 gap-0.5 p-0.5">
                               {previewImages.slice(0, 4).map((image, imageIndex) => (
                                 <button
                                   key={image.id}
-                                  className="min-h-0 min-w-0 cursor-zoom-in overflow-hidden rounded"
+                                  aria-label={`${t('history_preview')} ${imageIndex + 1}`}
+                                  className="min-h-11 min-w-11 cursor-zoom-in overflow-hidden rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
                                   type="button"
                                   title={t('history_preview')}
                                   onClick={() => setPreviewItem({
@@ -199,7 +241,8 @@ export default function TaskDrawer() {
                             </div>
                           ) : previewImage ? (
                             <button
-                              className="h-full w-full cursor-zoom-in"
+                              aria-label={t('history_preview')}
+                              className="h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
                               type="button"
                               title={t('history_preview')}
                               onClick={() => setPreviewItem({ imageUrl: previewImage, prompt: task.prompt })}
@@ -207,7 +250,7 @@ export default function TaskDrawer() {
                               <RetryImage alt={task.prompt} className="h-full w-full object-contain" src={previewImage} />
                             </button>
                           ) : (
-                            <ImageIcon size={18} className="text-[#8a8680]" />
+                            <ImageIcon aria-hidden="true" size={18} className="text-[#8a8680]" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -220,16 +263,6 @@ export default function TaskDrawer() {
                             {previewImages.length > 1 ? <span>x{previewImages.length}</span> : null}
                           </div>
                           {task.error ? <div className="mt-2 break-words text-sm text-[#ff6b6b]">{task.error}</div> : null}
-                          {previewImages.length > 1 ? (
-                            <a
-                              className="mt-3 inline-flex h-8 items-center gap-2 rounded-lg border border-white/[0.08] px-3 text-xs font-medium text-[#8a8680] transition-colors hover:bg-white/[0.04] hover:text-[#f0ede8]"
-                              href={taskDownloadUrl(task.id)}
-                              title={t('history_download_zip')}
-                            >
-                              <Archive size={12} />
-                              {t('history_download_zip')}
-                            </a>
-                          ) : null}
                         </div>
                       </div>
                     </div>
@@ -250,4 +283,12 @@ export default function TaskDrawer() {
       />
     </>
   );
+}
+
+function getFocusableElements(container: HTMLElement | null) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((element) => {
+    const isVisible = element.offsetWidth > 0 || element.offsetHeight > 0 || element.getClientRects().length > 0;
+    return isVisible && !element.getAttribute('aria-hidden');
+  });
 }
