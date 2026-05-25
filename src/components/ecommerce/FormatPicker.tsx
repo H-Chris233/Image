@@ -103,7 +103,7 @@ export function FormatPicker({ value, onChange }: FormatPickerProps) {
 
             {/* Platform / usage context */}
             <span
-              className="text-[9px] leading-none"
+              className="hidden text-[9px] leading-none sm:block"
               style={{ color: isSelected ? 'rgba(227,255,116,0.7)' : 'rgba(255,255,255,0.35)' }}
             >
               {fmt.usage}

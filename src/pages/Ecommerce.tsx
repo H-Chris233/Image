@@ -20,6 +20,7 @@ import {
   HistoryItem,
 } from '../api';
 import { CountChips } from '../components/ecommerce/CountChips';
+import { BatchResultPanel, type BatchResult } from '../components/ecommerce/BatchResultPanel';
 import { FormatPicker } from '../components/ecommerce/FormatPicker';
 import { GenerationProgress } from '../components/ecommerce/GenerationProgress';
 import { ResultPanel } from '../components/ecommerce/ResultPanel';
@@ -115,6 +116,24 @@ const STYLE_TEMPLATES = [
   },
 ];
 
+const TEMPLATE_KEYWORDS: Record<string, string[]> = {
+  white_bg: ['白底', '白色', '纯白', '白背景', 'white', 'clean', '干净', '纯色', '简单背景'],
+  minimal_gradient: ['渐变', '极简', '简约', '高级', '淡色', 'gradient', 'minimal', '现代', '质感'],
+  indoor_scene: ['室内', '家居', '生活', '桌面', '居家', 'indoor', '自然光', '咖啡', '陈设', '摆拍'],
+  outdoor_nature: ['户外', '自然', '绿色', '森林', '草地', 'outdoor', 'nature', '阳光', '清新', '树木'],
+  commercial_poster: ['海报', '商业', '广告', '时尚', 'poster', '促销', '视觉', '冲击', '大气', '品牌'],
+  festive: ['节日', '节庆', '氛围', '喜庆', '圣诞', '新年', '春节', 'festive', 'holiday', '大促', '礼物'],
+};
+
+function pickRecommendedTemplateIds(styleSuggestions: string[]): string[] {
+  if (!styleSuggestions.length) return [];
+  const text = styleSuggestions.join(' ').toLowerCase();
+  return Object.entries(TEMPLATE_KEYWORDS)
+    .filter(([, keywords]) => keywords.some((kw) => text.includes(kw.toLowerCase())))
+    .map(([id]) => id)
+    .slice(0, 3);
+}
+
 const FREEMIUM_CHIP_STYLE = {
   borderColor: 'rgba(227,255,116,0.3)',
   background: 'rgba(227,255,116,0.05)',
@@ -178,6 +197,9 @@ export default function Ecommerce() {
   const [publishCopies, setPublishCopies] = useState<Record<string, EcommercePublishCopyResult>>({});
   const [publishCopyLoadingKey, setPublishCopyLoadingKey] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<EcommerceAnalyzeResult | null>(null);
+  const recommendedTemplateIds = analysisResult
+    ? pickRecommendedTemplateIds(analysisResult.analysis?.style_suggestions ?? [])
+    : [];
   const [selectedPlan, setSelectedPlan] = useState<EcommerceRecommendedPlan | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -188,6 +210,12 @@ export default function Ecommerce() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [latestImages, setLatestImages] = useState<string[]>([]);
   const [awaitingTaskId, setAwaitingTaskId] = useState<string | null>(null);
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
+  const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
+  // Ref kept in sync so the polling effect can read the latest value without adding
+  // batchResults to its dependency array (which would cause re-entry after every update).
+  const batchResultsRef = useRef<BatchResult[]>([]);
   const { markSubmitStart, markSubmitSuccess, markSubmitFailed, markFirstValue } = useGenerationMetrics({
     awaitingTaskId,
   });
@@ -276,6 +304,11 @@ export default function Ecommerce() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 仅执行一次
 
+  // Keep batchResultsRef in sync after every render
+  useEffect(() => {
+    batchResultsRef.current = batchResults;
+  });
+
   // 监听新完成的电商任务，将结果内联展示在结果面板
   useEffect(() => {
     if (!awaitingTaskId) return;
@@ -296,6 +329,33 @@ export default function Ecommerce() {
       taskItems.forEach((item) => seenTaskIds.current.add(item.task_id ?? item.id));
     }
   }, [taskHistoryItems, awaitingTaskId, markFirstValue]);
+
+  // 监听批量任务完成
+  // batchResultsRef is kept in sync via render assignment; reading it here avoids adding
+  // batchResults to deps (which would cause re-entry after every setBatchResults call).
+  useEffect(() => {
+    if (!batchResultsRef.current.some((r) => r.status === 'pending' && r.taskId)) return;
+    const newItems = taskHistoryItems.filter(
+      (item) => Boolean(item.task_request?.ecommerce) && !seenTaskIds.current.has(item.task_id ?? item.id),
+    );
+    if (newItems.length === 0) return;
+    // Collect IDs to mark outside the updater to avoid side-effects in a pure function
+    const toMark: string[] = [];
+    setBatchResults((current) =>
+      current.map((result) => {
+        if (result.status !== 'pending' || !result.taskId) return result;
+        const taskItems = newItems.filter((item) => item.task_id === result.taskId);
+        const urls = taskItems
+          .filter((item) => item.image_url)
+          .sort((a, b) => (a.batch_index || 0) - (b.batch_index || 0))
+          .map((item) => item.image_url as string);
+        if (urls.length === 0) return result;
+        taskItems.forEach((item) => toMark.push(item.task_id ?? item.id));
+        return { ...result, status: 'success', imageUrls: urls };
+      }),
+    );
+    toMark.forEach((id) => seenTaskIds.current.add(id));
+  }, [taskHistoryItems]);
 
   const mergedHistory = mergeHistoryItems([
     ...taskHistoryItems.filter((item) => Boolean(item.task_request?.ecommerce)),
@@ -505,6 +565,82 @@ export default function Ecommerce() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleBatchSubmit() {
+    if (!productImage || loading) {
+      if (!productImage) notifyError(t('home_ecom_missing_image'));
+      return;
+    }
+    if (!viewer?.authenticated) {
+      notifyError(t('ecom_generation_login_required'));
+      return;
+    }
+    if (isOutOfCredits) {
+      notifyError('免费额度已用完，升级继续');
+      return;
+    }
+    if (selectedTemplateIds.length === 0) {
+      notifyError('请选择至少一个风格模板');
+      return;
+    }
+
+    setLoading(true);
+    notifyInfo(`正在提交 ${selectedTemplateIds.length} 个生成任务…`);
+
+    const basePayload = {
+      product_name: form.productName,
+      materials: form.materials,
+      selling_points: form.sellingPoints,
+      platform: form.platform,
+      extra_requirements: form.extraRequirements,
+      size: providerImageSize(imageScale, aspectRatio),
+      aspect_ratio: aspectRatio,
+      quality: imageQuality,
+      n: Math.max(1, Math.min(4, Number(imageCount) || 2)),
+      selected_plan: selectedPlan,
+      analysis: analysisResult?.analysis || null,
+    };
+
+    const references = [
+      { file: productImage, role: productReferenceRole, note: productReferenceNote, primary: true as const },
+      ...productReferences.map((ref) => ({ file: ref.file, role: ref.role, note: ref.note })),
+    ];
+
+    // Capture template IDs at submission time to ensure stable ordering
+    const submittedIds = [...selectedTemplateIds];
+
+    const settled = await Promise.allSettled(
+      submittedIds.map(async (templateId) => {
+        const tpl = STYLE_TEMPLATES.find((t) => t.id === templateId);
+        if (!tpl) throw new Error(`Unknown template: ${templateId}`);
+        const task = await generateEcommerceImages(
+          { ...basePayload, style: tpl.style, scenarios: tpl.scenarios },
+          references,
+        );
+        return { templateId, task };
+      }),
+    );
+
+    settled.forEach((s) => {
+      if (s.status === 'fulfilled') addTask(s.value.task);
+    });
+    closeDrawer();
+
+    // Single setBatchResults call — all taskIds populated upfront so polling guard works immediately
+    const finalResults: BatchResult[] = submittedIds.map((templateId, idx) => {
+      const tpl = STYLE_TEMPLATES.find((t) => t.id === templateId)!;
+      const s = settled[idx];
+      if (s.status === 'fulfilled') {
+        return { templateId, templateName: tpl.name, taskId: s.value.task.id, status: 'pending', imageUrls: [] };
+      }
+      return { templateId, templateName: tpl.name, taskId: null, status: 'error', imageUrls: [], error: '提交失败' };
+    });
+    setBatchResults(finalResults);
+
+    const successCount = settled.filter((s) => s.status === 'fulfilled').length;
+    notifyInfo(`✓ 已提交 ${successCount}/${submittedIds.length} 个任务，正在生成…`);
+    setLoading(false);
   }
 
   async function handleAnalyzeProduct() {
@@ -789,13 +925,34 @@ export default function Ecommerce() {
 
         {/* ① 选择场景风格 — Template-First Step 4 */}
         <div>
-          <div className="mb-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--ag-lime)' }}>
-            ① 选择场景风格
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--ag-lime)' }}>
+              ① 选择场景风格
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setBatchMode((m) => !m);
+                setSelectedTemplateIds([]);
+              }}
+              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-all duration-150"
+              style={{
+                border: batchMode ? '1px solid var(--ag-lime)' : '1px solid rgba(255,255,255,0.15)',
+                color: batchMode ? 'var(--ag-lime)' : 'rgba(255,255,255,0.4)',
+                background: batchMode ? 'rgba(227,255,116,0.08)' : 'transparent',
+              }}
+            >
+              批量
+            </button>
           </div>
           <TemplatePicker
             templates={STYLE_TEMPLATES}
-            value={selectedTemplate}
-            onChange={applyStyleTemplate}
+            value={batchMode ? null : selectedTemplate}
+            onChange={batchMode ? () => undefined : applyStyleTemplate}
+            recommendedIds={recommendedTemplateIds}
+            multiSelect={batchMode}
+            selectedIds={selectedTemplateIds}
+            onMultiChange={setSelectedTemplateIds}
           />
         </div>
 
@@ -806,7 +963,7 @@ export default function Ecommerce() {
           </div>
           <div className="relative">
             <button
-              className="group relative flex h-40 w-full items-center justify-center overflow-hidden border border-dashed border-primary/25 bg-black hover:bg-primary/5"
+              className="group relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden border border-dashed border-primary/25 bg-black hover:bg-primary/5 sm:aspect-auto sm:h-40"
               type="button"
               onClick={() => fileInputRef.current?.click()}
             >
@@ -892,7 +1049,7 @@ export default function Ecommerce() {
         </div>
 
         {/* 参数 */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <label className="min-w-0">
             <span className="mb-0.5 flex items-center gap-1 text-[10px] font-medium text-on-surface-variant">
               <span className="font-bold leading-none" style={{ color: 'var(--ag-lime)' }}>★</span>
@@ -986,9 +1143,22 @@ export default function Ecommerce() {
           <button
             className="btn-commerce w-full h-12"
             type="button"
-            disabled={loading || !productImage || isOutOfCredits}
-            onClick={handleSubmit}
-            title={!productImage ? '请先上传商品图（步骤②）' : isOutOfCredits ? '免费额度已用完，升级继续 →' : undefined}
+            disabled={
+              loading ||
+              !productImage ||
+              isOutOfCredits ||
+              (batchMode && selectedTemplateIds.length === 0)
+            }
+            onClick={batchMode ? () => { handleBatchSubmit().catch(() => undefined); } : handleSubmit}
+            title={
+              !productImage
+                ? '请先上传商品图（步骤②）'
+                : isOutOfCredits
+                ? '免费额度已用完，升级继续 →'
+                : batchMode && selectedTemplateIds.length === 0
+                ? '请选择至少一个风格模板'
+                : undefined
+            }
           >
             {loading ? (
               <Loader2 className="animate-spin" size={20} />
@@ -996,6 +1166,8 @@ export default function Ecommerce() {
               <>请先上传商品图 ↑</>
             ) : isOutOfCredits ? (
               <>额度已用完 · 升级继续 →</>
+            ) : batchMode ? (
+              <>✦ 批量生成{selectedTemplateIds.length > 0 ? ` (${selectedTemplateIds.length})` : ''}</>
             ) : (
               <>✦ 生成场景图 ({imageCount})</>
             )}
@@ -1018,7 +1190,7 @@ export default function Ecommerce() {
       </section>
 
             <details className="group border border-secondary/20 bg-black/55 open:pb-4">
-              <summary className="flex cursor-pointer list-none items-center justify-between p-4 [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none flex-col gap-2 p-4 [&::-webkit-details-marker]:hidden sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-secondary">
                   <Sparkles size={14} />
                   {t('ecom_ai_designer')}
@@ -1059,6 +1231,15 @@ export default function Ecommerce() {
               uploadedImageUrl={productPreview?.url}
               selectedTemplateName={selectedTemplate ? STYLE_TEMPLATES.find((t) => t.id === selectedTemplate)?.name : undefined}
             />
+
+            {batchResults.length > 0 && (
+              <BatchResultPanel
+                results={batchResults}
+                onPreview={(url) => setPreviewItem({ imageUrl: url, prompt: '批量生成图' })}
+                onDownload={(url) => window.open(url, '_blank')}
+                onClose={() => setBatchResults([])}
+              />
+            )}
 
             <section ref={historySectionRef}>
               <div className="mb-4 flex items-center justify-between">

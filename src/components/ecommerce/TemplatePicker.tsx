@@ -11,26 +11,60 @@ interface TemplatePickerProps {
   templates: TemplateItem[];
   value: string | null;
   onChange: (id: string) => void;
+  recommendedIds?: string[];
+  /** Enable checkbox-style multi-select. Requires selectedIds + onMultiChange. */
+  multiSelect?: boolean;
+  selectedIds?: string[];
+  onMultiChange?: (ids: string[]) => void;
 }
 
-export function TemplatePicker({ templates, value, onChange }: TemplatePickerProps) {
+export function TemplatePicker({
+  templates,
+  value,
+  onChange,
+  recommendedIds,
+  multiSelect = false,
+  selectedIds,
+  onMultiChange,
+}: TemplatePickerProps) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 min-w-0">
       {templates.map((tpl) => {
-        const isSelected = value === tpl.id;
+        const isSelected = multiSelect
+          ? (selectedIds ?? []).includes(tpl.id)
+          : value === tpl.id;
+        const isRecommended = recommendedIds != null && recommendedIds.includes(tpl.id);
+        const selectionIndex = multiSelect ? (selectedIds ?? []).indexOf(tpl.id) : -1;
+
+        function handleClick() {
+          if (multiSelect && onMultiChange) {
+            const current = selectedIds ?? [];
+            const next = current.includes(tpl.id)
+              ? current.filter((id) => id !== tpl.id)
+              : [...current, tpl.id];
+            onMultiChange(next);
+          } else {
+            onChange(tpl.id);
+          }
+        }
+
         return (
           <button
             key={tpl.id}
             type="button"
-            onClick={() => onChange(tpl.id)}
+            onClick={handleClick}
             className="group relative overflow-hidden rounded-xl transition-all duration-150"
             style={{
               aspectRatio: '1',
               border: isSelected
                 ? '2px solid var(--ag-lime)'
+                : isRecommended
+                ? '2px solid rgba(227,255,116,0.4)'
                 : '2px solid rgba(255,255,255,0.08)',
               boxShadow: isSelected
                 ? '0 0 0 3px rgba(227,255,116,0.2)'
+                : isRecommended
+                ? '0 0 0 2px rgba(227,255,116,0.1)'
                 : undefined,
               background: tpl.exampleImageUrl ? undefined : tpl.previewGradient,
             }}
@@ -50,6 +84,7 @@ export function TemplatePicker({ templates, value, onChange }: TemplatePickerPro
                 }}
               />
             )}
+
             {/* Hover / selected overlay with template info */}
             <div
               className="absolute inset-0 flex flex-col items-center justify-center gap-1 transition-opacity duration-150"
@@ -74,13 +109,23 @@ export function TemplatePicker({ templates, value, onChange }: TemplatePickerPro
               <span className="text-[10px] font-bold leading-none text-white">{tpl.name}</span>
             </div>
 
-            {/* Selected check indicator */}
+            {/* Selected indicator — number badge in multi-select, ✓ in single */}
             {isSelected && (
               <div
                 className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
                 style={{ background: 'var(--ag-lime)', color: 'var(--ag-charcoal)' }}
               >
-                ✓
+                {multiSelect ? selectionIndex + 1 : '✓'}
+              </div>
+            )}
+
+            {/* AI recommendation badge */}
+            {!isSelected && isRecommended && (
+              <div
+                className="absolute left-1 top-1 flex h-3.5 items-center rounded-full px-1 text-[7px] font-black uppercase tracking-wide"
+                style={{ background: 'rgba(227,255,116,0.92)', color: 'var(--ag-charcoal)' }}
+              >
+                AI
               </div>
             )}
           </button>
