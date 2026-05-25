@@ -33,6 +33,8 @@ import { GenerationProgress } from '../components/ecommerce/GenerationProgress';
 import { HistorySearchBar } from '../components/ecommerce/HistorySearchBar';
 import { ModelPicker } from '../components/ecommerce/ModelPicker';
 import { ResultPanel } from '../components/ecommerce/ResultPanel';
+import { SharePanel } from '../components/ecommerce/SharePanel';
+import { WatermarkEditor } from '../components/ecommerce/WatermarkEditor';
 import { SampleGallery } from '../components/ecommerce/SampleGallery';
 import { TemplatePicker } from '../components/ecommerce/TemplatePicker';
 import CompactInput from '../components/CompactInput';
@@ -1418,6 +1420,13 @@ export default function Ecommerce() {
               />
             )}
 
+            {latestImages.length > 0 && (
+              <WatermarkEditor
+                imageUrl={latestImages[0]}
+                onError={notifyError}
+              />
+            )}
+
             {batchResults.length > 0 && (
               <BatchResultPanel
                 results={batchResults}
@@ -1897,6 +1906,12 @@ function ProjectDetail({
             <span>{group.first.quality}</span>
             <span>x{group.images.length}</span>
           </div>
+          {group.first.id && (
+            <div className="mt-4">
+              <div className="mb-1.5 text-[9px] uppercase tracking-widest text-white/35">分享项目</div>
+              <SharePanel historyId={group.first.id} onError={(err) => { void err; }} />
+            </div>
+          )}
           {referenceNotes.length > 0 ? (
             <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
               {referenceNotes.slice(0, 6).map((note) => (
