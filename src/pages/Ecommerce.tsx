@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Download, ImagePlus, Loader2, Maximize2, Paperclip, PencilLine, RefreshCw, Sparkles, Trash2, X } from 'lucide-react';
 import {
   analyzeEcommerceProduct,
@@ -27,6 +27,7 @@ import { BatchDownloadBar } from '../components/ecommerce/BatchDownloadBar';
 import { BatchResultPanel, type BatchResult } from '../components/ecommerce/BatchResultPanel';
 import { CountChips } from '../components/ecommerce/CountChips';
 import { CreditEstimate } from '../components/ecommerce/CreditEstimate';
+import { CreateFlowWizard, type WizardResult } from '../components/ecommerce/CreateFlowWizard';
 import { CustomStyleModal, loadCustomTemplates, saveCustomTemplates, type CustomStyleTemplate } from '../components/ecommerce/CustomStyleModal';
 import { FormatPicker } from '../components/ecommerce/FormatPicker';
 import { GenerationProgress } from '../components/ecommerce/GenerationProgress';
@@ -285,6 +286,9 @@ export default function Ecommerce() {
   const [batchDownloading, setBatchDownloading] = useState(false);
   // M5: custom styles
   const [customTemplates, setCustomTemplates] = useState<CustomStyleTemplate[]>(() => loadCustomTemplates());
+  // Create flow wizard
+  const [showCreateWizard, setShowCreateWizard] = useState(false);
+  const location = useLocation();
   const [showCustomModal, setShowCustomModal] = useState(false);
   const { markSubmitStart, markSubmitSuccess, markSubmitFailed, markFirstValue } = useGenerationMetrics({
     awaitingTaskId,
@@ -712,6 +716,29 @@ export default function Ecommerce() {
     }
   }
 
+  useEffect(() => {
+    const state = location.state as { wizardResult?: WizardResult } | null;
+    if (state?.wizardResult) {
+      handleWizardComplete(state.wizardResult);
+      window.history.replaceState({}, '');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleWizardComplete(result: WizardResult) {
+    setProductImage(result.productImage);
+    setProductPreview({ name: result.productImage.name, url: URL.createObjectURL(result.productImage) });
+    setForm((prev) => ({
+      ...prev,
+      style: result.sceneDescription,
+      scenarios: result.category.nameEn,
+    }));
+    setAspectRatio(result.aspectRatio);
+    setImageCount(result.imageCount);
+    setSelectedTemplate(null);
+    setShowCreateWizard(false);
+  }
+
   async function handleBatchSubmit() {
     if (!productImage || loading) {
       if (!productImage) notifyError(t('home_ecom_missing_image'));
@@ -992,6 +1019,13 @@ export default function Ecommerce() {
   }
 
   return (
+    <>
+      {showCreateWizard && (
+        <CreateFlowWizard
+          onComplete={handleWizardComplete}
+          onClose={() => setShowCreateWizard(false)}
+        />
+      )}
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
       <div className="mb-6 flex flex-col gap-3 border-b border-white/10 pb-5 md:flex-row md:items-end md:justify-between">
         <div>
@@ -1004,12 +1038,22 @@ export default function Ecommerce() {
             <ModelBadge />
             <p className="text-sm text-white/50">{t('ecom_subtitle')}</p>
           </div>
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1" style={FREEMIUM_CHIP_STYLE}>
-            <span className="h-1.5 w-1.5 rounded-full" style={FREEMIUM_DOT_STYLE} aria-hidden />
-            <span className="text-[10px] font-bold uppercase tracking-widest" style={FREEMIUM_TEXT_STYLE}>Free Tier</span>
-            <span className="text-[11px] text-white/55">
-              {isOutOfCredits ? '本月免费额度已用完' : '每月 5 次免费生成 · 无需信用卡'}
-            </span>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1" style={FREEMIUM_CHIP_STYLE}>
+              <span className="h-1.5 w-1.5 rounded-full" style={FREEMIUM_DOT_STYLE} aria-hidden />
+              <span className="text-[10px] font-bold uppercase tracking-widest" style={FREEMIUM_TEXT_STYLE}>Free Tier</span>
+              <span className="text-[11px] text-white/55">
+                {isOutOfCredits ? '本月免费额度已用完' : '每月 5 次免费生成 · 无需信用卡'}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="flex h-8 items-center gap-2 bg-[var(--ag-lime)] px-4 text-[11px] font-bold uppercase tracking-widest text-black hover:opacity-90 transition-opacity"
+              onClick={() => setShowCreateWizard(true)}
+            >
+              <Sparkles size={13} />
+              新建创作
+            </button>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 md:w-[320px]">
@@ -1597,6 +1641,7 @@ export default function Ecommerce() {
         </div>
       ) : null}
     </div>
+    </>
   );
 }
 

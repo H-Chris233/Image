@@ -1,5 +1,7 @@
 import React, { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CreateFlowWizard, type WizardResult } from '../components/ecommerce/CreateFlowWizard';
+import Explore from './Explore';
 import { ArrowUp, ChevronDown, Clock3, ImagePlus, Loader2, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import {
   editImage,
@@ -40,6 +42,7 @@ export default function Create() {
   const { activeCount, addTask } = useTasks();
   const { notifyError } = useNotifier();
 
+  const [showWizard, setShowWizard] = useState(true);
   const [mode, setMode] = useState<CreateMode>('general');
   const [promptValue, setPromptValue] = useState('');
   const [selectedReferences, setSelectedReferences] = useState<ReferenceImageEntry[]>([]);
@@ -206,6 +209,19 @@ export default function Create() {
       selectedReferencePreviews.forEach((ref) => URL.revokeObjectURL(ref.previewUrl));
     };
   }, [selectedReferencePreviews]);
+
+  if (showWizard) {
+    return (
+      <CreateFlowWizard
+        onComplete={(result: WizardResult) => navigate('/ecommerce', { state: { wizardResult: result } })}
+        onClose={() => setShowWizard(false)}
+      />
+    );
+  }
+
+  if (!showWizard) {
+    return <Explore />;
+  }
 
   return (
     <div className="min-h-[calc(100vh-64px)] overflow-x-hidden px-3 pb-36 pt-4 text-[#f0ede8] sm:px-4 lg:px-6 lg:py-10">
