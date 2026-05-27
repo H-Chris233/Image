@@ -3,8 +3,8 @@ import TopNavBar from './components/TopNavBar';
 import SideNavBar from './components/SideNavBar';
 import BottomTabBar from './components/BottomTabBar';
 import { ThemeProvider } from './components/ThemeProvider';
-import Create from './pages/Create';
 import Explore from './pages/Explore';
+import Create from './pages/Create';
 import Workspace from './pages/Workspace';
 import History from './pages/History';
 import Favorites from './pages/Favorites';
@@ -12,7 +12,6 @@ import Config from './pages/Config';
 import Account from './pages/Account';
 import Recharge from './pages/Recharge';
 import Tasks from './pages/Tasks';
-import Ecommerce from './pages/Ecommerce';
 import AnnouncementModal from './components/AnnouncementModal';
 import AuthModal from './components/AuthModal';
 import TaskDrawer from './components/TaskDrawer';
@@ -47,7 +46,7 @@ export default function App() {
             {/* 旧路由兼容重定向 */}
             <Route path="/login" element={<Navigate to="/explore" replace />} />
             <Route path="/register" element={<Navigate to="/explore" replace />} />
-            <Route path="/ecommerce" element={<Ecommerce />} />
+            <Route path="/ecommerce" element={<Navigate to="/create" replace />} />
           </Routes>
         </main>
         <BottomTabBar />

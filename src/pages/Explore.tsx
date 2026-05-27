@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AlertCircle, ArrowRight, Copy, Heart, ImageIcon, ImageOff, Loader2, Maximize2, PenLine, RefreshCw, X } from 'lucide-react';
 import { favoriteInspiration, getInspirations, InspirationItem, unfavoriteInspiration } from '../api';
 import { useAuth } from '../auth';
@@ -8,6 +8,7 @@ import { useAuthModal } from '../authModal';
 import { copyTextToClipboard } from '../clipboard';
 import MasonryGrid from '../components/MasonryGrid';
 import RetryImage from '../components/RetryImage';
+import { CreateFlowWizard, type WizardResult } from '../components/ecommerce/CreateFlowWizard';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 
@@ -57,6 +58,7 @@ function getExploreErrorMessage(error: unknown) {
 export default function Explore() {
   const { viewer } = useAuth();
   const { openAuthModal } = useAuthModal();
+  const location = useLocation();
   const navigate = useNavigate();
   const { t } = useSite();
   const { notifyError, notifySuccess } = useNotifier();
@@ -68,6 +70,7 @@ export default function Explore() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState<string | null>(null);
+  const [showCreateWizard, setShowCreateWizard] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const nextOffsetRef = useRef(0);
   const hasMoreRef = useRef(true);
@@ -143,6 +146,13 @@ export default function Explore() {
   }, [loadMore]);
 
   useEffect(() => {
+    const routeState = location.state as { openCreateWizard?: boolean } | null;
+    if (!routeState?.openCreateWizard) return;
+    setShowCreateWizard(true);
+    navigate('/explore', { replace: true, state: null });
+  }, [location.state, navigate]);
+
+  useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const observer = new IntersectionObserver(
@@ -205,14 +215,26 @@ export default function Explore() {
 
   function handleStartCreating() {
     if (viewer?.authenticated) {
-      navigate('/create');
+      setShowCreateWizard(true);
       return;
     }
     openAuthModal('register', '/create', 'generate');
   }
 
+  function handleWizardComplete(result: WizardResult) {
+    setShowCreateWizard(false);
+    navigate('/create', { state: { wizardResult: result } });
+  }
+
   return (
     <div className="mx-auto min-h-screen max-w-screen-2xl px-4 pb-28 pt-6 lg:pb-6">
+      {showCreateWizard ? (
+        <CreateFlowWizard
+          onComplete={handleWizardComplete}
+          onClose={() => setShowCreateWizard(false)}
+        />
+      ) : null}
+
       <div className="mb-8 border-b border-white/10 pb-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
