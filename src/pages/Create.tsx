@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, RefObject } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Download, ImageIcon, Images, Layers3, Loader2, Maximize2, PackagePlus, PenLine, RefreshCw, Sparkles, Upload, WandSparkles, X } from 'lucide-react';
+import { ArrowRight, Download, ImageIcon, Loader2, Maximize2, PackagePlus, RefreshCw, Sparkles, Upload, X } from 'lucide-react';
 import { generateEcommerceImages, getAccount, type AccountInfo } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
@@ -127,37 +127,6 @@ const SCENE_TEMPLATES = [
 
 const DEFAULT_SCENE_TEMPLATE_IDS = SCENE_TEMPLATES.slice(0, 3).map((item) => item.id);
 
-const WORKFLOWS = [
-  {
-    id: 'product-images',
-    title: '商品场景图',
-    description: '上传商品图，生成主图、种草图和详情页素材。',
-    icon: PackagePlus,
-    active: true,
-  },
-  {
-    id: 'marketing-ad',
-    title: '营销广告图',
-    description: '围绕卖点生成投放海报和活动视觉。',
-    icon: Layers3,
-    active: false,
-  },
-  {
-    id: 'text-image',
-    title: '文生图',
-    description: '从提示词生成通用视觉草稿。',
-    icon: WandSparkles,
-    active: false,
-  },
-  {
-    id: 'image-editor',
-    title: 'AI 改图',
-    description: '替换背景、重绘局部、延展图片。',
-    icon: PenLine,
-    active: false,
-  },
-];
-
 export default function Create() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -216,7 +185,7 @@ export default function Create() {
   }, [asset?.previewUrl]);
 
   const canGenerate = Boolean(asset && strategy.sceneDescription.trim() && !loading);
-  const selectedWorkflow = asset ? '商品场景图' : '选择工作流';
+  const selectedWorkflow = asset ? '商品图工作台' : '开始创作';
   const isOutOfCredits = Boolean(
     viewer?.authenticated &&
     account?.balance?.ok === true &&
@@ -370,9 +339,9 @@ export default function Create() {
       <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E3FF74]">Create</p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-[#f0ede8] sm:text-3xl">创建图片生产任务</h1>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-[#f0ede8] sm:text-3xl">创建商品图</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">
-            先选择生产意图，再上传商品图和配置场景。当前主路径对齐商品图片生产工作流。
+            从灵感首页进入创作动作，上传商品图后进入商品图生产工作台。
           </p>
         </div>
         <div className="flex min-h-10 w-fit items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-xs font-semibold text-white/60">
@@ -414,45 +383,23 @@ function WorkflowLauncher({
   onStartProductFlow: () => void;
 }) {
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,0.42fr)]">
-      <section className="min-w-0">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-bold text-[#f0ede8]">选择要创建的内容</h2>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">Workflows</span>
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,0.82fr)_minmax(360px,0.42fr)]">
+      <section className="min-w-0 rounded-lg border border-[#E3FF74]/20 bg-[#14120f] p-5">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 bg-[#E3FF74]/10 text-[#E3FF74]">
+          <PackagePlus size={20} />
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {WORKFLOWS.map((workflow) => {
-            const Icon = workflow.icon;
-            return (
-              <button
-                key={workflow.id}
-                type="button"
-                onClick={workflow.active ? onStartProductFlow : undefined}
-                disabled={!workflow.active}
-                className={`min-h-40 rounded-lg border p-4 text-left transition-colors ${
-                  workflow.active
-                    ? 'border-[#E3FF74]/35 bg-[#191713] hover:border-[#E3FF74]/70 hover:bg-[#E3FF74]/[0.06]'
-                    : 'cursor-not-allowed border-white/10 bg-white/[0.025] opacity-60'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-black/20 text-[#E3FF74]">
-                    <Icon size={18} />
-                  </div>
-                  {workflow.active ? (
-                    <ArrowRight size={16} className="mt-1 text-[#E3FF74]" />
-                  ) : (
-                    <span className="rounded-full border border-white/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/35">
-                      Soon
-                    </span>
-                  )}
-                </div>
-                <h3 className="mt-5 text-lg font-bold text-[#f0ede8]">{workflow.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-on-surface-variant">{workflow.description}</p>
-              </button>
-            );
-          })}
-        </div>
+        <h2 className="mt-6 text-2xl font-bold tracking-tight text-[#f0ede8]">商品场景图</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-on-surface-variant">
+          上传商品图，进入场景描述、比例、背景、模特和多模板素材包生成。其他创作类型暂不作为独立工作流展示，避免误导用户。
+        </p>
+        <button
+          type="button"
+          onClick={onStartProductFlow}
+          className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#E3FF74] px-5 text-sm font-bold text-[#14120f] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/40"
+        >
+          开始创作
+          <ArrowRight size={16} />
+        </button>
       </section>
 
       <aside className="min-w-0 rounded-lg border border-white/10 bg-[#14120f] p-4">
@@ -468,7 +415,7 @@ function WorkflowLauncher({
           </div>
         ) : (
           <div className="flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/[0.02] px-4 text-center">
-            <Images size={22} className="mb-3 text-white/30" />
+            <ImageIcon size={22} className="mb-3 text-white/30" />
             <p className="text-sm text-on-surface-variant">从探索页复用提示词后，会出现在这里。</p>
           </div>
         )}

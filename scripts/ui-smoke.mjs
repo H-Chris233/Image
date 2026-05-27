@@ -1680,10 +1680,14 @@ async function runSmokeChecks(page, baseUrl) {
     await assertNoHorizontalOverflow(page, '/create mobile');
     const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
     if (!routedToCreate) throw new Error('/create entry did not stay on /create');
+    await page.waitFor(() => /商品场景图/.test(document.body.innerText || ''), '/create product workflow title');
     await assertNamedControlsMinTarget(page, '/create workflow launcher controls', [
-      '商品场景图',
+      '开始创作',
+    ]);
+    await assertNoNamedControls(page, '/create no placeholder workflow controls', [
       '营销广告图',
       '文生图',
+      'AI 改图',
     ]);
     await assertNoNamedControls(page, '/create no legacy composer controls', [
       '^Image Generation',
@@ -1699,7 +1703,7 @@ async function runSmokeChecks(page, baseUrl) {
     await assertNoHorizontalOverflow(page, '/create tablet launcher');
     const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
     if (!routedToCreate) throw new Error('/create tablet entry did not stay on /create');
-    await clickMainControl(page, '商品场景图', '/create product workflow card');
+    await clickMainControl(page, '开始创作', '/create product workflow entry');
     await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), '/create tablet guide dialog');
     await assertDialogSemantics(page, 'Create guide tablet dialog');
     await assertNamedControlsMinTarget(page, '/create tablet guide primary actions', [
@@ -1714,12 +1718,13 @@ async function runSmokeChecks(page, baseUrl) {
 
   await runCheck('/create guide closes back to the workflow launcher', async () => {
     await page.navigate('/create?smoke_auth=1', { width: 390, height: 844 });
-    await clickMainControl(page, '商品场景图', '/create product workflow card before close');
+    await clickMainControl(page, '开始创作', '/create product workflow entry before close');
     await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), '/create guide dialog before close');
     await clickMainControl(page, '^Close$', '/create guide close');
     await page.waitFor(() => !document.querySelector('[role="dialog"]'), '/create guide closes');
     await assertNoHorizontalOverflow(page, '/create after guide close');
-    await assertNamedControlsMinTarget(page, '/create product workflow remains available', ['商品场景图']);
+    await page.waitFor(() => /商品场景图/.test(document.body.innerText || ''), '/create product workflow title after close');
+    await assertNamedControlsMinTarget(page, '/create product workflow remains available', ['开始创作']);
   });
 
   await runCheck('shell icon controls keep 44px tap targets', async () => {
