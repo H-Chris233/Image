@@ -2,7 +2,6 @@ import { Clock3, History, ImageIcon, Loader2, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatDate } from '../api';
-import { IconButton, LinkButton, Pressable } from './design-system';
 import ImagePreviewModal from './ImagePreviewModal';
 import RetryImage from './RetryImage';
 import { useSite } from '../site';
@@ -144,14 +143,16 @@ export default function TaskDrawer() {
               <h2 className="font-display text-xl font-bold text-[#f0ede8]" id={titleId}>{t('tasks_title')}</h2>
               <p className="mt-1 text-sm text-[#8a8680]">{t('tasks_subtitle')}</p>
             </div>
-            <IconButton
+            <button
               ref={closeButtonRef}
-              label={t('modal_close')}
-              icon={<X aria-hidden="true" size={16} />}
               className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-lg text-[#8a8680] transition-colors hover:bg-white/[0.05] hover:text-[#f0ede8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
               type="button"
+              aria-label={t('modal_close')}
               onClick={closeDrawer}
-            />
+              title={t('modal_close')}
+            >
+              <X aria-hidden="true" size={16} />
+            </button>
           </div>
 
           <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-6 py-3 text-sm text-[#8a8680]">
@@ -180,9 +181,10 @@ export default function TaskDrawer() {
                     {t('tasks_subtitle')}
                   </p>
                   <div className="mt-5 flex flex-wrap justify-center gap-2">
-                    <LinkButton variant="primary" size="sm" className="min-h-11 px-3 text-xs" to="/create" onClick={closeDrawer} iconStart={<Sparkles aria-hidden="true" size={14} />}>
+                    <Link className="btn-primary min-h-11 px-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35" to="/create" onClick={closeDrawer}>
+                      <Sparkles aria-hidden="true" size={14} />
                       {t('tasks_create_action')}
-                    </LinkButton>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -216,7 +218,7 @@ export default function TaskDrawer() {
                           {previewImages.length > 1 ? (
                             <div className="grid h-full w-full grid-cols-2 gap-0.5 p-0.5">
                               {previewImages.slice(0, 4).map((image, imageIndex) => (
-                                <Pressable
+                                <button
                                   key={image.id}
                                   aria-label={`${t('history_preview')} ${imageIndex + 1}`}
                                   className="min-h-11 min-w-11 cursor-zoom-in overflow-hidden rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
@@ -234,11 +236,11 @@ export default function TaskDrawer() {
                                   })}
                                 >
                                   <RetryImage alt={task.prompt} className="h-full w-full object-cover" src={image.url} />
-                                </Pressable>
+                                </button>
                               ))}
                             </div>
                           ) : previewImage ? (
-                            <Pressable
+                            <button
                               aria-label={t('history_preview')}
                               className="h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
                               type="button"
@@ -246,7 +248,7 @@ export default function TaskDrawer() {
                               onClick={() => setPreviewItem({ imageUrl: previewImage, prompt: task.prompt })}
                             >
                               <RetryImage alt={task.prompt} className="h-full w-full object-contain" src={previewImage} />
-                            </Pressable>
+                            </button>
                           ) : (
                             <ImageIcon aria-hidden="true" size={18} className="text-[#8a8680]" />
                           )}

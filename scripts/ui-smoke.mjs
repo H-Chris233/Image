@@ -1674,119 +1674,54 @@ async function runSmokeChecks(page, baseUrl) {
     await assertEscClosesDialog(page, 'Explore detail modal');
   });
 
-  await runCheck('/create minimal composer has one reference entry and folded settings on mobile', async () => {
+  await runCheck('/create entry shows the local product wizard on mobile', async () => {
     await page.navigate('/create', { width: 390, height: 844 });
     await assertNoUnnamedButtons(page, '/create');
     await assertNoHorizontalOverflow(page, '/create mobile');
-    await assertNamedControlsMinTarget(page, '/create minimal primary controls', [
+    const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
+    if (!routedToCreate) throw new Error('/create entry did not stay on /create');
+    await page.waitFor(() => /PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create product wizard upload guidance');
+    await assertNamedControlsMinTarget(page, '/create product wizard controls', ['\u5f00\u59cb\u521b\u4f5c']);
+    await assertNoNamedControls(page, '/create no placeholder workflow controls', [
+      '\u8425\u9500\u5e7f\u544a\u56fe',
+      '\u6587\u751f\u56fe',
+      'AI \u6539\u56fe',
+    ]);
+    await assertNoNamedControls(page, '/create no legacy composer controls', [
       '^Image Generation',
       '^Commerce Image',
       '^Add reference image$',
       '^AI Optimize$',
       '^Generate Image$',
     ]);
-    await assertNoNamedControls(page, '/create no duplicate reference upload zone', ['^Drop or upload reference images$']);
-    await assertNoNamedControls(page, '/create no example prompt chips', [
-      '^A futuristic city night poster',
-      '^White mechanical flowers',
-      '^Retro sci-fi magazine cover',
-    ]);
-    const minimalComposer = await page.evaluate((helpersText) => {
-      eval(helpersText);
-      const visibleText = document.body.innerText;
-      const referenceEntrances = Array.from(document.querySelectorAll('button, [role="button"], a[href]'))
-        .filter((element) => isVisible(element))
-        .map((element) => accessibleName(element))
-        .filter((name) => /add reference image|drop or upload reference|添加参考|上传参考/i.test(name));
-      const upload = focusableElements(document)
-        .find((element) => /add reference image|添加参考/i.test(accessibleName(element)));
-      const textarea = document.querySelector('textarea');
-      const summary = document.querySelector('summary');
-      if (!(textarea instanceof HTMLTextAreaElement)) return { ok: false, reason: 'prompt textarea not found' };
-      if (!summary || !isVisible(summary)) return { ok: false, reason: 'folded settings summary not found' };
-      if (!upload) return { ok: false, reason: 'single reference control not found' };
-      upload.focus();
-      const textareaRect = textarea.getBoundingClientRect();
-      const summaryRect = summary.getBoundingClientRect();
-      return {
-        ok:
-          document.activeElement === upload &&
-          referenceEntrances.length === 1 &&
-          textareaRect.height >= 44 &&
-          summaryRect.height >= 44 &&
-          !/Creation Workspace|Task Input|Output Preview|Recent Tasks/i.test(visibleText),
-        name: accessibleName(upload),
-        referenceEntrances,
-        textareaHeight: textareaRect.height,
-        summaryHeight: summaryRect.height,
-        reason: `referenceEntrances=${referenceEntrances.join(', ')} textarea=${Math.round(textareaRect.height)} summary=${Math.round(summaryRect.height)}`,
-      };
-    }, domSnapshotHelpers().text);
-    if (!minimalComposer.ok) throw new Error(minimalComposer.reason || 'minimal create composer contract failed');
-    if (!minimalComposer.name) throw new Error('upload reference control has no accessible name');
-    const uploadResult = await page.evaluate(() => {
-      const input = document.querySelector('input[type="file"]');
-      if (!(input instanceof HTMLInputElement)) return { ok: false, reason: 'reference file input not found' };
-      const file = new File([new Uint8Array([137, 80, 78, 71])], 'smoke-reference.png', { type: 'image/png' });
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file);
-      input.files = dataTransfer.files;
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      return { ok: true };
-    });
-    if (!uploadResult.ok) throw new Error(uploadResult.reason || 'could not attach smoke reference image');
-    await page.waitFor(() => Boolean(document.querySelector('[aria-label="Remove reference image"], [aria-label="删除参考图"]')), '/create reference attachment row');
-    await assertNamedControlsMinTarget(page, '/create reference remove action', ['^Remove reference image$']);
-    await assertNoHorizontalOverflow(page, '/create reference attachment mobile');
-    await assertFormControlsMinTarget(page, '/create folded prompt textarea', [
-      '^Describe subject',
-    ]);
-    const settingsOpened = await page.evaluate((helpersText) => {
-      eval(helpersText);
-      const summary = document.querySelector('summary');
-      if (!(summary instanceof HTMLElement)) return false;
-      summary.click();
-      return Boolean(summary.closest('details')?.hasAttribute('open'));
-    }, domSnapshotHelpers().text);
-    if (!settingsOpened) throw new Error('/create folded generation settings could not be opened');
-    await assertFormControlsMinTarget(page, '/create expanded generation parameter selects', [
-      '^Size$',
-      '^Ratio$',
-      '^Quality$',
-      '^Count$',
+  });
+
+  await runCheck('/create product workflow opens the inline category launcher on tablet', async () => {
+    await page.navigate('/create?smoke_auth=1', { width: 1100, height: 900 });
+    await assertNoHorizontalOverflow(page, '/create tablet launcher');
+    const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
+    if (!routedToCreate) throw new Error('/create tablet entry did not stay on /create');
+    await clickMainControl(page, '\u5f00\u59cb\u521b\u4f5c', '/create product workflow entry');
+    await page.waitFor(() => /Beauty & Skincare/i.test(document.body.innerText || ''), '/create tablet category launcher');
+    await assertNoHorizontalOverflow(page, '/create tablet category launcher');
+    await assertNoUnnamedButtons(page, '/create tablet category launcher');
+    await assertNoNamedControls(page, '/create category launcher is inline', ['^Close$']);
+    await assertNamedControlsMinTarget(page, '/create tablet category actions', [
+      '^Exit$',
+      'Beauty & Skincare',
+      'Tech & Electronics',
+      'Sports & Outdoor',
     ]);
   });
 
-  await runCheck('/create tablet layout keeps composer actions reachable without prompt-chip clutter', async () => {
-    await page.navigate('/create', { width: 1100, height: 900 });
-    await assertNoHorizontalOverflow(page, '/create tablet layout');
-    await assertNamedControlsMinTarget(page, '/create tablet primary actions', [
-      '^Image Generation',
-      '^Commerce Image',
-      '^Add reference image$',
-      '^AI Optimize$',
-      '^Generate Image$',
-    ]);
-    await assertNoNamedControls(page, '/create tablet prompt chips removed', [
-      '^A futuristic city night poster',
-      '^White mechanical flowers',
-      '^Retro sci-fi magazine cover',
-    ]);
-  });
-
-  await runCheck('/create completed task toast keeps a named 44px dismiss target', async () => {
+  await runCheck('/create inline launcher exits back to the product wizard', async () => {
     await page.navigate('/create?smoke_auth=1', { width: 390, height: 844 });
-    const promptFocused = await page.evaluate(() => {
-      const textarea = document.querySelector('textarea');
-      if (!(textarea instanceof HTMLTextAreaElement)) return false;
-      textarea.focus();
-      return document.activeElement === textarea;
-    });
-    if (!promptFocused) throw new Error('/create prompt textarea could not be focused');
-    await page.insertText('Smoke task toast prompt');
-    await clickMainControl(page, '^Generate Image$', '/create generate for toast');
-    await page.waitFor(() => /Task Complete|Smoke task toast prompt/i.test(document.body.innerText), '/create task toast');
-    await assertNamedControlsMinTarget(page, 'TaskToast dismiss action', ['^Close Task Complete$']);
+    await clickMainControl(page, '\u5f00\u59cb\u521b\u4f5c', '/create product workflow entry before exit');
+    await page.waitFor(() => /Beauty & Skincare/i.test(document.body.innerText || ''), '/create category launcher before exit');
+    await clickMainControl(page, '^Exit$', '/create launcher exit');
+    await page.waitFor(() => /PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create product wizard after exit');
+    await assertNoHorizontalOverflow(page, '/create after launcher exit');
+    await assertNamedControlsMinTarget(page, '/create product workflow remains available', ['\u5f00\u59cb\u521b\u4f5c']);
   });
 
   await runCheck('shell icon controls keep 44px tap targets', async () => {
@@ -1859,6 +1794,19 @@ async function runSmokeChecks(page, baseUrl) {
       throw new Error(`language menu did not expose zh-CN state with English available: ${JSON.stringify(zhLanguageState)}`);
     }
     await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'shell-language-zh-desktop.png'));
+    const resetMenuOpened = await page.evaluate(() => {
+      const menu = document.querySelector('[data-testid="shell-language-menu"]');
+      if (menu) return true;
+      const button = document.querySelector('[data-testid="shell-language-button"]');
+      if (!(button instanceof HTMLElement)) return false;
+      button.click();
+      return true;
+    });
+    if (!resetMenuOpened) throw new Error('could not open language menu before resetting to en-US');
+    await page.waitFor(
+      () => Boolean(document.querySelector('[data-testid="shell-language-menu"]')),
+      'shell language menu open before en-US reset',
+    );
     const languageReset = await page.evaluate((helpersText) => {
       eval(helpersText);
       const englishButton = Array.from(document.querySelectorAll('[role="menuitemradio"]'))
@@ -1982,7 +1930,7 @@ async function runSmokeChecks(page, baseUrl) {
   });
 
   await runCheck('AuthModal has dialog semantics, named controls, Esc close, and Tab containment', async () => {
-    await page.navigate('/create', { width: 1280, height: 900 });
+    await page.navigate('/explore', { width: 1280, height: 900 });
     const opened = await page.evaluate((helpersText) => {
       eval(helpersText);
       const loginButton = Array.from(document.querySelectorAll('button'))
@@ -2006,19 +1954,8 @@ async function runSmokeChecks(page, baseUrl) {
   });
 
   await runCheck('AuthModal register verification controls keep 44px targets', async () => {
-    await page.navigate('/create?smoke_verify=1', { width: 390, height: 844 });
-    await clickMainControl(page, '^Generate Image$', 'open AuthModal from create generate');
-    await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), 'AuthModal login dialog before register switch');
-    const opened = await page.evaluate((helpersText) => {
-      eval(helpersText);
-      const registerButton = Array.from(document.querySelectorAll('button'))
-        .filter((element) => isVisible(element))
-        .find((element) => /^Register$/i.test(accessibleName(element)));
-      if (!registerButton) return false;
-      registerButton.click();
-      return true;
-    }, domSnapshotHelpers().text);
-    if (!opened) throw new Error('could not find visible Register button');
+    await page.navigate('/explore?smoke_verify=1', { width: 390, height: 844 });
+    await clickMainControl(page, '^Start creating$|^开始创作$', 'open AuthModal from Explore create entry');
     await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), 'AuthModal register dialog');
     await assertDialogSemantics(page, 'AuthModal register', { checkInputs: true });
     await assertNoHorizontalOverflow(page, 'AuthModal register mobile');
@@ -2077,19 +2014,6 @@ async function runSmokeChecks(page, baseUrl) {
     await assertNamedControlsMinTarget(page, '/history delete confirmation actions', [
       '^Cancel$',
       '^Delete 2 records$',
-    ]);
-  });
-
-  await runCheck('/history publish confirmation keeps blocking dialog contract', async () => {
-    await page.navigate('/history?smoke_auth=1', { width: 390, height: 844 });
-    await page.waitFor(() => /First smoke preview image/i.test(document.body.innerText), '/history fixture item before publish confirm');
-    await clickMainControl(page, '^Publish Case$', '/history publish confirm trigger');
-    await page.waitFor(() => document.querySelector('[role="alertdialog"]') && /Publish 2 generated assets/i.test(document.body.innerText), '/history publish confirmation');
-    await assertNoHorizontalOverflow(page, '/history publish confirmation mobile');
-    await assertFocusContained(page, '/history publish confirmation');
-    await assertNamedControlsMinTarget(page, '/history publish confirmation actions', [
-      '^Cancel$',
-      '^Publish Case$',
     ]);
   });
 
@@ -2454,16 +2378,6 @@ async function runSmokeChecks(page, baseUrl) {
     await clickMainControl(page, '^Select asset 2$', '/workspace select second asset for publish');
     await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
     await clickMainControl(page, '^Publish selected$', '/workspace publish selected');
-    await page.waitFor(() => document.querySelector('[role="alertdialog"]') && /Publish selected generated asset/i.test(document.body.innerText), '/workspace publish confirmation');
-    await page.evaluate((helpersText) => {
-      eval(helpersText);
-      const dialog = document.querySelector('[role="alertdialog"]');
-      const control = Array.from(dialog?.querySelectorAll('button') || [])
-        .map((element) => ({ element, name: accessibleName(element) }))
-        .find((item) => /^Publish selected$/i.test(item.name));
-      if (!control) throw new Error('publish confirmation button missing');
-      control.element.click();
-    }, domSnapshotHelpers().text);
     await page.waitFor(() => /Unpublish selected|Published/i.test(document.body.innerText), '/workspace selected asset published');
     const publishCalls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
     const publishScoped = publishCalls.filter((call) => call.type === 'history-publish');
@@ -2473,16 +2387,6 @@ async function runSmokeChecks(page, baseUrl) {
 
     await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
     await clickMainControl(page, '^Unpublish selected$', '/workspace unpublish selected');
-    await page.waitFor(() => document.querySelector('[role="alertdialog"]') && /Unpublish selected generated asset/i.test(document.body.innerText), '/workspace unpublish confirmation');
-    await page.evaluate((helpersText) => {
-      eval(helpersText);
-      const dialog = document.querySelector('[role="alertdialog"]');
-      const control = Array.from(dialog?.querySelectorAll('button') || [])
-        .map((element) => ({ element, name: accessibleName(element) }))
-        .find((item) => /^Unpublish selected$/i.test(item.name));
-      if (!control) throw new Error('unpublish confirmation button missing');
-      control.element.click();
-    }, domSnapshotHelpers().text);
     await page.waitFor(() => /Publish selected|Not published/i.test(document.body.innerText), '/workspace selected asset unpublished');
     const unpublishCalls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
     const unpublishScoped = unpublishCalls.filter((call) => call.type === 'history-publish');

@@ -8,7 +8,7 @@ import { useAuthModal } from '../authModal';
 import { copyTextToClipboard } from '../clipboard';
 import MasonryGrid from '../components/MasonryGrid';
 import RetryImage from '../components/RetryImage';
-import { Button, IconButton, Pressable } from '../components/design-system';
+import { CreateFlowWizard, type WizardResult } from '../components/ecommerce/CreateFlowWizard';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 
@@ -16,7 +16,7 @@ const PAGE_SIZE = 48;
 const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
 const SKELETON_COUNT = 16;
 const LOAD_MORE_SKELETON_COUNT = 8;
-const EXPLORE_CARD_RATIOS = [0.72, 0.78, 0.86, 0.94, 1.05, 1.18, 1.32];
+const EXPLORE_CARD_RATIOS = [0.94, 1.0, 1.05, 1.12, 1.18];
 const FOCUSABLE_SELECTOR = [
   'a[href]',
   'button:not([disabled])',
@@ -69,6 +69,7 @@ export default function Explore() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState<string | null>(null);
+  const [showCreateWizard, setShowCreateWizard] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const nextOffsetRef = useRef(0);
   const hasMoreRef = useRef(true);
@@ -206,14 +207,26 @@ export default function Explore() {
 
   function handleStartCreating() {
     if (viewer?.authenticated) {
-      navigate('/create');
+      setShowCreateWizard(true);
       return;
     }
     openAuthModal('register', '/create', 'generate');
   }
 
+  function handleWizardComplete(result: WizardResult) {
+    setShowCreateWizard(false);
+    navigate('/create', { state: { wizardResult: result } });
+  }
+
   return (
     <div className="mx-auto min-h-screen max-w-screen-2xl px-4 pb-28 pt-6 lg:pb-6">
+      {showCreateWizard ? (
+        <CreateFlowWizard
+          onComplete={handleWizardComplete}
+          onClose={() => setShowCreateWizard(false)}
+        />
+      ) : null}
+
       <div className="mb-8 border-b border-white/10 pb-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
@@ -221,15 +234,14 @@ export default function Explore() {
             <h1 className="mt-3 font-display text-4xl font-bold tracking-tight text-[#f0ede8] sm:text-5xl">{t('home_title')}</h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-on-surface-variant">{t('explore_desc')}</p>
           </div>
-          <Button
-            variant="lime"
-            iconEnd={<ArrowRight size={16} />}
+          <button
             type="button"
             onClick={handleStartCreating}
-            className="inline-flex min-h-11 w-fit items-center gap-2 rounded-lg bg-[#E3FF74] px-4 text-sm font-bold text-[#1a1917] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111110]"
+            className="btn-primary min-h-11 w-fit px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111110]"
           >
             {t('explore_cta')}
-          </Button>
+            <ArrowRight size={16} />
+          </button>
         </div>
         <div className="mt-6 flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
           <span className="h-px w-8 bg-[#E3FF74]/60" />
@@ -248,15 +260,14 @@ export default function Explore() {
         <ExploreStatePanel
           accent="error"
           action={(
-            <Button
-              variant="lime"
-              iconStart={<RefreshCw size={16} />}
+            <button
               type="button"
               onClick={() => loadMore({ force: true }).catch(() => undefined)}
-              className="inline-flex h-11 items-center gap-2 rounded-lg border border-[#E3FF74]/30 bg-[#E3FF74] px-4 text-sm font-semibold text-[#1a1917] transition-colors hover:bg-white"
+              className="btn-primary h-11 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/45"
             >
+              <RefreshCw size={16} />
               {t('history_retry')}
-            </Button>
+            </button>
           )}
           description={loadErrorMessage || t('toast_error')}
           icon={<AlertCircle size={24} />}
@@ -303,16 +314,14 @@ export default function Explore() {
                 {loadErrorMessage || t('toast_error')}
               </div>
             </div>
-            <Button
-              variant="danger"
-              size="sm"
-              iconStart={<RefreshCw size={14} />}
+            <button
               type="button"
               onClick={() => loadMore({ force: true }).catch(() => undefined)}
               className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg border border-error/30 px-3 text-xs font-semibold text-error transition-colors hover:bg-error/15"
             >
+              <RefreshCw size={14} />
               {t('history_retry')}
-            </Button>
+            </button>
           </div>
         </div>
       )}
@@ -390,7 +399,7 @@ function ExploreCard({
           <Heart aria-hidden="true" size={15} fill="currentColor" />
         </div>
       ) : null}
-      <Pressable
+      <button
         type="button"
         onClick={() => onOpen(item)}
         className="block h-full w-full overflow-hidden text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/80 focus-visible:ring-inset"
@@ -434,7 +443,7 @@ function ExploreCard({
             </div>
           </div>
         </div>
-      </Pressable>
+      </button>
     </article>
   );
 }
@@ -568,14 +577,16 @@ function ExploreDetailModal({
                 {title}
               </h2>
             </div>
-            <IconButton
+            <button
               ref={closeButtonRef}
-              label={t('modal_close')}
-              icon={<X size={16} />}
               type="button"
+              aria-label={t('modal_close')}
+              title={t('modal_close')}
               onClick={onClose}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-white/10 hover:text-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/80"
-            />
+            >
+              <X size={16} />
+            </button>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
@@ -588,38 +599,45 @@ function ExploreDetailModal({
           </div>
 
           <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_44px_44px] gap-2 border-t border-white/10 p-4 sm:p-5">
-            <Button
-              variant="lime"
-              iconStart={<PenLine size={15} className="shrink-0" />}
-              iconEnd={<ArrowRight size={15} className="shrink-0" />}
+            <button
               type="button"
               onClick={() => onReusePrompt(item)}
               disabled={!canReuse}
               aria-label={reusePromptAriaLabel}
-              className="inline-flex h-11 min-w-0 items-center justify-between gap-2 rounded-lg bg-[#E3FF74] px-4 text-sm font-bold text-[#1a1917] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#191713] disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-primary h-11 min-w-0 justify-between gap-2 px-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#191713] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {reusePromptLabel}
-            </Button>
-            <IconButton
-              label={`${t('prompt_editor_copy')} ${title}`}
-              icon={<Copy size={15} />}
+              <span className="flex min-w-0 items-center gap-2">
+                <PenLine size={15} className="shrink-0" />
+                <span className="truncate">{reusePromptLabel}</span>
+              </span>
+              <ArrowRight size={15} className="shrink-0" />
+            </button>
+            <button
               type="button"
               onClick={() => onCopyPrompt(item)}
               disabled={!canReuse}
+              aria-label={`${t('prompt_editor_copy')} ${title}`}
+              title={t('prompt_editor_copy')}
               className="inline-flex h-11 w-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 text-sm font-semibold text-white/75 transition-colors hover:border-[#E3FF74]/45 hover:bg-[#E3FF74]/10 hover:text-[#E3FF74] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/80 disabled:cursor-not-allowed disabled:opacity-50"
-            />
-            <IconButton
-              label={`${item.favorited ? t('home_unfavorite_case') : t('home_favorite_case')} ${title}`}
-              icon={favoriting ? <Loader2 className="animate-spin" size={15} /> : item.favorited ? <Heart size={15} fill="currentColor" /> : <Heart size={15} />}
+            >
+              <Copy size={15} />
+              <span className="sr-only">{t('prompt_editor_copy')}</span>
+            </button>
+            <button
               type="button"
               onClick={() => onToggleFavorite(item)}
               disabled={favoriting}
+              aria-label={`${item.favorited ? t('home_unfavorite_case') : t('home_favorite_case')} ${title}`}
+              title={item.favorited ? t('home_unfavorite_case') : t('home_favorite_case')}
               className={`inline-flex h-11 w-11 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/80 disabled:cursor-not-allowed disabled:opacity-60 ${
                 item.favorited
                   ? 'border-[#E3FF74]/45 bg-[#E3FF74] text-[#1a1917] shadow-[0_10px_28px_rgba(227,255,116,0.22)] hover:bg-white'
                   : 'border-white/15 bg-white/5 text-white/75 hover:border-[#E3FF74]/45 hover:bg-[#E3FF74]/10 hover:text-[#E3FF74]'
               }`}
-            />
+            >
+              {favoriting ? <Loader2 className="animate-spin" size={15} /> : item.favorited ? <Heart size={15} fill="currentColor" /> : <Heart size={15} />}
+              <span className="sr-only">{item.favorited ? t('home_unfavorite_case') : t('home_favorite_case')}</span>
+            </button>
           </div>
         </aside>
       </div>

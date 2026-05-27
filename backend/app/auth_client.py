@@ -5,7 +5,7 @@ from typing import Any
 import httpx
 
 from .branding import UPSTREAM_SERVICE_LABEL
-from .provider import ProviderError
+from .provider import ProviderError, _friendly_upstream_error, _looks_like_html
 
 
 class Sub2APIAuthClient:
@@ -223,4 +223,7 @@ def _extract_error_message(payload: Any, response: httpx.Response) -> str:
             return str(error["message"])
         if error:
             return str(error)
-    return response.text[:1000] or f"{UPSTREAM_SERVICE_LABEL} returned HTTP {response.status_code}"
+    text = response.text or ""
+    if _looks_like_html(response, text):
+        return _friendly_upstream_error(response, text)
+    return text[:1000] or f"{UPSTREAM_SERVICE_LABEL} 返回 HTTP {response.status_code}"

@@ -2,7 +2,6 @@ import { ImageOff, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { ImgHTMLAttributes } from 'react';
 import { useSite } from '../site';
-import { Button } from './design-system';
 
 type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
   src?: string | null;
@@ -39,9 +38,7 @@ export default function RetryImage({ src, alt = '', className = '', onError, onL
         </div>
         <div className="text-xs font-medium">{t('image_load_failed')}</div>
         {src ? (
-          <Button
-            variant="lime"
-            size="sm"
+          <button
             className="flex min-h-11 items-center gap-2 rounded-full border border-[#E3FF74]/25 bg-[#E3FF74]/10 px-4 text-xs font-semibold text-[#E3FF74] transition-colors hover:bg-[#E3FF74]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
             type="button"
             aria-label={t('image_retry')}
@@ -55,7 +52,7 @@ export default function RetryImage({ src, alt = '', className = '', onError, onL
           >
             <RefreshCw aria-hidden="true" size={12} />
             {t('image_retry')}
-          </Button>
+          </button>
         ) : null}
       </div>
     );

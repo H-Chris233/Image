@@ -2,7 +2,6 @@ import { CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 import type { NoticeToast } from '../tasks';
-import { IconButton } from './design-system';
 
 export default function TaskToastStack() {
   const { t } = useSite();
@@ -51,13 +50,15 @@ export default function TaskToastStack() {
                 <p className="mt-1 line-clamp-3 break-words text-sm text-on-surface-variant [overflow-wrap:anywhere]">{body}</p>
                 {isTaskToast && toast.error && body !== toast.error ? <div className="mt-2 break-words text-xs text-error [overflow-wrap:anywhere]">{toast.error}</div> : null}
               </div>
-              <IconButton
-                label={`${t('modal_close')} ${title}`}
-                icon={<X aria-hidden="true" size={14} />}
+              <button
+                aria-label={`${t('modal_close')} ${title}`}
                 className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 type="button"
                 onClick={() => dismissToast(toast.id)}
-              />
+                title={t('modal_close')}
+              >
+                <X aria-hidden="true" size={14} />
+              </button>
             </div>
           </div>
         );

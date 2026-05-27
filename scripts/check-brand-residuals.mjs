@@ -7,14 +7,15 @@ const ignoredDirs = new Set([
   '.git',
   '.pytest_cache',
   '.tmp',
+  'benchmark',
   'backend/data',
   'backend/storage',
   'dist',
+  'docs/design-references',
   'node_modules',
 ]);
 
 const ignoredFiles = new Set();
-
 const ignoredPrefixes = [];
 
 function textFromCodes(codes) {

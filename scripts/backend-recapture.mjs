@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUTPUT_DIR = path.join(ROOT_DIR, 'output', 'playwright', 'backend-recapture');
 const PROFILE_DIR = path.join(OUTPUT_DIR, 'browser-profile');
-const BASE_URL = (process.env.CAPTURE_BASE_URL || 'http://127.0.0.1:3001').replace(/\/$/, '');
-const BACKEND_URL = (process.env.CAPTURE_BACKEND_URL || 'http://127.0.0.1:8001').replace(/\/$/, '');
+const BASE_URL = (process.env.CAPTURE_BASE_URL || 'http://127.0.0.1:3000').replace(/\/$/, '');
+const BACKEND_URL = (process.env.CAPTURE_BACKEND_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const LOAD_TIMEOUT_MS = Number(process.env.CAPTURE_LOAD_TIMEOUT_MS || 45_000);
 const CHECK_TIMEOUT_MS = Number(process.env.CAPTURE_CHECK_TIMEOUT_MS || 25_000);
 const ADMIN_SESSION_COOKIE = process.env.CAPTURE_SESSION_COOKIE || 'aethergenix_session';
@@ -40,9 +40,8 @@ function npmCommand() {
 function smokeEnv() {
   return {
     ...process.env,
-    npm_config_cache: process.env.npm_config_cache || path.join(ROOT_DIR, '.tmp', 'npm-cache'),
+    npm_config_cache: process.env.npm_config_cache || path.join(ROOT_DIR, '.npm-cache'),
     INSPIRATION_SYNC_ON_STARTUP: process.env.INSPIRATION_SYNC_ON_STARTUP || '0',
-    VITE_BACKEND_PROXY_TARGET: process.env.VITE_BACKEND_PROXY_TARGET || BACKEND_URL,
   };
 }
 
@@ -119,19 +118,17 @@ async function startBackendIfNeeded() {
   const logs = createLogBuffer();
   const backendPort = new URL(BACKEND_URL).port || '8000';
   const backendHost = new URL(BACKEND_URL).hostname || '127.0.0.1';
-  const backendArgs = [
+  const backend = spawn('python', [
     '-m',
     'uvicorn',
     'backend.app.main:app',
+    '--env-file',
+    '.env',
     '--host',
     backendHost,
     '--port',
     backendPort,
-  ];
-  if (exists(path.join(ROOT_DIR, '.env'))) {
-    backendArgs.splice(3, 0, '--env-file', '.env');
-  }
-  const backend = spawn('python', backendArgs, {
+  ], {
     cwd: ROOT_DIR,
     env: smokeEnv(),
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -617,17 +614,6 @@ async function captureRoute(cdp, sessionId, capture, sessionValues) {
       const src = img.getAttribute('src') || '';
       return src.includes('/storage/') && img.complete && img.naturalWidth > 0;
     }).length,
-    visibleLoadedStorageImages: Array.from(document.images).filter((img) => {
-      const src = img.getAttribute('src') || '';
-      const rect = img.getBoundingClientRect();
-      return src.includes('/storage/')
-        && img.complete
-        && img.naturalWidth > 0
-        && rect.width > 0
-        && rect.height > 0
-        && rect.bottom > 0
-        && rect.top < window.innerHeight;
-    }).length,
     horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
   }));
 
@@ -674,13 +660,8 @@ function captureDefinitions(taskId, inspirationTotal) {
           const rect = img.getBoundingClientRect();
           return img.complete && img.naturalWidth > 0 && rect.width > 0 && rect.height > 0;
         });
-        const visibleLoaded = loaded.filter((img) => {
-          const rect = img.getBoundingClientRect();
-          return rect.bottom > 0 && rect.top < window.innerHeight;
-        });
         return location.pathname === '/explore'
           && loaded.length >= minimumImages
-          && visibleLoaded.length >= 1
           && document.documentElement.scrollWidth <= window.innerWidth + 1;
       },
     },

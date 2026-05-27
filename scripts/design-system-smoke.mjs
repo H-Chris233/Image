@@ -148,26 +148,10 @@ const activeSourceFiles = [
 
 const primitiveMigrationFiles = [
   'src/components/AccountCenterHeader.tsx',
-  'src/components/AnnouncementModal.tsx',
-  'src/components/AuthModal.tsx',
   'src/components/BottomTabBar.tsx',
-  'src/components/CompactInput.tsx',
-  'src/components/GenerationSelect.tsx',
-  'src/components/ImagePreviewModal.tsx',
   'src/components/PromptEditorModal.tsx',
-  'src/components/RetryImage.tsx',
   'src/components/SideNavBar.tsx',
-  'src/components/TaskDrawer.tsx',
-  'src/components/TaskToastStack.tsx',
-  'src/components/TopNavBar.tsx',
   'src/pages/Account.tsx',
-  'src/pages/Config.tsx',
-  'src/pages/Create.tsx',
-  'src/pages/Explore.tsx',
-  'src/pages/Favorites.tsx',
-  'src/pages/History.tsx',
-  'src/pages/Tasks.tsx',
-  'src/pages/Workspace.tsx',
 ];
 
 const rawControlPattern = /<(button|input|textarea|select)\b/;

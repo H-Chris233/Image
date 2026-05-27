@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Search, Download, Trash2, RefreshCw, ArrowDown, Loader2, Maximize2, Globe2, Archive, AlertCircle, LogIn, Sparkles, X, ImageOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,6 @@ import { useAuthModal } from '../authModal';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import MasonryGrid from '../components/MasonryGrid';
 import RetryImage from '../components/RetryImage';
-import { Button, ConfirmDialog, IconButton, Pressable, TextInputControl } from '../components/design-system';
 import { groupHistoryItems, HistoryGroup, mergeHistoryItems } from '../historyGroups';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
@@ -332,7 +331,7 @@ export default function History() {
             <label className="relative flex-1 md:w-72">
               <span className="sr-only">{t('history_search')}</span>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/50" size={16} />
-              <TextInputControl
+              <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={(event) => {
@@ -341,23 +340,24 @@ export default function History() {
                     handleApplySearch();
                   }
                 }}
-                className="min-h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low py-2 pl-10 pr-12 text-sm text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/50 focus:border-lime/45 focus:ring-2 focus:ring-lime/20"
+                className="min-h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low py-2 pl-10 pr-12 text-sm text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/50 focus:border-primary"
                 placeholder={t('history_search')}
                 type="text"
               />
               {query.trim() ? (
-                <IconButton
-                  label={t('history_clear_search')}
-                  icon={<X size={14} />}
+                <button
+                  aria-label={t('history_clear_search')}
                   className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   onClick={handleClearSearch}
                   type="button"
-                />
+                >
+                  <X size={14} />
+                </button>
               ) : null}
             </label>
           </div>
         ) : (
-          <div className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-outline-variant/70 bg-surface-container-low px-4 text-sm text-on-surface-variant">
+          <div className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant/70 bg-surface-container-low px-4 text-sm text-on-surface-variant">
             <LogIn size={16} className="text-primary/70" />
             {t('history_login_title')}
           </div>
@@ -371,9 +371,10 @@ export default function History() {
           icon={<LogIn size={24} />}
           title={t('history_login_title')}
           action={(
-            <Button variant="primary" className="min-h-11" type="button" onClick={() => openAuthModal('login', '/history', 'history')} iconStart={<LogIn size={16} />}>
+            <button className="btn-primary min-h-11" type="button" onClick={() => openAuthModal('login', '/history', 'history')}>
+              <LogIn size={16} />
               {t('top_login')}
-            </Button>
+            </button>
           )}
         />
       ) : loadError && visibleGroups.length === 0 ? (
@@ -383,9 +384,10 @@ export default function History() {
           icon={<AlertCircle size={24} />}
           title={t('history_error_title')}
           action={(
-            <Button variant="primary" className="min-h-11" type="button" onClick={() => load(0, false).catch(() => undefined)} iconStart={<RefreshCw size={16} />}>
+            <button className="btn-primary min-h-11" type="button" onClick={() => load(0, false).catch(() => undefined)}>
+              <RefreshCw size={16} />
               {t('history_retry')}
-            </Button>
+            </button>
           )}
         />
       ) : loading && visibleGroups.length === 0 ? (
@@ -397,19 +399,19 @@ export default function History() {
           icon={hasSearch ? <Search size={24} /> : <Sparkles size={24} />}
           title={hasSearch ? t('history_search_empty_title') : t('history_empty_title')}
           action={hasSearch ? (
-            <Button
-              variant="ghost"
-              iconStart={<X size={16} />}
+            <button
               className="inline-flex h-11 items-center gap-2 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
               type="button"
               onClick={handleClearSearch}
             >
+              <X size={16} />
               {t('history_clear_search')}
-            </Button>
+            </button>
           ) : (
-            <Button variant="primary" className="min-h-11" type="button" onClick={() => navigate('/create')} iconStart={<Sparkles size={16} />}>
+            <button className="btn-primary min-h-11" type="button" onClick={() => navigate('/create')}>
+              <Sparkles size={16} />
               {t('history_create_action')}
-            </Button>
+            </button>
           )}
         />
       ) : (
@@ -432,15 +434,14 @@ export default function History() {
 
           {hasMore ? (
             <div className="mt-12 flex justify-center">
-              <Button
-                variant="ghost"
-                iconStart={loading ? <Loader2 className="animate-spin" size={14} /> : <ArrowDown size={14} />}
+              <button
                 onClick={() => load(offset, true)}
                 disabled={loading}
                 className="flex min-h-11 items-center gap-2 rounded-lg border border-outline-variant px-8 py-3 text-sm text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-50"
               >
+                {loading ? <Loader2 className="animate-spin" size={14} /> : <ArrowDown size={14} />}
                 {t('history_load_more')}
-              </Button>
+              </button>
             </div>
           ) : null}
         </>
@@ -473,11 +474,15 @@ function HistoryCard({
   onDelete: () => Promise<void>;
   onPreview: (imageId?: string) => void;
   onRegenerate: () => void;
-  onTogglePublish: () => Promise<void>;
+  onTogglePublish: () => void;
 }) {
   const { t } = useSite();
+  const cancelDeleteRef = useRef<HTMLButtonElement | null>(null);
+  const confirmDeleteRef = useRef<HTMLButtonElement | null>(null);
+  const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
+  const deleteDialogTitleId = useId();
+  const deleteDialogDescId = useId();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [confirmingPublish, setConfirmingPublish] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const item = group.first;
   const colors = getColorClasses(index % 2 === 0 ? 'primary' : 'secondary');
@@ -501,19 +506,53 @@ function HistoryCard({
   const deleteConfirmLabel = deleteCount === 1
     ? t('history_delete_confirm_one')
     : t('history_delete_confirm_many', { count: deleteCount });
-  const publishTitle = group.allPublished
-    ? t('history_unpublish_title', { count: group.images.length })
-    : t('history_publish_title', { count: group.images.length });
-  const publishConsequence = group.allPublished
-    ? t('history_unpublish_consequence', { count: group.images.length })
-    : t('history_publish_consequence', { count: group.images.length });
-  const publishConfirmLabel = group.allPublished ? t('history_unpublish_case') : t('history_publish_case');
+
+  useEffect(() => {
+    if (!confirmingDelete) {
+      return undefined;
+    }
+
+    cancelDeleteRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !deleting) {
+        event.preventDefault();
+        closeDeleteConfirm();
+        return;
+      }
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const focusable = [cancelDeleteRef.current, confirmDeleteRef.current].filter(
+        (element): element is HTMLButtonElement => Boolean(element) && !element.disabled,
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [confirmingDelete, deleting]);
 
   function closeDeleteConfirm() {
     if (deleting) {
       return;
     }
     setConfirmingDelete(false);
+    window.setTimeout(() => deleteButtonRef.current?.focus(), 0);
   }
 
   async function confirmDelete() {
@@ -523,15 +562,6 @@ function HistoryCard({
       setConfirmingDelete(false);
     } catch {
       setDeleting(false);
-    }
-  }
-
-  async function confirmPublish() {
-    try {
-      await onTogglePublish();
-      setConfirmingPublish(false);
-    } catch {
-      setConfirmingPublish(false);
     }
   }
 
@@ -545,7 +575,7 @@ function HistoryCard({
           const hiddenLabel = hiddenSlotCount > 0 && slotIndex === visibleSlots.length - 1 ? `+${hiddenSlotCount}` : null;
           if (hasImage) {
             return (
-              <Pressable
+              <button
                 key={slot.id}
                 aria-label={`${t('history_preview')} ${slotIndex + 1}`}
                 className={`group relative block w-full cursor-zoom-in overflow-hidden bg-black text-left ${
@@ -568,7 +598,7 @@ function HistoryCard({
                   </span>
                   {hiddenLabel ? <span className="shrink-0 text-lime">{hiddenLabel}</span> : null}
                 </span>
-              </Pressable>
+              </button>
             );
           }
 
@@ -638,8 +668,7 @@ function HistoryCard({
               <span>{downloadLabel}</span>
             </a>
           ) : (
-            <Button
-              variant="ghost"
+            <button
               aria-label={downloadLabel}
               className="flex h-11 min-w-0 cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-bold uppercase tracking-wide text-white/35"
               disabled
@@ -648,23 +677,20 @@ function HistoryCard({
             >
               {downloadIcon}
               <span>{downloadLabel}</span>
-            </Button>
+            </button>
           )}
-          <Button
-            variant={index % 2 === 0 ? 'primary' : 'orange'}
-            iconStart={<RefreshCw size={14} />}
+          <button
             onClick={onRegenerate}
             className={`flex h-11 min-w-0 items-center justify-center gap-2 rounded-lg px-3 text-xs font-black uppercase tracking-wide ${colors.btnBg} ${colors.btnText} ${colors.btnShadow} transition-all duration-300 hover:brightness-110`}
             type="button"
           >
+            <RefreshCw size={14} />
             <span>{t('history_regenerate')}</span>
-          </Button>
+          </button>
         </div>
 
         <div className="mt-3 flex items-center gap-2 border-t border-white/10 pt-3">
-          <Button
-            variant={group.allPublished ? 'plain' : 'ghost'}
-            iconStart={isPublishing ? <Loader2 className="animate-spin" size={14} /> : <Globe2 size={14} />}
+          <button
             aria-label={group.allPublished ? t('history_unpublish_case') : t('history_publish_case')}
             className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border px-3 text-[11px] font-bold uppercase tracking-wide transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
               group.allPublished
@@ -672,44 +698,84 @@ function HistoryCard({
                 : 'border-white/15 bg-white/5 text-white/60 hover:border-tertiary/35 hover:text-tertiary'
             }`}
             type="button"
-            onClick={() => setConfirmingPublish(true)}
+            onClick={onTogglePublish}
             disabled={publishDisabled}
           >
+            {isPublishing ? <Loader2 className="animate-spin" size={14} /> : <Globe2 size={14} />}
             <span className="truncate">{group.allPublished ? t('history_unpublish_case') : t('history_publish_case')}</span>
-          </Button>
-          <IconButton
-            label={t('history_delete')}
-            icon={<Trash2 size={14} />}
+          </button>
+          <button
+            ref={deleteButtonRef}
+            aria-label={t('history_delete')}
             onClick={() => setConfirmingDelete(true)}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-error/35 bg-error/10 text-error transition-all hover:border-error hover:bg-error/20"
             disabled={confirmingDelete || deleting}
+            title={t('history_delete')}
             type="button"
-          />
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
-        <ConfirmDialog
-          open={confirmingPublish}
-          title={publishTitle}
-          description={publishConsequence}
-          cancelLabel={t('history_delete_cancel')}
-          confirmLabel={publishConfirmLabel}
-          icon={<Globe2 size={16} />}
-          tone="publish"
-          busy={isPublishing}
-          onCancel={() => setConfirmingPublish(false)}
-          onConfirm={() => confirmPublish().catch(() => undefined)}
-        />
-        <ConfirmDialog
-          open={confirmingDelete}
-          title={deleteTitle}
-          description={deleteConsequence}
-          cancelLabel={t('history_delete_cancel')}
-          confirmLabel={deleteConfirmLabel}
-          icon={<Trash2 size={16} />}
-          tone="danger"
-          busy={deleting}
-          onCancel={closeDeleteConfirm}
-          onConfirm={() => confirmDelete().catch(() => undefined)}
-        />
+
+        {confirmingDelete ? (
+          <div
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 px-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] pt-6 backdrop-blur-sm sm:items-center sm:p-6"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                closeDeleteConfirm();
+              }
+            }}
+          >
+            <div
+              aria-describedby={deleteDialogDescId}
+              aria-labelledby={deleteDialogTitleId}
+              aria-modal="true"
+              className="flex max-h-[min(82vh,28rem)] w-full max-w-md flex-col overflow-hidden rounded-xl border border-error/40 bg-surface-container-low shadow-[0_28px_90px_rgba(0,0,0,0.5)] sm:rounded-2xl"
+              role="alertdialog"
+            >
+              <div className="flex min-h-0 flex-1 items-start gap-3 overflow-y-auto p-4 sm:p-5">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-error text-on-error">
+                  <Trash2 size={16} />
+                </div>
+                <div className="min-w-0">
+                  <h2
+                    className="break-words text-base font-semibold leading-6 text-error [overflow-wrap:anywhere]"
+                    id={deleteDialogTitleId}
+                  >
+                    {deleteTitle}
+                  </h2>
+                  <p
+                    className="mt-2 break-words text-sm leading-6 text-on-surface-variant [overflow-wrap:anywhere]"
+                    id={deleteDialogDescId}
+                  >
+                    {deleteConsequence}
+                  </p>
+                </div>
+              </div>
+              <div className="grid shrink-0 grid-cols-1 gap-2 border-t border-outline-variant/70 bg-surface-container px-4 py-3 sm:grid-cols-2 sm:p-4">
+                <button
+                  ref={cancelDeleteRef}
+                  className="inline-flex h-11 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
+                  type="button"
+                  disabled={deleting}
+                  onClick={closeDeleteConfirm}
+                >
+                  {t('history_delete_cancel')}
+                </button>
+                <button
+                  ref={confirmDeleteRef}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-error bg-error px-3 text-sm font-black uppercase text-on-error transition-colors hover:bg-error/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => confirmDelete().catch(() => undefined)}
+                >
+                  {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+                  <span className="truncate">{deleteConfirmLabel}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </article>
   );

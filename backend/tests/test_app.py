@@ -1205,7 +1205,7 @@ def test_ecommerce_analyze_surfaces_billing_errors(tmp_path: Path) -> None:
         assert response.json()["detail"] == "余额不足，请充值或更换 API Key 后重试"
 
 
-def test_ecommerce_generate_surfaces_analysis_provider_errors_as_json(tmp_path: Path) -> None:
+def test_ecommerce_generate_falls_back_when_analysis_provider_is_temporarily_unavailable(tmp_path: Path) -> None:
     provider = ChatErrorProvider()
     with make_client(tmp_path, provider=provider) as client:
         login_demo_user(client)
@@ -1218,8 +1218,12 @@ def test_ecommerce_generate_surfaces_analysis_provider_errors_as_json(tmp_path: 
 
         assert response.status_code == 200
         task = wait_for_task(client, response.json()["id"], attempts=120)
-        assert task["status"] == "failed"
-        assert task["error"] == "Upstream request failed"
+        assert task["status"] == "succeeded"
+        assert task["error"] is None
+        assert task["result"]["ecommerce_analysis"]["source"] == "fallback"
+        assert task["result"]["series_plan"]["source"] == "fallback"
+        assert len(task["items"]) == 4
+        assert len(provider.edited_fields) == 4
 
 
 def test_ecommerce_generate_analyzes_all_reference_angles(tmp_path: Path) -> None:
@@ -2025,3 +2029,80 @@ def test_inspiration_sync_requires_admin(tmp_path: Path) -> None:
         response = client.post("/api/inspirations/sync")
 
         assert response.status_code in {200, 502}
+
+
+def _fake_response(status: int, body: str, content_type: str) -> httpx.Response:
+    return httpx.Response(
+        status_code=status,
+        headers={"content-type": content_type},
+        content=body.encode("utf-8"),
+    )
+
+
+def test_provider_error_message_extracts_cloudflare_tunnel_title() -> None:
+    from app.provider import _extract_error_message
+
+    body = (
+        "<!doctype html><html><head>"
+        "<title>Cloudflare Tunnel error | sub.example.com | Cloudflare</title>"
+        "</head><body><h1>Error 1033</h1>...</body></html>"
+    )
+    response = _fake_response(530, body, "text/html; charset=UTF-8")
+
+    message = _extract_error_message(response)
+
+    assert "暂时不可用" in message
+    assert "530" in message
+    assert "Cloudflare Tunnel error" in message
+    assert "<html" not in message
+    assert "<!doctype" not in message
+
+
+def test_provider_error_message_handles_html_without_title() -> None:
+    from app.provider import _extract_error_message
+
+    body = "<html><body><h1>502 Bad Gateway</h1></body></html>"
+    response = _fake_response(502, body, "text/html")
+
+    message = _extract_error_message(response)
+
+    assert "暂时不可用" in message
+    assert "502" in message
+    assert "<html" not in message
+
+
+def test_provider_error_message_keeps_structured_json_error() -> None:
+    from app.provider import _extract_error_message
+
+    body = json.dumps({"error": {"message": "rate limit reached"}})
+    response = _fake_response(429, body, "application/json")
+
+    message = _extract_error_message(response)
+
+    assert message == "rate limit reached"
+
+
+def test_provider_error_message_falls_back_to_plain_text() -> None:
+    from app.provider import _extract_error_message
+
+    response = _fake_response(503, "service overloaded", "text/plain")
+
+    message = _extract_error_message(response)
+
+    assert message == "service overloaded"
+
+
+def test_auth_client_error_message_collapses_html_to_friendly_string() -> None:
+    from app.auth_client import _extract_error_message
+
+    body = (
+        "<!doctype html><html><head>"
+        "<title>Bad Gateway</title></head><body>upstream down</body></html>"
+    )
+    response = _fake_response(502, body, "text/html")
+
+    message = _extract_error_message(payload=body[:1000], response=response)
+
+    assert "暂时不可用" in message
+    assert "502" in message
+    assert "<html" not in message

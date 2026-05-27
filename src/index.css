@@ -137,18 +137,9 @@
   50% { opacity: 1; }
 }
 
-/* ─── Utilities ─── */
-@layer utilities {
-  .animate-skeleton {
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
-  }
-  .animate-fade-in {
-    animation: fade-in 0.25s var(--ag-ease-out);
-  }
-  .animate-glow-breathe {
-    animation: glow-breathe 3s ease-in-out infinite;
-  }
-
+/* ─── Components ─── */
+/* btn-* 必须在 components 层，让 h-11/h-12 等 utility 高度类能正确覆盖默认 2.5rem。 */
+@layer components {
   /* ── 白色胶囊主按钮（Lovart 风格）── */
   .btn-primary {
     display: inline-flex;
@@ -204,6 +195,57 @@
     box-shadow: var(--ag-glow-lime);
   }
   .btn-lime:hover { background-color: #f0ff9c; }
+
+  /* ── 电商专属 CTA 按钮（矩形圆角，区别于胶囊 btn-lime） ── */
+  .btn-commerce {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 2.75rem;
+    padding: 0 1.5rem;
+    border-radius: 0.75rem;
+    background-color: #E3FF74;
+    color: #1a1917;
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    box-shadow: var(--ag-glow-lime);
+    transition: all 0.15s var(--ag-ease-out);
+  }
+  .btn-commerce:hover { background-color: #f0ff9c; transform: translateY(-1px); }
+  .btn-commerce:disabled { opacity: 0.4; pointer-events: none; }
+
+  /* ── 电商次级按钮 ── */
+  .btn-commerce-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 2.75rem;
+    padding: 0 1.5rem;
+    border-radius: 0.75rem;
+    background-color: #3a3835;
+    color: #f0ede8;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px solid #4a4844;
+    transition: all 0.15s var(--ag-ease-out);
+  }
+  .btn-commerce-secondary:hover { background-color: #4a4844; }
+}
+
+/* ─── Utilities ─── */
+@layer utilities {
+  .animate-skeleton {
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  }
+  .animate-fade-in {
+    animation: fade-in 0.25s var(--ag-ease-out);
+  }
+  .animate-glow-breathe {
+    animation: glow-breathe 3s ease-in-out infinite;
+  }
 
   /* ── 暖炭底卡片 ── */
   .card-warm {

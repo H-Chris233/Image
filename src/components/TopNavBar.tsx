@@ -7,7 +7,6 @@ import { useAuthModal } from '../authModal';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 import aethergenixLogo from '../../aethergenix.svg';
-import { Button, IconButton } from './design-system';
 
 export default function TopNavBar() {
   const location = useLocation();
@@ -118,16 +117,19 @@ export default function TopNavBar() {
       <div className="flex items-center gap-1">
         {showLanguageMenu && (
           <div className="relative">
-            <IconButton
+            <button
               ref={languageButtonRef}
-              className="relative"
-              icon={<Languages size={17} aria-hidden="true" />}
-              label={t('lang_label')}
+              className="relative flex h-[44px] w-[44px] items-center justify-center rounded-xl text-[#8a8680] transition-colors hover:bg-white/5 hover:text-[#f0ede8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
+              type="button"
+              aria-label={t('lang_label')}
               aria-haspopup="menu"
               aria-expanded={languageMenuOpen}
+              title={t('lang_label')}
               data-testid="shell-language-button"
               onClick={() => setLanguageMenuOpen((open) => !open)}
-            />
+            >
+              <Languages size={17} aria-hidden="true" />
+            </button>
             {languageMenuOpen && (
               <div
                 ref={languageMenuRef}
@@ -143,15 +145,14 @@ export default function TopNavBar() {
                 {localeOptions.map((option) => {
                   const selected = locale === option.value;
                   return (
-                    <Button
+                    <button
                       key={option.value}
-                      className={`justify-between rounded-lg px-3 ${
+                      className={`flex min-h-[44px] w-full items-center justify-between rounded-lg px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 ${
                         selected
                           ? 'bg-[#E3FF74]/10 text-[#E3FF74]'
                           : 'text-[#f0ede8] hover:bg-white/[0.06]'
                       }`}
-                      variant="plain"
-                      fullWidth
+                      type="button"
                       role="menuitemradio"
                       aria-checked={selected}
                       onClick={() => {
@@ -162,7 +163,7 @@ export default function TopNavBar() {
                     >
                       <span>{option.label}</span>
                       {selected && <Check size={14} aria-hidden="true" />}
-                    </Button>
+                    </button>
                   );
                 })}
               </div>
@@ -171,31 +172,38 @@ export default function TopNavBar() {
         )}
 
         {/* 任务 */}
-        <IconButton
-          className="relative"
-          variant={activeCount > 0 ? 'lime' : 'ghost'}
-          icon={<ListTodo aria-hidden="true" size={15} />}
-          label={taskButtonLabel}
+        <button
+          className={`relative flex h-[44px] w-[44px] items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 ${
+            activeCount > 0
+              ? 'border border-[rgba(227,255,116,0.2)] bg-[rgba(227,255,116,0.08)] text-[#E3FF74] hover:bg-[rgba(227,255,116,0.12)]'
+              : 'text-[#8a8680] hover:bg-white/5 hover:text-[#f0ede8]'
+          }`}
+          type="button"
+          aria-label={taskButtonLabel}
+          title={taskButtonLabel}
           onClick={openDrawer}
         >
+          <ListTodo aria-hidden="true" size={15} />
           {activeCount > 0 && (
             <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E3FF74] px-1 text-[9px] font-bold text-[#1a1917]">
               {activeCount}
             </span>
           )}
-        </IconButton>
+        </button>
 
         {/* 公告 */}
-        <IconButton
-          className="relative"
-          icon={<Bell aria-hidden="true" size={15} />}
-          label={t('top_announcement')}
+        <button
+          className="relative flex h-[44px] w-[44px] items-center justify-center rounded-xl text-[#8a8680] transition-colors hover:bg-white/5 hover:text-[#f0ede8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
+          type="button"
+          aria-label={t('top_announcement')}
+          title={t('top_announcement')}
           onClick={openAnnouncement}
         >
+          <Bell aria-hidden="true" size={15} />
           {siteSettings?.announcement.enabled && (
             <span aria-hidden="true" className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#E3FF74]" />
           )}
-        </IconButton>
+        </button>
 
         {/* 桌面端账户 */}
         <div className="hidden lg:flex items-center gap-2 ml-2">
@@ -207,29 +215,32 @@ export default function TopNavBar() {
                   {formatBalance(account?.balance)}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
+                className="btn-ghost min-h-11 px-3 text-xs"
+                type="button"
                 onClick={handleLogout}
-                loading={loggingOut}
-                iconStart={<LogOut aria-hidden="true" size={13} />}
+                disabled={loggingOut}
               >
+                <LogOut aria-hidden="true" size={13} />
                 {t('top_logout')}
-              </Button>
+              </button>
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
+              <button
+                className="btn-ghost min-h-11"
+                type="button"
                 onClick={() => openAuthModal('login')}
               >
                 {t('top_login')}
-              </Button>
-              <Button
+              </button>
+              <button
+                className="btn-primary min-h-11"
+                type="button"
                 onClick={() => openAuthModal('register')}
               >
                 {t('top_register')}
-              </Button>
+              </button>
             </div>
           )}
         </div>

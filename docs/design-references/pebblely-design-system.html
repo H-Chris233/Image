@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pebblely Design System · AetherGenix 参考</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  background: #f9f9f7;
+  color: #1c1917;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Layout */
+.page-header {
+  background: #1c1917;
+  color: white;
+  padding: 28px 40px;
+}
+.page-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.page-header p { font-size: 13px; color: #a8a29e; }
+.badge { display: inline-block; background: #fde047; color: #000; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+
+.sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  width: 200px;
+  height: 100vh;
+  background: #1c1917;
+  padding: 20px 0;
+  overflow-y: auto;
+  z-index: 100;
+}
+.sidebar-logo {
+  padding: 16px 20px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fde047;
+  border-bottom: 1px solid #333;
+  margin-bottom: 8px;
+}
+.sidebar a {
+  display: block;
+  padding: 7px 20px;
+  font-size: 12px;
+  color: #a8a29e;
+  text-decoration: none;
+  transition: color .1s;
+}
+.sidebar a:hover { color: #fde047; }
+.sidebar .section-group { padding: 8px 20px 4px; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #57534e; margin-top: 8px; }
+
+.main {
+  margin-left: 200px;
+  padding: 0 40px 80px;
+  max-width: 1000px;
+}
+
+.section {
+  padding-top: 60px;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid #fde047;
+  padding-bottom: 10px;
+  margin-bottom: 24px;
+}
+.section-title .num {
+  background: #fde047;
+  color: #000;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.subsection { margin-bottom: 32px; }
+.subsection-title { font-size: 13px; font-weight: 700; color: #57534e; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+
+hr { border: none; border-top: 1px solid #e7e5e4; margin: 40px 0; }
+
+/* Color swatches */
+.color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.swatch {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+.swatch-color { height: 56px; }
+.swatch-info { background: white; padding: 8px 10px; }
+.swatch-name { font-size: 11px; font-weight: 700; color: #1c1917; }
+.swatch-hex { font-size: 11px; color: #737373; font-family: 'SF Mono', 'Fira Code', monospace; }
+.swatch-usage { font-size: 10px; color: #a3a3a3; margin-top: 2px; line-height: 1.3; }
+
+/* Type specimens */
+.type-scale { display: flex; flex-direction: column; gap: 16px; }
+.type-row { display: flex; align-items: baseline; gap: 20px; padding: 12px 0; border-bottom: 1px solid #f0ede8; }
+.type-meta { min-width: 140px; flex-shrink: 0; }
+.type-token { font-size: 11px; font-weight: 700; color: #1c1917; font-family: 'SF Mono', 'Fira Code', monospace; background: #f0ede8; padding: 2px 6px; border-radius: 3px; }
+.type-px { font-size: 11px; color: #737373; margin-top: 3px; }
+.type-usage-note { font-size: 11px; color: #a3a3a3; margin-top: 2px; }
+.type-preview { color: #1c1917; }
+
+/* Spacing */
+.spacing-grid { display: flex; flex-direction: column; gap: 8px; }
+.spacing-row { display: flex; align-items: center; gap: 16px; }
+.spacing-bar { background: #fde047; height: 16px; border-radius: 3px; flex-shrink: 0; }
+.spacing-label { font-size: 11px; font-family: 'SF Mono', 'Fira Code', monospace; color: #57534e; min-width: 100px; }
+.spacing-usage { font-size: 11px; color: #a3a3a3; }
+
+/* Radius */
+.radius-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+.radius-card {
+  background: white;
+  width: 100px; height: 80px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  flex-direction: column;
+  gap: 6px;
+}
+.radius-name { font-size: 10px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; color: #57534e; }
+.radius-val { font-size: 10px; color: #a3a3a3; }
+
+/* Shadow */
+.shadow-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+.shadow-card {
+  background: white;
+  width: 140px; height: 80px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+}
+.shadow-name { font-size: 10px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; color: #57534e; }
+.shadow-usage { font-size: 10px; color: #a3a3a3; text-align: center; padding: 0 8px; }
+
+/* Component demos */
+.demo-box {
+  background: white;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  margin-bottom: 16px;
+}
+.demo-label { font-size: 10px; font-weight: 700; color: #a3a3a3; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+
+/* Buttons */
+.btn-yellow-primary {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  font-size: 16px; font-weight: 600;
+  color: #171717;
+  background: #fde047;
+  cursor: pointer;
+  transition: background .1s;
+  font-family: inherit;
+}
+.btn-yellow-primary:hover { background: #facc15; }
+
+.btn-yellow-lg {
+  display: inline-block;
+  font-size: 18px; font-weight: 600;
+  background: #fde047;
+  color: #000;
+  padding: 8px 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  transition: background .1s;
+}
+.btn-yellow-lg:hover { background: #facc15; }
+
+.btn-text-link {
+  font-size: 16px; font-weight: 600;
+  color: #404040;
+  background: none; border: none;
+  cursor: pointer; font-family: inherit;
+  text-decoration: none;
+}
+.btn-text-link:hover { text-decoration: underline; }
+
+/* Navbar */
+.nav-demo {
+  background: rgba(255,255,255,.9);
+  backdrop-filter: blur(8px);
+  padding: 16px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+.nav-logo-demo { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.nav-links-demo { display: flex; align-items: center; gap: 24px; font-size: 16px; font-weight: 600; color: #404040; }
+
+/* Cards */
+.template-card-demo {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  transition: box-shadow .15s;
+  cursor: pointer;
+}
+.template-card-demo:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1); }
+
+.feature-card-demo {
+  background: #fafafa;
+  border-radius: 24px;
+  padding: 32px 40px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px;
+}
+
+.gallery-item-demo {
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+}
+.gallery-item-demo .overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.6);
+  opacity: 0;
+  transition: opacity .1s;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 12px; font-weight: 600;
+}
+.gallery-item-demo:hover .overlay { opacity: 1; }
+
+/* Jost font demo */
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
+.jost { font-family: 'Jost', sans-serif; }
+
+/* Token table */
+.token-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.token-table th {
+  background: #1c1917;
+  color: white;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+.token-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0ede8;
+  vertical-align: top;
+}
+.token-table tr:nth-child(even) td { background: #fafaf8; }
+.code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; background: #f0ede8; padding: 1px 5px; border-radius: 3px; color: #1c1917; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+.note {
+  background: #fff8db;
+  border-left: 3px solid #fde047;
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  font-size: 12px;
+  color: #7a6000;
+  margin: 12px 0;
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">☁ Pebblely DS</div>
+  <div class="section-group">基础</div>
+  <a href="#colors">颜色系统</a>
+  <a href="#typography">字体排版</a>
+  <a href="#spacing">间距体系</a>
+  <a href="#radius">圆角</a>
+  <a href="#shadows">阴影</a>
+  <div class="section-group">组件</div>
+  <a href="#navbar">导航栏</a>
+  <a href="#buttons">按钮</a>
+  <a href="#cards">卡片</a>
+  <a href="#gallery">图片悬浮</a>
+  <div class="section-group">布局</div>
+  <a href="#layout">栅格与断点</a>
+  <a href="#animation">动画</a>
+  <div class="section-group">综合</div>
+  <a href="#tokens">Token 速查表</a>
+</nav>
+
+<div class="main">
+
+<!-- Header -->
+<div style="padding: 40px 0 0;">
+  <div style="background: #1c1917; color: white; padding: 28px 32px; border-radius: 12px; margin-bottom: 8px;">
+    <h1 style="font-size:22px; font-weight:700; margin-bottom:4px;">Pebblely Design System <span class="badge">从源码提取</span></h1>
+    <p style="font-size:13px; color:#a8a29e;">Framework: Tailwind CSS v3 + Nuxt.js · Font: Jost · 提取自 3 个页面的完整 HTML</p>
+  </div>
+  <div class="note">本文档从 Pebblely 公开网页源码中自动提取，仅供 AetherGenix 内部设计参考使用。</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="colors">
+  <div class="section-title"><span class="num">01</span> 颜色系统</div>
+
+  <div class="subsection">
+    <div class="subsection-title">主色 · Yellow（品牌核心）</div>
+    <div class="color-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#fde047;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">yellow-300</div>
+          <div class="swatch-hex">#fde047</div>
+          <div class="swatch-usage">CTA 按钮默认态、Section 背景</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#facc15;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">yellow-400</div>
+          <div class="swatch-hex">#facc15</div>
+          <div class="swatch-usage">按钮 hover 态</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#eab308;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">yellow-500</div>
+          <div class="swatch-hex">#eab308</div>
+          <div class="swatch-usage">强调文字、accent</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#ca8a04;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">yellow-600</div>
+          <div class="swatch-hex">#ca8a04</div>
+          <div class="swatch-usage">弱化的强调文字</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">文字色</div>
+    <div class="color-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1c1917;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">stone-900</div>
+          <div class="swatch-hex">#1c1917</div>
+          <div class="swatch-usage">主标题（带暖棕调，非纯黑）</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#57534e;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">stone-600</div>
+          <div class="swatch-hex">#57534e</div>
+          <div class="swatch-usage">正文、副标题</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#171717;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">neutral-900</div>
+          <div class="swatch-hex">#171717</div>
+          <div class="swatch-usage">深色标题</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#404040;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">neutral-700</div>
+          <div class="swatch-hex">#404040</div>
+          <div class="swatch-usage">导航链接、次要元素</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#737373;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">neutral-500</div>
+          <div class="swatch-hex">#737373</div>
+          <div class="swatch-usage">图库元数据、标注文字</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#a3a3a3;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">neutral-400</div>
+          <div class="swatch-hex">#a3a3a3</div>
+          <div class="swatch-usage">placeholder、最弱提示</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">背景色</div>
+    <div class="color-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#ffffff; border: 1px solid #e7e5e4;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">white</div>
+          <div class="swatch-hex">#ffffff</div>
+          <div class="swatch-usage">主页面背景、卡片</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#f9fafb; border: 1px solid #e7e5e4;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">gray-50</div>
+          <div class="swatch-hex">#f9fafb</div>
+          <div class="swatch-usage">Template 卡片背景</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#fafafa; border: 1px solid #e7e5e4;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">neutral-50</div>
+          <div class="swatch-hex">#fafafa</div>
+          <div class="swatch-usage">Feature Section 背景</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#f5f5f5; border: 1px solid #e7e5e4;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">neutral-100</div>
+          <div class="swatch-hex">#f5f5f5</div>
+          <div class="swatch-usage">浅色分割线</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">边框色</div>
+    <div class="color-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#e7e5e4;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">stone-200</div>
+          <div class="swatch-hex">#e7e5e4</div>
+          <div class="swatch-usage">Footer 分割线、卡片边框</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#d4d4d4;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">neutral-300</div>
+          <div class="swatch-hex">#d4d4d4</div>
+          <div class="swatch-usage">输入框、搜索框边框</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note"><strong>设计语言总结：</strong>用 Stone 系（带暖棕调）而非纯 Gray 系做文字/边框，整体观感更温暖有质感。黄色在白色背景上是唯一的视觉锚点，不存在第二主色。</div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="typography">
+  <div class="section-title"><span class="num">02</span> 字体排版</div>
+
+  <div class="subsection">
+    <div class="subsection-title">字体家族</div>
+    <div class="demo-box">
+      <div class="demo-label">Jost（品牌主字体，自托管 base64 woff2）</div>
+      <div class="jost" style="font-size:36px; font-weight:600; line-height:1.2; color:#1c1917; margin-bottom:8px;">
+        Create AI product photos that help you sell more.
+      </div>
+      <div class="jost" style="font-size:16px; font-weight:300; color:#57534e;">
+        No Photoshop skills required. 无需设计经验，一键生成高质量商品图。
+      </div>
+      <div style="margin-top:12px; font-size:12px; color:#a3a3a3;">
+        <span class="code">font-family: 'Jost', ui-sans-serif, system-ui, -apple-system, ...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">字号体系（Tailwind text-* scale）</div>
+    <div class="type-scale">
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-token">text-xs</div>
+          <div class="type-px">12px · 0.75rem</div>
+          <div class="type-usage-note">标注、徽章</div>
+        </div>
+        <div class="type-preview jost" style="font-size:12px; color:#1c1917;">Caption text · 图库元数据 · 版权信息</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-token">text-sm</div>
+          <div class="type-px">14px · 0.875rem</div>
+          <div class="type-usage-note">次要 UI 文字</div>
+        </div>
+        <div class="type-preview jost" style="font-size:14px; color:#1c1917;">Secondary UI text · 标签文字</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-token">text-base</div>
+          <div class="type-px">16px · 1rem</div>
+          <div class="type-usage-note">导航链接、正文</div>
+        </div>
+        <div class="type-preview jost" style="font-size:16px; font-weight:600; color:#1c1917;">导航链接 · font-semibold</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-token">text-lg</div>
+          <div class="type-px">18px · 1.125rem</div>
+          <div class="type-usage-note">功能描述、CTA</div>
+        </div>
+        <div class="type-preview jost" style="font-size:18px; font-weight:600; color:#1c1917;">Feature descriptions · Get started</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-token">text-xl</div>
+          <div class="type-px">20px · 1.25rem</div>
+          <div class="type-usage-note">图库 h3（最常用）</div>
+        </div>
+        <div class="type-preview jost" style="font-size:20px; font-weight:600; color:#1c1917;">Gallery heading · 子标题</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-token">text-4xl</div>
+          <div class="type-px">36px · 2.25rem</div>
+          <div class="type-usage-note">Section 标题（tablet）</div>
+        </div>
+        <div class="type-preview jost" style="font-size:36px; font-weight:600; line-height:1.1; color:#1c1917;">Section heading</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-token">text-5xl</div>
+          <div class="type-px">48px · 3rem</div>
+          <div class="type-usage-note">页面 Hero 默认</div>
+        </div>
+        <div class="type-preview jost" style="font-size:48px; font-weight:600; line-height:1; color:#1c1917;">Hero title</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">
+          <div class="type-token">text-7xl</div>
+          <div class="type-px">72px · 4.5rem</div>
+          <div class="type-usage-note">大屏 Hero 标题</div>
+        </div>
+        <div class="type-preview jost" style="font-size:64px; font-weight:600; line-height:1; color:#1c1917;">Hero lg</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">字重</div>
+    <div class="demo-box">
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="jost" style="font-size:20px; font-weight:300; color:#1c1917;">font-light 300 · 正文描述、副文案</div>
+        <div class="jost" style="font-size:20px; font-weight:400; color:#1c1917;">font-normal 400 · 基础正文</div>
+        <div class="jost" style="font-size:20px; font-weight:500; color:#1c1917;">font-medium 500 · 筛选标签、次级标题</div>
+        <div class="jost" style="font-size:20px; font-weight:600; color:#1c1917;">font-semibold 600 · 导航、按钮、标题（最常用）</div>
+        <div class="jost" style="font-size:20px; font-weight:700; color:#1c1917;">font-bold 700 · CTA 区块 Hero</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="spacing">
+  <div class="section-title"><span class="num">03</span> 间距体系</div>
+  <div class="note">Tailwind 默认刻度，1 unit = 4px</div>
+
+  <div class="subsection" style="margin-top:16px;">
+    <div class="subsection-title">UI 间距（组件级）</div>
+    <div class="spacing-grid">
+      <div class="spacing-row">
+        <div class="spacing-label">space-1 · 4px</div>
+        <div class="spacing-bar" style="width:4px;"></div>
+        <div class="spacing-usage">细间距</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-label">space-2 · 8px</div>
+        <div class="spacing-bar" style="width:8px;"></div>
+        <div class="spacing-usage">icon gap、badge padding</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-label">space-4 · 16px</div>
+        <div class="spacing-bar" style="width:16px;"></div>
+        <div class="spacing-usage">默认 gap / padding（最常用 · 28次）</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-label">space-6 · 24px</div>
+        <div class="spacing-bar" style="width:24px;"></div>
+        <div class="spacing-usage">卡片内间距</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-label">space-8 · 32px</div>
+        <div class="spacing-bar" style="width:32px;"></div>
+        <div class="spacing-usage">section 水平 padding (px-8, py-8)</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-label">space-12 · 48px</div>
+        <div class="spacing-bar" style="width:48px;"></div>
+        <div class="spacing-usage">feature card padding (lg:px-12)</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-label">space-16 · 64px</div>
+        <div class="spacing-bar" style="width:64px;"></div>
+        <div class="spacing-usage">大 gap、pb-16</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">页面级间距</div>
+    <div class="spacing-grid">
+      <div class="spacing-row">
+        <div class="spacing-label">py-24 · 96px</div>
+        <div class="spacing-bar" style="width:96px;"></div>
+        <div class="spacing-usage">Footer 区域</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-label">py-32 · 128px</div>
+        <div class="spacing-bar" style="width:128px;"></div>
+        <div class="spacing-usage">主要 Section 上下 padding（标准）</div>
+      </div>
+      <div class="spacing-row">
+        <div class="spacing-label">pt-36 · 144px</div>
+        <div class="spacing-bar" style="width:144px;"></div>
+        <div class="spacing-usage">Hero 顶部 padding（sm 起）</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="subsection-title">按钮 Padding</div>
+    <div class="demo-box">
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+        <div>
+          <button class="btn-yellow-primary">Get started</button>
+          <div style="font-size:10px; color:#a3a3a3; margin-top:4px; text-align:center;">py-2 px-4</div>
+        </div>
+        <div>
+          <button class="btn-yellow-lg">Get started free</button>
+          <div style="font-size:10px; color:#a3a3a3; margin-top:4px; text-align:center;">py-2 px-8 · large</div>
+        </div>
+        <div>
+          <a class="btn-text-link" href="#">Learn how it works →</a>
+          <div style="font-size:10px; color:#a3a3a3; margin-top:4px; text-align:center;">text-link</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="radius">
+  <div class="section-title"><span class="num">04</span> 圆角</div>
+  <div class="radius-grid">
+    <div>
+      <div class="radius-card" style="border-radius:4px; border:2px solid #e7e5e4;">
+        <div class="radius-name">rounded</div>
+        <div class="radius-val">4px</div>
+      </div>
+      <div style="font-size:11px; color:#a3a3a3; margin-top:6px;">大 CTA 按钮</div>
+    </div>
+    <div>
+      <div class="radius-card" style="border-radius:6px; border:2px solid #e7e5e4;">
+        <div class="radius-name">rounded-md</div>
+        <div class="radius-val">6px</div>
+      </div>
+      <div style="font-size:11px; color:#a3a3a3; margin-top:6px;">主要 CTA 按钮 (nav)</div>
+    </div>
+    <div>
+      <div class="radius-card" style="border-radius:8px; border:2px solid #e7e5e4;">
+        <div class="radius-name">rounded-lg</div>
+        <div class="radius-val">8px</div>
+      </div>
+      <div style="font-size:11px; color:#a3a3a3; margin-top:6px;">卡片、模板 tile、图库（最常用）</div>
+    </div>
+    <div>
+      <div class="radius-card" style="border-radius:24px; border:2px solid #e7e5e4;">
+        <div class="radius-name">rounded-3xl</div>
+        <div class="radius-val">24px</div>
+      </div>
+      <div style="font-size:11px; color:#a3a3a3; margin-top:6px;">Feature Bento 卡片</div>
+    </div>
+    <div>
+      <div class="radius-card" style="border-radius:9999px; border:2px solid #e7e5e4;">
+        <div class="radius-name">rounded-full</div>
+        <div class="radius-val">9999px</div>
+      </div>
+      <div style="font-size:11px; color:#a3a3a3; margin-top:6px;">头像、图标容器</div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="shadows">
+  <div class="section-title"><span class="num">05</span> 阴影</div>
+  <div class="shadow-grid">
+    <div>
+      <div class="shadow-card" style="box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+        <div class="shadow-name">shadow-sm</div>
+        <div class="shadow-usage">template 卡片默认态</div>
+      </div>
+    </div>
+    <div>
+      <div class="shadow-card" style="box-shadow: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1);">
+        <div class="shadow-name">shadow</div>
+        <div class="shadow-usage">图库 item、默认 shadow（43次）</div>
+      </div>
+    </div>
+    <div>
+      <div class="shadow-card" style="box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1);">
+        <div class="shadow-name">shadow-lg</div>
+        <div class="shadow-usage">template 卡片 hover 态</div>
+      </div>
+    </div>
+  </div>
+  <div class="note" style="margin-top:16px;"><strong>规律：</strong>静止 <code class="code">shadow-sm</code> → hover <code class="code">shadow-lg</code>，跳过中间级，形成明显的层次感变化。</div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="navbar">
+  <div class="section-title"><span class="num">06</span> 导航栏</div>
+  <div class="demo-box">
+    <nav class="nav-demo">
+      <div class="nav-logo-demo jost">☁ Pebblely</div>
+      <div class="nav-links-demo">
+        <span>Resources</span>
+        <span>Pricing</span>
+        <span>Log in</span>
+        <button class="btn-yellow-primary">Get started</button>
+      </div>
+    </nav>
+  </div>
+  <table class="token-table" style="margin-top:12px;">
+    <tr><th>属性</th><th>值</th></tr>
+    <tr><td>背景</td><td><span class="code">bg-white/90 backdrop-blur</span> — 毛玻璃效果</td></tr>
+    <tr><td>位置</td><td><span class="code">fixed top-0 z-30</span></td></tr>
+    <tr><td>内边距</td><td><span class="code">py-4 px-4 md:px-8 lg:px-16 2xl:px-24</span></td></tr>
+    <tr><td>Logo 字号</td><td><span class="code">text-xl font-bold</span> — Jost 字体</td></tr>
+    <tr><td>链接样式</td><td><span class="code">text-base font-semibold text-neutral-700 hover:underline</span></td></tr>
+    <tr><td>CTA</td><td>yellow-300 background + rounded-md + shadow-sm</td></tr>
+  </table>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="buttons">
+  <div class="section-title"><span class="num">07</span> 按钮</div>
+
+  <div class="two-col">
+    <div>
+      <div class="demo-box">
+        <div class="demo-label">Primary CTA（Nav / 主要操作）</div>
+        <button class="btn-yellow-primary jost">Get started</button>
+        <div style="margin-top:10px; font-size:11px; color:#737373; line-height:1.8;">
+          <div><span class="code">bg-yellow-300</span> → hover: <span class="code">bg-yellow-400</span></div>
+          <div><span class="code">text-neutral-900</span> · <span class="code">font-semibold</span></div>
+          <div><span class="code">rounded-md</span> · <span class="code">shadow-sm</span></div>
+          <div><span class="code">px-4 py-2</span> · <span class="code">text-base</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="demo-box">
+        <div class="demo-label">Large CTA（Hero / Section）</div>
+        <button class="btn-yellow-lg jost">Get started for free</button>
+        <div style="margin-top:10px; font-size:11px; color:#737373; line-height:1.8;">
+          <div><span class="code">bg-yellow-300</span> → hover: <span class="code">bg-yellow-400</span></div>
+          <div><span class="code">text-black</span> · <span class="code">font-semibold</span></div>
+          <div><span class="code">rounded</span>（更小圆角）</div>
+          <div><span class="code">px-8 py-2</span> · <span class="code">text-lg</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="demo-box">
+        <div class="demo-label">Text Link（次要操作）</div>
+        <a class="btn-text-link jost" href="#">Learn how it works →</a>
+        <div style="margin-top:10px; font-size:11px; color:#737373; line-height:1.8;">
+          <div><span class="code">text-neutral-700</span> · <span class="code">font-semibold</span></div>
+          <div>hover: <span class="code">underline</span></div>
+          <div>无 background、无 border</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="cards">
+  <div class="section-title"><span class="num">08</span> 卡片</div>
+  <div class="three-col">
+    <div>
+      <div class="demo-label">Template Tile（功能选择卡）</div>
+      <div class="template-card-demo">
+        <div style="font-size:24px; margin-bottom:8px;">🌿</div>
+        <div class="jost" style="font-size:16px; font-weight:600; margin-bottom:4px;">Nature Studio</div>
+        <div style="font-size:13px; color:#57534e; font-weight:300;">自然光户外场景模板</div>
+      </div>
+      <div style="font-size:11px; color:#a3a3a3; margin-top:6px;"><span class="code">bg-gray-50 rounded-lg shadow-sm hover:shadow-lg</span></div>
+    </div>
+    <div>
+      <div class="demo-label">Feature Card（Bento 风格）</div>
+      <div class="feature-card-demo">
+        <div style="font-size:32px;">⚡</div>
+        <div class="jost" style="font-size:20px; font-weight:600; text-align:center;">Instant results</div>
+        <div style="font-size:13px; color:#57534e; text-align:center; font-weight:300;">生成速度极快</div>
+      </div>
+      <div style="font-size:11px; color:#a3a3a3; margin-top:6px;"><span class="code">bg-neutral-50 rounded-3xl px-8 pt-8 lg:px-12 lg:pt-12</span></div>
+    </div>
+    <div>
+      <div class="demo-label">Gallery Item（图片悬浮遮罩）</div>
+      <div class="gallery-item-demo">
+        <div style="width:160px; height:160px; background:linear-gradient(135deg,#c8e8f0,#88b8d0); display:flex; align-items:center; justify-content:center; font-size:48px;">🧴</div>
+        <div class="overlay">View · Use prompt</div>
+      </div>
+      <div style="font-size:11px; color:#a3a3a3; margin-top:6px;"><span class="code">rounded-lg</span> + <span class="code">bg-black/60 opacity-0 → group-hover:opacity-100 duration-100</span></div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="gallery">
+  <div class="section-title"><span class="num">09</span> 图库交互</div>
+  <div class="demo-box">
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <div class="gallery-item-demo">
+        <div style="width:120px;height:120px;background:linear-gradient(135deg,#ffd6e0,#ffb3c6);display:flex;align-items:center;justify-content:center;font-size:36px;">🧴</div>
+        <div class="overlay" style="font-size:11px; padding:10px; flex-direction:column; gap:4px;">
+          <span>Use prompt</span>
+          <span style="opacity:.7;">Nature · SK-II</span>
+        </div>
+      </div>
+      <div class="gallery-item-demo">
+        <div style="width:120px;height:120px;background:linear-gradient(135deg,#b3d9ff,#80bfff);display:flex;align-items:center;justify-content:center;font-size:36px;">🥤</div>
+        <div class="overlay" style="font-size:11px; padding:10px;">Use prompt</div>
+      </div>
+      <div class="gallery-item-demo">
+        <div style="width:120px;height:120px;background:linear-gradient(135deg,#c8f0c8,#a0d0a0);display:flex;align-items:center;justify-content:center;font-size:36px;">💊</div>
+        <div class="overlay" style="font-size:11px; padding:10px;">Use prompt</div>
+      </div>
+    </div>
+    <div style="margin-top:10px; font-size:12px; color:#737373;">鼠标悬停查看效果 →</div>
+  </div>
+  <table class="token-table" style="margin-top:12px;">
+    <tr><th>属性</th><th>值</th></tr>
+    <tr><td>遮罩背景</td><td><span class="code">bg-black/60</span> — rgba(0,0,0,0.60)</td></tr>
+    <tr><td>过渡效果</td><td><span class="code">transition-opacity duration-100</span> — 仅 100ms，极快</td></tr>
+    <tr><td>触发方式</td><td><span class="code">group-hover:opacity-100</span>（父元素 group，子元素监听）</td></tr>
+    <tr><td>圆角</td><td><span class="code">rounded-lg</span> + <span class="code">overflow-hidden</span>（遮罩不溢出）</td></tr>
+  </table>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="layout">
+  <div class="section-title"><span class="num">10</span> 栅格与断点</div>
+  <table class="token-table">
+    <tr><th>断点</th><th>宽度</th><th>常见用法</th></tr>
+    <tr><td>default (mobile)</td><td>< 640px</td><td>单列、text-5xl hero、px-4</td></tr>
+    <tr><td><span class="code">sm</span></td><td>640px</td><td>居中文字、sm:pt-36、sm:px-8</td></tr>
+    <tr><td><span class="code">md</span></td><td>768px</td><td>md:grid-cols-3、md:px-8</td></tr>
+    <tr><td><span class="code">lg</span></td><td>1024px</td><td>lg:text-7xl、lg:px-12、lg:grid-cols-6</td></tr>
+    <tr><td><span class="code">xl</span></td><td>1280px</td><td>max-w-7xl 内容限宽</td></tr>
+    <tr><td><span class="code">2xl</span></td><td>1536px</td><td>2xl:container 2xl:px-24（最大宽度约束）</td></tr>
+  </table>
+
+  <div class="subsection" style="margin-top:20px;">
+    <div class="subsection-title">内容宽度</div>
+    <table class="token-table">
+      <tr><th>Token</th><th>宽度</th><th>用途</th></tr>
+      <tr><td><span class="code">max-w-7xl</span></td><td>1280px</td><td>主内容栅格</td></tr>
+      <tr><td><span class="code">max-w-5xl</span></td><td>1024px</td><td>宽卡片布局</td></tr>
+      <tr><td><span class="code">max-w-4xl</span></td><td>896px</td><td>内容块</td></tr>
+      <tr><td><span class="code">max-w-3xl</span></td><td>768px</td><td>文字区块</td></tr>
+      <tr><td><span class="code">max-w-xl</span></td><td>576px</td><td>窄文字块</td></tr>
+    </table>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="animation">
+  <div class="section-title"><span class="num">11</span> 动画</div>
+  <table class="token-table">
+    <tr><th>场景</th><th>Before</th><th>After</th><th>Duration</th></tr>
+    <tr><td>卡片悬浮</td><td><span class="code">shadow-sm</span></td><td><span class="code">shadow-lg</span></td><td>默认（150ms）</td></tr>
+    <tr><td>按钮悬浮</td><td><span class="code">bg-yellow-300</span></td><td><span class="code">bg-yellow-400</span></td><td>默认（150ms）</td></tr>
+    <tr><td>图片遮罩</td><td><span class="code">opacity-0</span></td><td><span class="code">opacity-100</span></td><td><strong>100ms（极快）</strong></td></tr>
+    <tr><td>链接悬浮</td><td>无下划线</td><td><span class="code">underline</span></td><td>即时</td></tr>
+  </table>
+  <div class="note" style="margin-top:12px;"><strong>动画哲学：</strong>只有图片遮罩用了极短的 100ms，其余均使用 Tailwind 默认 150ms。整体克制，无任何 transform/scale 动效，保持产品「专业工具」而非「炫技展示」的气质。</div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<section class="section" id="tokens">
+  <div class="section-title"><span class="num">12</span> Token 速查表</div>
+  <table class="token-table">
+    <tr><th>Token 类别</th><th>值</th><th>Tailwind Class</th></tr>
+    <tr><td>主色</td><td style="background:#fde047; width:20px;">&nbsp;</td><td><span class="code">bg-yellow-300</span> / <span class="code">text-yellow-300</span></td></tr>
+    <tr><td>主色 hover</td><td style="background:#facc15; width:20px;">&nbsp;</td><td><span class="code">hover:bg-yellow-400</span></td></tr>
+    <tr><td>主文字</td><td style="background:#1c1917; width:20px;">&nbsp;</td><td><span class="code">text-stone-900</span></td></tr>
+    <tr><td>次要文字</td><td style="background:#57534e; width:20px;">&nbsp;</td><td><span class="code">text-stone-600</span></td></tr>
+    <tr><td>弱文字</td><td style="background:#737373; width:20px;">&nbsp;</td><td><span class="code">text-neutral-500</span></td></tr>
+    <tr><td>背景·白</td><td style="background:#ffffff; border:1px solid #eee;">&nbsp;</td><td><span class="code">bg-white</span></td></tr>
+    <tr><td>背景·浅灰</td><td style="background:#fafafa; border:1px solid #eee;">&nbsp;</td><td><span class="code">bg-neutral-50</span></td></tr>
+    <tr><td>卡片背景</td><td style="background:#f9fafb; border:1px solid #eee;">&nbsp;</td><td><span class="code">bg-gray-50</span></td></tr>
+    <tr><td>分割线</td><td style="background:#e7e5e4;">&nbsp;</td><td><span class="code">border-stone-200</span></td></tr>
+    <tr><td>主字体</td><td colspan="2">Jost · fallback: ui-sans-serif, system-ui</td></tr>
+    <tr><td>主要字重</td><td colspan="2"><span class="code">font-semibold</span> (600) · <span class="code">font-light</span> (300)</td></tr>
+    <tr><td>Hero 字号</td><td colspan="2"><span class="code">text-5xl</span> → lg: <span class="code">text-7xl</span></td></tr>
+    <tr><td>卡片圆角</td><td colspan="2"><span class="code">rounded-lg</span> (8px) — 最常用</td></tr>
+    <tr><td>Bento 圆角</td><td colspan="2"><span class="code">rounded-3xl</span> (24px)</td></tr>
+    <tr><td>默认间距</td><td colspan="2"><span class="code">gap-4</span> / <span class="code">p-4</span> (16px)</td></tr>
+    <tr><td>节段间距</td><td colspan="2"><span class="code">py-32</span> (128px)</td></tr>
+    <tr><td>卡片阴影</td><td colspan="2"><span class="code">shadow-sm</span> → hover: <span class="code">shadow-lg</span></td></tr>
+    <tr><td>Nav 效果</td><td colspan="2"><span class="code">bg-white/90 backdrop-blur</span> (毛玻璃)</td></tr>
+    <tr><td>图片遮罩</td><td colspan="2"><span class="code">bg-black/60 opacity-0 group-hover:opacity-100 duration-100</span></td></tr>
+  </table>
+</section>
+
+<div style="height:40px;"></div>
+<div style="background:#1c1917; color:#57534e; text-align:center; padding:20px; font-size:12px; margin-left:-40px; margin-right:-40px;">
+  AetherGenix 内部文档 · 从 pebblely.com 源码提取 · 2026-05-25
+</div>
+
+</div><!-- /main -->
+
+</body>
+</html>

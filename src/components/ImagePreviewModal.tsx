@@ -2,7 +2,6 @@ import { ChevronLeft, ChevronRight, Download, ExternalLink, X } from 'lucide-rea
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useSite } from '../site';
 import RetryImage from './RetryImage';
-import { Button, IconButton } from './design-system';
 
 export type PreviewImage = {
   id?: string;
@@ -178,10 +177,7 @@ export default function ImagePreviewModal({ imageUrl, images, initialIndex = 0, 
             </div>
           </div>
           <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-            <Button
-              as="a"
-              variant="ghost"
-              size="sm"
+            <a
               aria-label={t('modal_download')}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-outline-variant px-3 text-center text-xs font-medium text-on-surface-variant transition-colors hover:bg-surface-container"
               href={current.url}
@@ -190,11 +186,8 @@ export default function ImagePreviewModal({ imageUrl, images, initialIndex = 0, 
             >
               <Download size={14} />
               <span className="min-w-0 break-words [overflow-wrap:anywhere]">{t('modal_download')}</span>
-            </Button>
-            <Button
-              as="a"
-              variant="ghost"
-              size="sm"
+            </a>
+            <a
               aria-label={t('modal_open_image')}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-outline-variant px-3 text-center text-xs font-medium text-on-surface-variant transition-colors hover:bg-surface-container"
               href={current.url}
@@ -204,15 +197,17 @@ export default function ImagePreviewModal({ imageUrl, images, initialIndex = 0, 
             >
               <ExternalLink size={14} />
               <span className="min-w-0 break-words [overflow-wrap:anywhere]">{t('modal_open_image')}</span>
-            </Button>
-            <IconButton
+            </a>
+            <button
               ref={closeButtonRef}
-              label={t('modal_close')}
-              icon={<X aria-hidden="true" size={16} />}
               className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
               type="button"
+              aria-label={t('modal_close')}
               onClick={onClose}
-            />
+              title={t('modal_close')}
+            >
+              <X aria-hidden="true" size={16} />
+            </button>
           </div>
         </div>
 
@@ -220,20 +215,24 @@ export default function ImagePreviewModal({ imageUrl, images, initialIndex = 0, 
         <div className="relative flex max-h-[calc(100dvh-8rem)] items-center justify-center overflow-auto bg-surface-container-low sm:max-h-[75vh]">
           {hasMultiple ? (
             <>
-              <IconButton
-                label={t('modal_previous')}
-                icon={<ChevronLeft aria-hidden="true" size={20} />}
+              <button
                 className="absolute left-3 top-1/2 z-10 flex h-[44px] w-[44px] -translate-y-1/2 items-center justify-center rounded-full bg-surface/80 text-on-surface shadow-lg backdrop-blur hover:bg-surface transition-colors"
                 type="button"
+                aria-label={t('modal_previous')}
                 onClick={() => setIndex((value) => (value <= 0 ? gallery.length - 1 : value - 1))}
-              />
-              <IconButton
-                label={t('modal_next')}
-                icon={<ChevronRight aria-hidden="true" size={20} />}
+                title={t('modal_previous')}
+              >
+                <ChevronLeft aria-hidden="true" size={20} />
+              </button>
+              <button
                 className="absolute right-3 top-1/2 z-10 flex h-[44px] w-[44px] -translate-y-1/2 items-center justify-center rounded-full bg-surface/80 text-on-surface shadow-lg backdrop-blur hover:bg-surface transition-colors"
                 type="button"
+                aria-label={t('modal_next')}
                 onClick={() => setIndex((value) => (value >= gallery.length - 1 ? 0 : value + 1))}
-              />
+                title={t('modal_next')}
+              >
+                <ChevronRight aria-hidden="true" size={20} />
+              </button>
             </>
           ) : null}
           <RetryImage alt={current.title || alt} className="max-h-[calc(100dvh-10rem)] w-auto max-w-full object-contain p-4 sm:max-h-[70vh]" src={current.url} />

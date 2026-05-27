@@ -1,7 +1,6 @@
 import { Bell, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useSite } from '../site';
-import { IconButton, Surface } from './design-system';
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -95,13 +94,12 @@ export default function AnnouncementModal() {
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm" onClick={closeAnnouncement}>
-      <Surface
+      <div
         ref={dialogRef}
         aria-describedby={bodyId}
         aria-labelledby={titleId}
         aria-modal="true"
-        className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden animate-fade-in"
-        padding="lg"
+        className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1a1917] p-6 shadow-xl animate-fade-in"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         tabIndex={-1}
@@ -117,19 +115,23 @@ export default function AnnouncementModal() {
               <h2 className="mt-0.5 text-lg font-bold text-[#f0ede8]" id={titleId}>{announcement?.title || t('top_announcement')}</h2>
             </div>
           </div>
-          <IconButton
+          <button
             ref={closeButtonRef}
-            label={t('modal_close')}
-            icon={<X aria-hidden="true" size={16} />}
+            className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-lg border border-white/[0.08] text-[#8a8680] transition-colors hover:bg-white/[0.05] hover:text-[#f0ede8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
+            type="button"
+            aria-label={t('modal_close')}
             onClick={closeAnnouncement}
-          />
+            title={t('modal_close')}
+          >
+            <X aria-hidden="true" size={16} />
+          </button>
         </div>
 
         <div id={bodyId} className="min-h-0 overflow-y-auto whitespace-pre-wrap break-words rounded-xl bg-white/[0.03] p-5 text-sm leading-7 text-[#f0ede8] [overflow-wrap:anywhere]">
           {hasContent ? announcement?.body || announcement?.title : t('announcement_empty')}
         </div>
 
-      </Surface>
+      </div>
     </div>
   );
 }

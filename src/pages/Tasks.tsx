@@ -15,7 +15,6 @@ import { Link } from 'react-router-dom';
 import { formatDate, taskDownloadUrl } from '../api';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import RetryImage from '../components/RetryImage';
-import { Button, LinkButton, Pressable, SegmentedControl } from '../components/design-system';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 
@@ -168,7 +167,7 @@ export default function Tasks() {
           : copy.emptyDesc;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pb-28 pt-5 text-[#f0ede8] sm:px-6 sm:pt-8 lg:pb-8">
+    <div className="mx-auto w-full max-w-5xl px-4 py-5 text-[#f0ede8] sm:px-6 sm:py-8">
       <div className="border-b border-white/[0.07] pb-5">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
@@ -204,33 +203,38 @@ export default function Tasks() {
             {activeCount > 0 ? t('tasks_active', { value: activeCount }) : t('tasks_idle')}
           </div>
         </div>
-        <SegmentedControl<FilterKey>
-          label={copy.eyebrow}
-          className="w-full lg:w-[520px]"
-          value={filter}
-          onChange={setFilter}
-          options={([
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" aria-label={copy.eyebrow}>
+          {([
             ['all', t('tasks_filter_all')],
             ['active', t('tasks_filter_active')],
             ['succeeded', t('tasks_filter_succeeded')],
             ['failed', t('tasks_filter_failed')],
-          ] as const).map(([key, label]) => ({
-            value: key,
-            label,
-            description: (
-              <span className="inline-flex rounded-md bg-white/[0.05] px-1.5 py-0.5 tabular-nums text-[#b9b2a8]">
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              className={`flex h-11 min-w-0 items-center justify-between gap-3 rounded-lg px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111110] sm:min-w-[112px] ${
+                filter === key
+                  ? 'border border-[rgba(227,255,116,0.15)] bg-[rgba(227,255,116,0.1)] text-[#E3FF74]'
+                  : 'border border-transparent text-[#8a8680] hover:bg-white/[0.04] hover:text-[#f0ede8]'
+              }`}
+              type="button"
+              aria-pressed={filter === key}
+              onClick={() => setFilter(key)}
+            >
+              <span className="truncate">{label}</span>
+              <span className="rounded-md bg-white/[0.05] px-1.5 py-0.5 tabular-nums text-[#b9b2a8]">
                 {counts[key]}
               </span>
-            ),
-          }))}
-        />
+            </button>
+          ))}
+        </div>
       </div>
 
       {visibleTasks.length === 0 ? (
-        <div className="mt-6 flex min-h-[200px] items-center justify-center rounded-2xl border border-outline-variant/70 bg-surface/70 px-5 py-6 text-center shadow-[0_24px_80px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:min-h-[300px] sm:px-6 sm:py-10">
+        <div className="mt-6 flex min-h-[300px] items-center justify-center rounded-2xl border border-outline-variant/70 bg-surface/70 px-5 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:px-6">
           <div className="mx-auto flex max-w-sm flex-col items-center">
             <div
-              className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border sm:h-14 sm:w-14 ${
+              className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border ${
                 filter === 'failed'
                   ? 'border-error/25 bg-error/10 text-error'
                   : hasFilter
@@ -239,40 +243,39 @@ export default function Tasks() {
               }`}
             >
               {filter === 'failed' ? (
-                <AlertTriangle size={22} />
+                <AlertTriangle size={24} />
               ) : hasFilter ? (
-                <ListFilter size={22} />
+                <ListFilter size={24} />
               ) : (
-                <Sparkles size={22} />
+                <Sparkles size={24} />
               )}
             </div>
             <h2 className="text-xl font-bold tracking-tight text-on-surface">{emptyTitle}</h2>
             <p className="mt-2 text-sm leading-6 text-on-surface-variant">{emptyDesc}</p>
-            <div className="mt-4 flex flex-wrap justify-center gap-3 sm:mt-6">
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
               {hasFilter ? (
-                <Button
-                  variant="ghost"
-                  iconStart={<ListFilter size={16} />}
+                <button
                   className="inline-flex h-11 items-center gap-2 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
                   type="button"
                   onClick={() => setFilter('all')}
                 >
+                  <ListFilter size={16} />
                   {copy.clearFilter}
-                </Button>
+                </button>
               ) : null}
               {filter === 'succeeded' ? (
-                <LinkButton
-                  variant="ghost"
-                  iconStart={<HistoryIcon size={16} />}
+                <Link
                   className="inline-flex h-11 items-center gap-2 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
                   to="/history"
                 >
+                  <HistoryIcon size={16} />
                   {copy.historyAction}
-                </LinkButton>
+                </Link>
               ) : null}
-              <LinkButton variant="primary" className="min-h-11" to="/create" iconStart={<Sparkles size={16} />}>
+              <Link className="btn-primary min-h-11" to="/create">
+                <Sparkles size={16} />
                 {copy.createAction}
-              </LinkButton>
+              </Link>
             </div>
           </div>
         </div>
@@ -317,7 +320,7 @@ export default function Tasks() {
                     {previewImages.length > 1 ? (
                       <div className="grid h-full w-full grid-cols-2 gap-0.5 p-0.5">
                         {previewImages.slice(0, 4).map((image, imageIndex) => (
-                          <Pressable
+                          <button
                             key={`${image.id || image.url}-${imageIndex}`}
                             className="min-h-0 min-w-0 cursor-zoom-in overflow-hidden rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/50"
                             type="button"
@@ -337,11 +340,11 @@ export default function Tasks() {
                             }
                           >
                             <RetryImage alt={task.prompt} className="h-full w-full object-cover" src={image.url} />
-                          </Pressable>
+                          </button>
                         ))}
                       </div>
                     ) : previewImage ? (
-                      <Pressable
+                      <button
                         className="h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/50"
                         type="button"
                         title={t('history_preview')}
@@ -349,7 +352,7 @@ export default function Tasks() {
                         onClick={() => setPreviewItem({ imageUrl: previewImage, prompt: task.prompt })}
                       >
                         <RetryImage alt={task.prompt} className="h-full w-full object-contain" src={previewImage} />
-                      </Pressable>
+                      </button>
                     ) : (
                       <div className="flex flex-col items-center gap-2 text-[#8a8680]">
                         <ImageIcon size={18} />

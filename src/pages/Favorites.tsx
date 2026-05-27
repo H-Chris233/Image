@@ -9,7 +9,6 @@ import { copyTextToClipboard } from '../clipboard';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import MasonryGrid from '../components/MasonryGrid';
 import RetryImage from '../components/RetryImage';
-import { Button, IconButton, TextInputControl } from '../components/design-system';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 
@@ -88,7 +87,7 @@ function FavoritesHeader({
         <div className="flex w-full min-w-0 md:w-auto">
           <label className="relative flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low py-0 pl-3 pr-12 text-on-surface transition-colors focus-within:border-secondary md:w-72">
             <Search className="shrink-0 text-primary/50" size={16} />
-            <TextInputControl
+            <input
               aria-label={t('favorites_search')}
               value={query}
               onChange={(event) => setQuery?.(event.target.value)}
@@ -103,13 +102,14 @@ function FavoritesHeader({
               type="text"
             />
             {query?.trim() ? (
-              <IconButton
-                label={t('history_clear_search')}
-                icon={<X size={14} />}
+              <button
+                aria-label={t('history_clear_search')}
                 className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/40"
                 onClick={onClearSearch}
                 type="button"
-              />
+              >
+                <X size={14} />
+              </button>
             ) : loading ? (
               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-secondary" size={14} />
             ) : null}
@@ -161,14 +161,16 @@ function FavoriteCard({
           </div>
         )}
 
-        <IconButton
+        <button
           className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white/80 backdrop-blur transition-colors hover:border-primary hover:bg-black/75 hover:text-primary disabled:cursor-not-allowed disabled:opacity-45"
           type="button"
           onClick={() => onPreview(item)}
           disabled={!hasImage}
-          label={`${t('history_preview')} ${title}`}
-          icon={<Maximize2 size={15} />}
-        />
+          aria-label={`${t('history_preview')} ${title}`}
+          title={t('history_preview')}
+        >
+          <Maximize2 size={15} />
+        </button>
       </div>
 
       <div className="space-y-4 p-4">
@@ -185,25 +187,26 @@ function FavoriteCard({
         </p>
 
         <div className="grid grid-cols-[1fr_44px] gap-2">
-          <Button
-            variant="primary"
-            iconStart={<PenLine size={14} className="shrink-0" />}
+          <button
             className="inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full bg-[#f0ede8] px-4 text-xs font-semibold text-[#1a1917] transition-all hover:bg-white disabled:pointer-events-none disabled:opacity-40"
             type="button"
             onClick={() => onReusePrompt(item)}
             disabled={removing || !item.prompt}
             aria-label={`${t('home_clone_prompt')} ${title}`}
           >
+            <PenLine size={14} className="shrink-0" />
             <span className="truncate">{t('home_clone_prompt')}</span>
-          </Button>
-          <IconButton
+          </button>
+          <button
             className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/65 transition-colors hover:border-secondary hover:bg-secondary/10 hover:text-secondary disabled:cursor-not-allowed disabled:opacity-70"
             type="button"
             disabled={removing}
             onClick={() => onUnfavorite(item)}
-            label={`${t('home_unfavorite_case')} ${title}`}
-            icon={removing ? <Loader2 className="animate-spin" size={15} /> : <HeartOff size={15} />}
-          />
+            aria-label={`${t('home_unfavorite_case')} ${title}`}
+            title={t('home_unfavorite_case')}
+          >
+            {removing ? <Loader2 className="animate-spin" size={15} /> : <HeartOff size={15} />}
+          </button>
         </div>
       </div>
     </article>
@@ -365,15 +368,14 @@ export default function Favorites() {
           icon={<LogIn size={24} />}
           title={t('favorites_login_title')}
           action={(
-            <Button
-              variant="primary"
-              iconStart={<LogIn size={16} />}
-              className="min-h-11"
+            <button
+              className="btn-primary min-h-11"
               type="button"
               onClick={() => openAuthModal('login', '/favorites', 'favorites')}
             >
+              <LogIn size={16} />
               {t('top_login')}
-            </Button>
+            </button>
           )}
         />
       </div>
@@ -404,9 +406,10 @@ export default function Favorites() {
           icon={<AlertCircle size={24} />}
           title={t('favorites_error_title')}
           action={(
-            <Button variant="primary" className="min-h-11" type="button" onClick={() => load(0, false).catch(() => undefined)} iconStart={<RefreshCw size={16} />}>
+            <button className="btn-primary min-h-11" type="button" onClick={() => load(0, false).catch(() => undefined)}>
+              <RefreshCw size={16} />
               {t('history_retry')}
-            </Button>
+            </button>
           )}
         />
       ) : items.length > 0 ? (
@@ -436,32 +439,29 @@ export default function Favorites() {
                   <div className="text-sm font-semibold text-error">{t('favorites_error_title')}</div>
                   <div className="mt-1 break-words text-xs leading-5 text-on-surface-variant [overflow-wrap:anywhere]">{t('favorites_error_desc')}</div>
                 </div>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  iconStart={<RefreshCw size={14} />}
+                <button
                   type="button"
                   onClick={() => load(0, false).catch(() => undefined)}
                   className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg border border-error/30 px-3 text-xs font-semibold text-error transition-colors hover:bg-error/15"
                 >
+                  <RefreshCw size={14} />
                   {t('history_retry')}
-                </Button>
+                </button>
               </div>
             </div>
           ) : null}
 
           <div className="mt-12 flex justify-center">
             {offset < total ? (
-              <Button
-                variant="ghost"
-                iconStart={loading ? <Loader2 className="animate-spin" size={14} /> : <ArrowDown size={14} />}
+              <button
                 onClick={() => load(offset, true)}
                 disabled={loading}
                 className="flex min-h-11 items-center gap-2 border border-primary/30 bg-primary/5 px-8 py-3 text-xs uppercase tracking-widest text-primary transition-colors hover:border-primary disabled:opacity-50"
                 type="button"
               >
+                {loading ? <Loader2 className="animate-spin" size={14} /> : <ArrowDown size={14} />}
                 {t('history_load_more')}
-              </Button>
+              </button>
             ) : (
               <div className="text-xs uppercase tracking-[0.3em] text-white/35">{t('favorites_all_loaded')}</div>
             )}
@@ -474,19 +474,19 @@ export default function Favorites() {
           icon={submittedQuery.trim() ? <Search size={24} /> : <Sparkles size={24} />}
           title={submittedQuery.trim() ? t('favorites_search_empty_title') : t('favorites_empty_title')}
           action={submittedQuery.trim() ? (
-            <Button
-              variant="ghost"
-              iconStart={<X size={16} />}
+            <button
               className="inline-flex h-11 items-center gap-2 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
               type="button"
               onClick={handleClearSearch}
             >
+              <X size={16} />
               {t('history_clear_search')}
-            </Button>
+            </button>
           ) : (
-            <Button variant="primary" className="min-h-11" type="button" onClick={() => navigate('/explore')} iconStart={<Sparkles size={16} />}>
+            <button className="btn-primary min-h-11" type="button" onClick={() => navigate('/explore')}>
+              <Sparkles size={16} />
               {t('favorites_explore_action')}
-            </Button>
+            </button>
           )}
         />
       )}

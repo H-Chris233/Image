@@ -26,7 +26,6 @@ import {
 } from '../api';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import RetryImage from '../components/RetryImage';
-import { Button, ConfirmDialog, Pressable } from '../components/design-system';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
@@ -108,11 +107,6 @@ const WORKSPACE_COPY = {
     publishSelected: '发布选中',
     unpublishSelected: '取消发布',
     publishingSelected: '更新中',
-    publishConfirmTitle: '\u53d1\u5e03\u9009\u4e2d\u751f\u6210\u7ed3\u679c\uff1f',
-    publishConfirmDescription: '\u8fd9\u4f1a\u5c06\u9009\u4e2d\u56fe\u50cf\u516c\u5f00\u5230\u6848\u4f8b\u5c55\u793a\u533a\uff0c\u5176\u4ed6\u8bbf\u5ba2\u53ef\u4ee5\u770b\u5230\u5bf9\u5e94\u8f93\u51fa\u3002',
-    unpublishConfirmTitle: '\u53d6\u6d88\u53d1\u5e03\u9009\u4e2d\u751f\u6210\u7ed3\u679c\uff1f',
-    unpublishConfirmDescription: '\u8fd9\u4f1a\u4ece\u516c\u5f00\u6848\u4f8b\u4e2d\u79fb\u9664\u9009\u4e2d\u56fe\u50cf\uff0c\u4f46\u4e0d\u4f1a\u5220\u9664\u5f53\u524d\u4efb\u52a1\u6216\u5386\u53f2\u8bb0\u5f55\u3002',
-    cancelAction: '\u53d6\u6d88',
     unpublished: '未发布',
     selectAsset: (index: number) => `选择第 ${index} 张`,
     currentTask: '当前任务',
@@ -206,11 +200,6 @@ const WORKSPACE_COPY = {
     publishSelected: 'Publish selected',
     unpublishSelected: 'Unpublish selected',
     publishingSelected: 'Updating selected',
-    publishConfirmTitle: 'Publish selected generated asset?',
-    publishConfirmDescription: 'This makes the selected image public in the case gallery so visitors can view the output.',
-    unpublishConfirmTitle: 'Unpublish selected generated asset?',
-    unpublishConfirmDescription: 'This removes the selected image from the public case gallery but keeps the current task and history record intact.',
-    cancelAction: 'Cancel',
     unpublished: 'Not published',
     selectAsset: (index: number) => `Select asset ${index}`,
     currentTask: 'Current task',
@@ -388,17 +377,16 @@ export default function Workspace() {
   return (
     <div className="min-h-screen text-[#f0ede8]">
       <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
-        <Button
-          variant="plain"
-          iconStart={<ArrowLeft size={15} />}
+        <button
           type="button"
           onClick={() => navigate(-1)}
           className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm text-on-surface-variant transition-colors hover:bg-white/[0.04] hover:text-[#E3FF74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
           aria-label={copy.back}
           title={copy.back}
         >
+          <ArrowLeft size={15} />
           <span>{copy.back}</span>
-        </Button>
+        </button>
 
         {isMissingTask ? (
           <MissingTaskState copy={copy} error={error} onBack={() => navigate(-1)} onCreate={() => navigate('/create')} />
@@ -584,7 +572,7 @@ function SucceededWorkbench({
   onRegenerateSelected: () => void;
   onReuseSelectedPrompt: () => void;
   onSelectImage: (id: string) => void;
-  onToggleSelectedPublish: () => Promise<void>;
+  onToggleSelectedPublish: () => void;
   publishedCount: number;
   publishableCount: number;
   publishingImageId: string | null;
@@ -600,24 +588,11 @@ function SucceededWorkbench({
       : copy.selectedAsset;
   const selectedIsPublishable = selectedImage?.status === 'succeeded' && Boolean(selectedImage.image_url);
   const selectedIsPublishing = selectedImage ? publishingImageId === selectedImage.id : false;
-  const [confirmingPublish, setConfirmingPublish] = useState(false);
   const isAlbum = images.length > 1;
   const seriesPlan = isAlbum ? getSeriesPlan(task, images) : null;
   const selectedPlanItem = selectedImageIndex >= 0
     ? seriesPlan?.items.find((item) => item.index === selectedImageIndex + 1) ?? seriesPlan?.items[selectedImageIndex]
     : undefined;
-  const publishConfirmTitle = selectedImage?.published ? copy.unpublishConfirmTitle : copy.publishConfirmTitle;
-  const publishConfirmDescription = selectedImage?.published ? copy.unpublishConfirmDescription : copy.publishConfirmDescription;
-  const publishConfirmLabel = selectedImage?.published ? copy.unpublishSelected : copy.publishSelected;
-
-  async function confirmSelectedPublish() {
-    try {
-      await onToggleSelectedPublish();
-      setConfirmingPublish(false);
-    } catch {
-      setConfirmingPublish(false);
-    }
-  }
 
   return (
     <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#151412] shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
@@ -660,15 +635,14 @@ function SucceededWorkbench({
                 <div className="w-full shrink-0 xl:w-[260px]">
                   <SectionLabel icon={<Download size={14} />} label={copy.collectionActions} />
                   <div className="mt-3 grid grid-cols-2 gap-2 xl:grid-cols-1">
-                    <Button
-                      variant="ghost"
-                      iconStart={<ImageIcon size={15} />}
+                    <button
                       type="button"
                       onClick={onPreviewAll}
                       className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-white/20 bg-white/5 px-2 text-center text-sm font-semibold text-white transition-colors hover:border-[#E3FF74]/45 hover:text-[#E3FF74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 sm:gap-2 sm:px-3"
                     >
+                      <ImageIcon size={15} />
                       <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.previewAll}</span>
-                    </Button>
+                    </button>
                     <a
                       href={downloadHref}
                       download
@@ -688,7 +662,7 @@ function SucceededWorkbench({
             {images.map((img, index) => {
               const isSelected = selectedImage?.id === img.id;
               return (
-                <Pressable
+                <button
                   key={img.id}
                   type="button"
                   className={`group relative min-h-[160px] overflow-hidden rounded-xl border bg-white/[0.03] p-0 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-[#E3FF74]/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#151412] ${
@@ -720,7 +694,7 @@ function SucceededWorkbench({
                     </span>
                     <span className="shrink-0 text-[11px] font-semibold text-white/75">{index + 1}/{images.length}</span>
                   </div>
-                </Pressable>
+                </button>
               );
             })}
           </div>
@@ -807,41 +781,36 @@ function SucceededWorkbench({
           <div className="mt-5 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
             <SectionLabel icon={<ImageIcon size={14} />} label={copy.selectedActions} />
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
-              <Button
-                variant="ghost"
-                iconStart={<ImageIcon size={15} />}
+              <button
                 type="button"
                 onClick={() => selectedImage && selectedImageIndex >= 0 ? onPreview(images, selectedImageIndex) : undefined}
                 disabled={!selectedImage}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 text-center text-sm font-semibold text-white transition-colors hover:border-[#E3FF74]/45 hover:text-[#E3FF74] disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
               >
+                <ImageIcon size={15} />
                 <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.previewSelected}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                iconStart={<Sparkles size={15} />}
+              </button>
+              <button
                 type="button"
                 onClick={onReuseSelectedPrompt}
                 disabled={!selectedPrompt}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-center text-sm font-semibold text-on-surface-variant transition-colors hover:border-white/30 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
               >
+                <Sparkles size={15} />
                 <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.reuseSelectedPrompt}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                iconStart={regenerating ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
+              </button>
+              <button
                 type="button"
                 onClick={onRegenerateSelected}
                 disabled={regenerating || !selectedPrompt}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-center text-sm font-semibold text-on-surface-variant transition-colors hover:border-white/30 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
               >
+                {regenerating ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
                 <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.createVariant}</span>
-              </Button>
-              <Button
-                variant={selectedImage?.published ? 'plain' : 'ghost'}
-                iconStart={selectedIsPublishing ? <Loader2 className="animate-spin" size={15} /> : <Globe2 size={15} />}
+              </button>
+              <button
                 type="button"
-                onClick={() => setConfirmingPublish(true)}
+                onClick={onToggleSelectedPublish}
                 disabled={selectedIsPublishing || !selectedIsPublishable}
                 className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3 text-center text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
                   selectedImage?.published
@@ -849,25 +818,13 @@ function SucceededWorkbench({
                     : 'border-white/15 bg-white/[0.04] text-on-surface-variant hover:border-tertiary/35 hover:text-tertiary'
                 } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tertiary/35`}
               >
+                {selectedIsPublishing ? <Loader2 className="animate-spin" size={15} /> : <Globe2 size={15} />}
                 <span className="min-w-0 break-words [overflow-wrap:anywhere]">
                   {selectedIsPublishing ? copy.publishingSelected : selectedImage?.published ? copy.unpublishSelected : copy.publishSelected}
                 </span>
-              </Button>
+              </button>
             </div>
           </div>
-
-          <ConfirmDialog
-            open={confirmingPublish}
-            title={publishConfirmTitle}
-            description={publishConfirmDescription}
-            cancelLabel={copy.cancelAction}
-            confirmLabel={publishConfirmLabel}
-            icon={<Globe2 size={16} />}
-            tone="publish"
-            busy={selectedIsPublishing}
-            onCancel={() => setConfirmingPublish(false)}
-            onConfirm={() => confirmSelectedPublish().catch(() => undefined)}
-          />
 
           <div className="mt-6">
             <TaskMetaGrid compact copy={copy} expectedCount={expectedCount} task={task} />
@@ -936,25 +893,23 @@ function FailedTaskPanel({
         <aside className="border-t border-white/[0.07] bg-[#1a1917] p-5 sm:p-6 lg:border-l lg:border-t-0">
           <TaskMetaGrid copy={copy} expectedCount={expectedCount} task={task} />
           <div className="mt-6 grid grid-cols-1 gap-2">
-            <Button
-              variant="ghost"
-              iconStart={<Sparkles size={15} />}
+            <button
               type="button"
               onClick={onReusePrompt}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 text-center text-sm font-semibold text-white transition-colors hover:border-[#E3FF74]/45 hover:text-[#E3FF74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
             >
+              <Sparkles size={15} />
               <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.revisePrompt}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              iconStart={regenerating ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
+            </button>
+            <button
               type="button"
               onClick={onRegenerate}
               disabled={regenerating || !task.prompt}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-center text-sm font-semibold text-on-surface-variant transition-colors hover:border-white/30 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
             >
+              {regenerating ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
               <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.retrySameSettings}</span>
-            </Button>
+            </button>
           </div>
         </aside>
       </div>
@@ -992,25 +947,23 @@ function EmptyResultState({
         <div className="w-full shrink-0 lg:w-[340px]">
           <TaskMetaGrid compact copy={copy} expectedCount={expectedCount} task={task} />
           <div className="mt-4 grid gap-2">
-            <Button
-              variant="ghost"
-              iconStart={<Sparkles size={15} />}
+            <button
               type="button"
               onClick={onReusePrompt}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 text-center text-sm font-semibold text-white transition-colors hover:border-[#E3FF74]/45 hover:text-[#E3FF74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
             >
+              <Sparkles size={15} />
               <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.reusePrompt}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              iconStart={regenerating ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
+            </button>
+            <button
               type="button"
               onClick={onRegenerate}
               disabled={regenerating || !task.prompt}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-center text-sm font-semibold text-on-surface-variant transition-colors hover:border-white/30 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
             >
+              {regenerating ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
               <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.retryPrompt}</span>
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -1046,24 +999,22 @@ function MissingTaskState({
             </p>
           ) : null}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button
-              variant="primary"
-              iconStart={<Sparkles size={15} />}
+            <button
               type="button"
               onClick={onCreate}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#f0ede8] px-5 py-2.5 text-sm font-semibold text-[#1a1917] transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1917]"
             >
+              <Sparkles size={15} />
               {copy.createAction}
-            </Button>
-            <Button
-              variant="ghost"
-              iconStart={<ArrowLeft size={15} />}
+            </button>
+            <button
               type="button"
               onClick={onBack}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-outline-variant/50 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container/50 hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1917]"
             >
+              <ArrowLeft size={15} />
               {copy.goBackAction}
-            </Button>
+            </button>
           </div>
         </div>
       </div>

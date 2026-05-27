@@ -1,5 +1,3 @@
-import { SelectControl } from './design-system';
-
 export default function GenerationSelect({
   label,
   value,
@@ -20,7 +18,7 @@ export default function GenerationSelect({
   return (
     <label className="block min-w-0">
       <span className="mb-0.5 block text-[10px] font-medium text-on-surface-variant">{label}</span>
-      <SelectControl
+      <select
         className="min-h-11 w-full rounded-lg border border-outline-variant bg-surface-container-low px-2 text-xs text-on-surface outline-none transition-colors focus:border-primary"
         aria-label={label}
         value={value}
@@ -32,7 +30,7 @@ export default function GenerationSelect({
             {getOptionLabel?.(option) || option}
           </option>
         ))}
-      </SelectControl>
+      </select>
     </label>
   );
 }

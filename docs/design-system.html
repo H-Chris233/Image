@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AetherGenix Design System v1</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bricolage+Grotesque:wght@300;400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* ── AetherGenix 暖炭黑 Design Tokens ── */
+
+  /* Surfaces */
+  --bg:            #111110;
+  --surface:       #1a1917;
+  --surface-c:     #242220;
+  --surface-ch:    #2e2c29;
+  --surface-cmax:  #3a3835;
+
+  /* Text */
+  --on-surface:    #f0ede8;
+  --on-muted:      #8a8680;
+  --on-dim:        #4a4844;
+
+  /* Brand */
+  --lime:          #E3FF74;
+  --lime-dim:      rgba(227,255,116,.08);
+  --lime-border:   rgba(227,255,116,.15);
+  --orange:        #fe6e00;
+  --orange-dim:    rgba(254,110,0,.12);
+
+  /* Borders */
+  --outline:       #4a4844;
+  --outline-v:     #2e2c29;
+
+  /* Light mode */
+  --bg-light:       #f9f8f6;
+  --surface-light:  #ffffff;
+  --on-surface-light: #1a1917;
+
+  /* Glows */
+  --glow-lime:   0 0 16px rgba(227,255,116,.30), 0 0 48px rgba(227,255,116,.10);
+  --glow-orange: 0 0 16px rgba(254,110,0,.35),   0 0 48px rgba(254,110,0,.12);
+  --glow-soft:   0 8px 32px rgba(0,0,0,.5),      0 0 1px rgba(255,255,255,.06);
+
+  /* Radii */
+  --r-sm:   6px;
+  --r-md:   8px;
+  --r-lg:   12px;
+  --r-xl:   16px;
+  --r-2xl:  20px;
+  --r-full: 9999px;
+
+  /* Easing */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Base ────────────────────────────────────────────── */
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--on-surface);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Sidebar ─────────────────────────────────────────── */
+.sidebar {
+  position: fixed; top: 0; left: 0;
+  width: 220px; height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--outline-v);
+  padding: 0 0 24px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.sidebar-header {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--outline-v);
+}
+.sidebar-logo {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 15px; font-weight: 700;
+  color: var(--on-surface);
+  display: flex; align-items: center; gap: 8px;
+}
+.sidebar-logo .dot { width:8px; height:8px; border-radius:50%; background:var(--lime); }
+.sidebar-version { font-size: 10px; color: var(--on-muted); margin-top: 4px; }
+.sidebar-group {
+  padding: 14px 18px 6px;
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--on-dim);
+}
+.sidebar a {
+  display: block; padding: 6px 18px;
+  font-size: 12px; color: var(--on-muted);
+  text-decoration: none;
+  transition: color .15s;
+  border-left: 2px solid transparent;
+}
+.sidebar a:hover { color: var(--on-surface); border-left-color: var(--lime); background: var(--lime-dim); }
+
+/* ── Main ────────────────────────────────────────────── */
+.main { margin-left: 220px; padding: 0 48px 80px; max-width: 1020px; }
+
+/* ── Section ─────────────────────────────────────────── */
+.section { padding-top: 64px; }
+.section-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--outline-v);
+}
+.section-num {
+  background: var(--lime); color: var(--bg);
+  font-size: 11px; font-weight: 800;
+  padding: 2px 7px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.section-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 20px; font-weight: 700;
+  color: var(--on-surface);
+}
+.section-desc { font-size: 13px; color: var(--on-muted); margin-bottom: 20px; }
+
+.subsection { margin-bottom: 36px; }
+.sub-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--on-muted);
+  margin-bottom: 12px;
+}
+
+hr { border: none; border-top: 1px solid var(--outline-v); margin: 48px 0; }
+
+/* ── Code ─────────────────────────────────────────────── */
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; background: var(--surface-c);
+  color: var(--lime); padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ── Note boxes ──────────────────────────────────────── */
+.note {
+  background: rgba(227,255,116,.06);
+  border-left: 3px solid var(--lime);
+  padding: 10px 14px;
+  border-radius: 0 8px 8px 0;
+  font-size: 12px; color: var(--on-surface);
+  margin: 12px 0;
+}
+.note-orange {
+  background: rgba(254,110,0,.08);
+  border-left: 3px solid var(--orange);
+  padding: 10px 14px; border-radius: 0 8px 8px 0;
+  font-size: 12px; color: var(--on-surface);
+  margin: 12px 0;
+}
+.note-gap {
+  background: rgba(255,80,80,.06);
+  border-left: 3px solid #ff6b6b;
+  padding: 10px 14px; border-radius: 0 8px 8px 0;
+  font-size: 12px; color: var(--on-surface);
+  margin: 12px 0;
+}
+
+/* ── Grid helpers ──────────────────────────────────────── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.four-col { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+
+/* ── Demo box ──────────────────────────────────────────── */
+.demo {
+  background: var(--surface-c);
+  border: 1px solid var(--outline-v);
+  border-radius: var(--r-xl);
+  padding: 24px;
+  margin-bottom: 10px;
+}
+.demo-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--on-muted);
+  margin-bottom: 14px;
+}
+
+/* ── Token table ─────────────────────────────────────── */
+.token-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.token-table th {
+  background: var(--surface-ch); color: var(--on-muted);
+  padding: 8px 12px; text-align: left;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  border-bottom: 1px solid var(--outline-v);
+}
+.token-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--outline-v);
+  color: var(--on-surface); vertical-align: middle;
+}
+.token-table tr:hover td { background: rgba(255,255,255,.02); }
+
+/* ── Color swatches ──────────────────────────────────── */
+.swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.swatch { border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--outline-v); }
+.swatch-color { height: 52px; }
+.swatch-info { background: var(--surface-c); padding: 8px 10px; }
+.swatch-name { font-size: 11px; font-weight: 700; color: var(--on-surface); }
+.swatch-hex { font-size: 10px; color: var(--on-muted); font-family: 'JetBrains Mono', monospace; }
+.swatch-use { font-size: 10px; color: var(--on-dim); margin-top: 2px; line-height: 1.3; }
+
+/* ── Button components ────────────────────────────────── */
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 40px; padding: 0 20px;
+  background: var(--on-surface); color: var(--bg);
+  font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif;
+  border: none; border-radius: var(--r-full); cursor: pointer;
+  transition: background .15s var(--ease-out);
+}
+.btn-primary:hover { background: #ffffff; }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 40px; padding: 0 16px;
+  background: transparent; color: rgba(240,237,232,.8);
+  font-size: 14px; font-weight: 500; font-family: 'Inter', sans-serif;
+  border: 1px solid rgba(255,255,255,.15); border-radius: var(--r-full); cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.btn-ghost:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.25); }
+
+.btn-lime {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 40px; padding: 0 20px;
+  background: var(--lime); color: var(--bg);
+  font-size: 14px; font-weight: 700; font-family: 'Inter', sans-serif;
+  border: none; border-radius: var(--r-full); cursor: pointer;
+  box-shadow: var(--glow-lime);
+  transition: box-shadow .2s, transform .15s var(--ease-spring);
+}
+.btn-lime:hover { transform: translateY(-1px); box-shadow: 0 0 24px rgba(227,255,116,.45), 0 0 64px rgba(227,255,116,.15); }
+
+.btn-orange {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 40px; padding: 0 20px;
+  background: var(--orange); color: #fff;
+  font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif;
+  border: none; border-radius: var(--r-full); cursor: pointer;
+  box-shadow: var(--glow-orange);
+}
+
+/* ── NEW: Commerce buttons ───────────────────────────── */
+.btn-commerce-primary {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 44px; padding: 0 24px;
+  background: var(--lime); color: var(--bg);
+  font-size: 15px; font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif;
+  border: none; border-radius: var(--r-lg); cursor: pointer;
+  box-shadow: var(--glow-lime);
+  transition: transform .15s var(--ease-spring), box-shadow .2s;
+  gap: 6px;
+}
+.btn-commerce-primary:hover { transform: translateY(-1px); box-shadow: 0 0 24px rgba(227,255,116,.5), 0 0 64px rgba(227,255,116,.18); }
+
+/* ── Card components ─────────────────────────────────── */
+.card-warm {
+  background: var(--surface-c);
+  border: 1px solid var(--outline-v);
+  border-radius: var(--r-xl);
+  padding: 20px;
+}
+.card-glass {
+  background: rgba(26,25,23,.7);
+  border: 1px solid rgba(255,255,255,.07);
+  backdrop-filter: blur(12px);
+  border-radius: var(--r-xl);
+  padding: 20px;
+}
+
+/* ── Template thumbnails (NEW) ───────────────────────── */
+.tmpl-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.tmpl-chip {
+  aspect-ratio: 1;
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  border: 2px solid transparent;
+  overflow: hidden;
+  position: relative;
+  transition: border-color .15s, transform .15s var(--ease-spring);
+}
+.tmpl-chip:hover { transform: scale(1.05); border-color: var(--on-muted); }
+.tmpl-chip.selected { border-color: var(--lime); box-shadow: 0 0 0 3px rgba(227,255,116,.2); }
+.tmpl-chip .label {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,.7));
+  color: white; font-size: 9px; font-weight: 700;
+  padding: 10px 4px 4px; text-align: center;
+  opacity: 0; transition: opacity .1s;
+}
+.tmpl-chip:hover .label { opacity: 1; }
+.tmpl-chip.selected .label { opacity: 1; }
+
+/* ── Format selector (NEW) ───────────────────────────── */
+.format-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+.format-card {
+  background: var(--surface-c);
+  border: 1.5px solid var(--outline-v);
+  border-radius: var(--r-lg);
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color .15s, background .15s;
+  min-width: 90px;
+}
+.format-card:hover { border-color: var(--on-muted); background: var(--surface-ch); }
+.format-card.selected { border-color: var(--lime); background: rgba(227,255,116,.06); }
+.format-card .format-thumb {
+  background: var(--surface-cmax);
+  margin: 0 auto 8px;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+.format-card .format-name { font-size: 11px; font-weight: 700; color: var(--on-surface); }
+.format-card .format-size { font-size: 10px; color: var(--on-muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+/* ── Count chips (NEW) ───────────────────────────────── */
+.count-chips { display: flex; gap: 6px; }
+.count-chip {
+  width: 36px; height: 36px;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--outline-v);
+  background: var(--surface-c);
+  color: var(--on-muted);
+  font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all .15s;
+}
+.count-chip:hover { border-color: var(--on-muted); color: var(--on-surface); }
+.count-chip.selected { border-color: var(--lime); background: rgba(227,255,116,.08); color: var(--lime); }
+
+/* ── Product card (NEW) ──────────────────────────────── */
+.product-card {
+  background: var(--surface-c);
+  border: 1px solid var(--outline-v);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .15s, transform .15s var(--ease-spring);
+  position: relative;
+}
+.product-card:hover { border-color: var(--on-muted); transform: translateY(-2px); }
+.product-card.selected { border-color: var(--lime); box-shadow: 0 0 0 3px rgba(227,255,116,.15); }
+.product-card .product-thumb {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  background: var(--surface-ch);
+}
+.product-card .product-info { padding: 10px 12px; }
+.product-card .product-name { font-size: 12px; font-weight: 600; color: var(--on-surface); }
+.product-card .product-tag { font-size: 10px; color: var(--on-muted); margin-top: 2px; }
+.product-card .product-add {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; color: var(--on-dim);
+  border: 2px dashed var(--outline);
+  border-radius: var(--r-xl);
+  transition: border-color .15s, color .15s;
+  cursor: pointer;
+}
+.product-card .product-add:hover { border-color: var(--on-muted); color: var(--on-muted); }
+
+/* ── Recent list (NEW) ──────────────────────────────── */
+.recent-list { background: var(--surface-c); border: 1px solid var(--outline-v); border-radius: var(--r-xl); overflow: hidden; }
+.recent-header { padding: 14px 18px; border-bottom: 1px solid var(--outline-v); display: flex; align-items: center; justify-content: space-between; }
+.recent-row {
+  display: grid; grid-template-columns: 24px 52px 1fr 1fr 90px;
+  gap: 10px; padding: 10px 18px;
+  align-items: center; border-bottom: 1px solid var(--outline-v);
+  font-size: 12px; transition: background .1s;
+}
+.recent-row:hover { background: var(--surface-ch); }
+.recent-row:last-child { border-bottom: none; }
+.r-thumb {
+  width: 44px; height: 44px; border-radius: var(--r-md);
+  overflow: hidden; background: var(--surface-ch);
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.theme-tag {
+  background: var(--surface-cmax); border-radius: var(--r-sm);
+  padding: 2px 8px; font-size: 10px; color: var(--on-muted);
+  display: inline-block;
+}
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+.r-thumb.gen { animation: pulse 1.4s ease-in-out infinite; }
+
+/* ── Input ───────────────────────────────────────────── */
+.input-demo {
+  background: var(--surface-c);
+  border: 1px solid var(--outline-v);
+  border-radius: var(--r-lg);
+  padding: 9px 12px;
+  font-size: 13px; font-family: 'Inter', sans-serif;
+  color: var(--on-surface);
+  width: 100%; outline: none;
+  transition: border-color .15s;
+}
+.input-demo:focus { border-color: var(--on-muted); }
+.input-demo::placeholder { color: var(--on-dim); }
+
+.select-demo {
+  background: var(--surface-c);
+  border: 1.5px solid var(--outline-v);
+  border-radius: var(--r-lg);
+  padding: 9px 32px 9px 12px;
+  font-size: 13px; font-family: 'Inter', sans-serif;
+  color: var(--on-surface); outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8680' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  cursor: pointer;
+}
+.select-demo:focus { border-color: var(--on-muted); }
+
+/* ── Badge / Tag ─────────────────────────────────────── */
+.badge-lime { background: var(--lime-dim); border: 1px solid var(--lime-border); color: var(--lime); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--r-full); display: inline-block; }
+.badge-orange { background: rgba(254,110,0,.1); border: 1px solid rgba(254,110,0,.2); color: var(--orange); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--r-full); display: inline-block; }
+.badge-gray { background: var(--surface-ch); border: 1px solid var(--outline-v); color: var(--on-muted); font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: var(--r-full); display: inline-block; }
+
+/* ── Comparison table ───────────────────────────────── */
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cmp-table th { background: var(--surface-ch); color: var(--on-muted); padding: 8px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--outline-v); }
+.cmp-table td { padding: 9px 12px; border-bottom: 1px solid var(--outline-v); color: var(--on-surface); }
+.cmp-table tr:hover td { background: rgba(255,255,255,.02); }
+.check { color: #4ade80; font-weight: 700; }
+.cross { color: #ff6b6b; font-weight: 700; }
+.improve { color: var(--lime); font-weight: 700; }
+.hl { background: rgba(227,255,116,.04) !important; }
+
+/* ── Typography specimens ─────────────────────────────── */
+.type-row { padding: 12px 0; border-bottom: 1px solid var(--outline-v); display: flex; align-items: baseline; gap: 20px; }
+.type-meta { min-width: 160px; flex-shrink: 0; }
+.type-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; background: var(--surface-c); color: var(--lime); padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 3px; }
+.type-info { font-size: 10px; color: var(--on-muted); }
+
+/* ── Spacing visual ──────────────────────────────────── */
+.sp-row { display: flex; align-items: center; gap: 14px; padding: 5px 0; }
+.sp-bar { background: var(--lime); opacity: .6; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.sp-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--on-muted); min-width: 110px; }
+.sp-use { font-size: 11px; color: var(--on-dim); }
+
+/* ── Shadow demos ────────────────────────────────────── */
+.shadow-cards { display: flex; gap: 14px; flex-wrap: wrap; }
+.shadow-card { background: var(--surface-c); border-radius: var(--r-xl); width: 140px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.shadow-name { font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--on-muted); }
+.shadow-use { font-size: 10px; color: var(--on-dim); text-align: center; padding: 0 8px; }
+
+/* ── Radius demos ────────────────────────────────────── */
+.radius-wrap { display: flex; gap: 14px; flex-wrap: wrap; }
+.radius-demo { background: var(--surface-c); border: 1px solid var(--outline-v); width: 100px; height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.radius-label { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--on-muted); }
+.radius-val { font-size: 10px; color: var(--on-dim); }
+
+/* ── Nav demo ─────────────────────────────────────────── */
+.nav-demo {
+  background: rgba(17,17,16,.8);
+  backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--outline-v);
+  border-radius: var(--r-xl);
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+}
+.nav-logo-d { font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; font-weight: 700; color: var(--on-surface); display: flex; align-items: center; gap: 6px; }
+
+/* ── Side nav demo ──────────────────────────────────── */
+.sidenav-demo { background: var(--bg); border: 1px solid var(--outline-v); border-radius: var(--r-xl); padding: 12px; width: 200px; }
+.sidenav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: var(--r-lg);
+  font-size: 13px; color: var(--on-muted);
+  cursor: pointer; transition: all .1s;
+  border-left: 2px solid transparent;
+  margin-bottom: 2px;
+}
+.sidenav-item:hover { color: var(--on-surface); background: rgba(255,255,255,.04); }
+.sidenav-item.active {
+  color: var(--lime);
+  background: var(--lime-dim);
+  border-left-color: var(--lime);
+  font-weight: 600;
+}
+
+/* ── Glow badge ──────────────────────────────────────── */
+.glow-demo { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.glow-box { width: 120px; height: 60px; border-radius: var(--r-lg); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+
+/* ── E-commerce generation panel ────────────────────── */
+.gen-panel {
+  background: var(--surface-c);
+  border: 1px solid var(--outline-v);
+  border-radius: var(--r-xl);
+  padding: 20px;
+  max-width: 400px;
+}
+.gen-product-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface-ch); border: 1px solid var(--outline-v);
+  border-radius: var(--r-lg); margin-bottom: 16px;
+}
+
+/* ── Animation section ──────────────────────────────── */
+@keyframes fade-in { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
+@keyframes glow-breathe { 0%,100%{box-shadow: 0 0 16px rgba(227,255,116,.3)} 50%{box-shadow: 0 0 32px rgba(227,255,116,.6)} }
+.anim-fadein { animation: fade-in .4s var(--ease-out) both; }
+.anim-glow { animation: glow-breathe 2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo"><span class="dot"></span>AetherGenix</div>
+    <div class="sidebar-version">Design System v1 · 2026-05-25</div>
+  </div>
+  <div class="sidebar-group">基础</div>
+  <a href="#overview">概览 & 优化机会</a>
+  <a href="#colors">颜色系统</a>
+  <a href="#typography">字体排版</a>
+  <a href="#spacing">间距体系</a>
+  <a href="#radius">圆角</a>
+  <a href="#shadows">阴影 & Glow</a>
+  <a href="#animation">动画</a>
+  <div class="sidebar-group">现有组件</div>
+  <a href="#buttons">按钮</a>
+  <a href="#cards">卡片</a>
+  <a href="#nav">导航</a>
+  <a href="#inputs">输入控件</a>
+  <a href="#badges">徽章 & 标签</a>
+  <div class="sidebar-group">新增组件</div>
+  <a href="#template-picker">模板选择器</a>
+  <a href="#format-picker">格式选择器</a>
+  <a href="#product-library">产品库</a>
+  <a href="#gen-panel">生成面板</a>
+  <a href="#recent-list">结果列表</a>
+  <div class="sidebar-group">综合</div>
+  <a href="#token-table">Token 速查表</a>
+</nav>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- HEADER -->
+<div style="padding: 48px 0 0;">
+  <div style="background: var(--surface); border: 1px solid var(--outline-v); border-radius: var(--r-xl); padding: 32px; margin-bottom: 8px;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+      <h1 style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:800; color:var(--on-surface);">AetherGenix</h1>
+      <span style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:300; color:var(--on-muted);">Design System</span>
+      <span class="badge-lime">v1</span>
+    </div>
+    <p style="font-size:14px; color:var(--on-muted);">暖炭黑 · 电石灰签名 · 深色优先 · Lovart 风格 · Tailwind CSS v4</p>
+    <div style="display:flex; gap:24px; margin-top:16px; font-size:12px; color:var(--on-muted);">
+      <span>字体：Inter · Bricolage Grotesque · JetBrains Mono</span>
+      <span>主色：<code>#E3FF74</code></span>
+      <span>底色：<code>#111110</code></span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 01 OVERVIEW -->
+<section class="section" id="overview">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <span class="section-title">概览 & 优化机会</span>
+  </div>
+
+  <div class="note" style="margin-bottom:20px;">
+    <strong>当前设计优势：</strong>暖炭黑底色有质感、电石灰签名色辨识度强、按钮三级体系清晰、毛玻璃 Nav 精致。这套风格定位是「创作者工作台」，应当保留。
+  </div>
+
+  <div class="sub-label">对比 Pebblely 后发现的提升机会</div>
+  <table class="cmp-table">
+    <tr><th>维度</th><th>当前状态</th><th>优化方向</th><th>优先级</th></tr>
+    <tr class="hl"><td><strong>电商模板选择</strong></td><td><span class="cross">✗</span> 文字按钮，无视觉预览</td><td class="improve">→ 视觉缩略图网格，带场景预览</td><td><span class="badge-lime">P0</span></td></tr>
+    <tr class="hl"><td><strong>输出格式/尺寸</strong></td><td><span class="cross">✗</span> 无尺寸/用途选项</td><td class="improve">→ 格式卡片选择（主图/信息流/竖版）</td><td><span class="badge-lime">P0</span></td></tr>
+    <tr class="hl"><td><strong>商品图持久化</strong></td><td><span class="cross">✗</span> 每次重传，无产品库</td><td class="improve">→ 产品库卡片组件</td><td><span class="badge-lime">P0</span></td></tr>
+    <tr><td><strong>批量数量选择</strong></td><td><span class="cross">✗</span> 无</td><td class="improve">→ 1/2/4 count chips + 按钮显示「生成 (N)」</td><td><span class="badge-orange">P1</span></td></tr>
+    <tr><td><strong>结果微调</strong></td><td><span class="cross">✗</span> 无就地编辑</td><td class="improve">→ 文字描述微调，不重传</td><td><span class="badge-orange">P1</span></td></tr>
+    <tr><td><strong>CTA 在电商页的力度</strong></td><td>ghost 风格偏弱</td><td class="improve">→ 电商场景专属 CTA 按钮（更大，矩形圆角）</td><td><span class="badge-orange">P1</span></td></tr>
+    <tr><td><strong>Credit 透明度</strong></td><td><span class="cross">✗</span> 不显示消耗预估</td><td class="improve">→ 按钮显示「生成 (4)」—— N 实时更新</td><td><span class="badge-gray">P2</span></td></tr>
+    <tr><td><strong>批量下载</strong></td><td><span class="cross">✗</span> 无</td><td class="improve">→ 复选框 + 批量下载按钮</td><td><span class="badge-gray">P2</span></td></tr>
+  </table>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 02 COLORS -->
+<section class="section" id="colors">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <span class="section-title">颜色系统</span>
+  </div>
+
+  <div class="subsection">
+    <div class="sub-label">品牌色</div>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#E3FF74;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">--lime</div>
+          <div class="swatch-hex">#E3FF74</div>
+          <div class="swatch-use">签名高亮、active、lime CTA</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:rgba(227,255,116,.08); border:1px solid rgba(227,255,116,.15);"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">--lime-dim</div>
+          <div class="swatch-hex">rgba(227,255,116,.08)</div>
+          <div class="swatch-use">active item 背景</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#fe6e00;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">--orange</div>
+          <div class="swatch-hex">#fe6e00</div>
+          <div class="swatch-use">次要 CTA、警示</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="sub-label">暗色 Surface 体系（6 梯级）</div>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#111110;"></div>
+        <div class="swatch-info"><div class="swatch-name">--bg</div><div class="swatch-hex">#111110</div><div class="swatch-use">页面底色</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#1a1917;"></div>
+        <div class="swatch-info"><div class="swatch-name">--surface</div><div class="swatch-hex">#1a1917</div><div class="swatch-use">侧边栏、Nav</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#242220;"></div>
+        <div class="swatch-info"><div class="swatch-name">--surface-c</div><div class="swatch-hex">#242220</div><div class="swatch-use">卡片、面板背景</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#2e2c29;"></div>
+        <div class="swatch-info"><div class="swatch-name">--surface-ch</div><div class="swatch-hex">#2e2c29</div><div class="swatch-use">表格 hover、次层</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#3a3835;"></div>
+        <div class="swatch-info"><div class="swatch-name">--surface-cmax</div><div class="swatch-hex">#3a3835</div><div class="swatch-use">最深卡片层</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="sub-label">文字色</div>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#f0ede8;"></div>
+        <div class="swatch-info"><div class="swatch-name">--on-surface</div><div class="swatch-hex">#f0ede8</div><div class="swatch-use">主文字（暖白）</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#8a8680;"></div>
+        <div class="swatch-info"><div class="swatch-name">--on-muted</div><div class="swatch-hex">#8a8680</div><div class="swatch-use">次要文字</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#4a4844;"></div>
+        <div class="swatch-info"><div class="swatch-name">--on-dim</div><div class="swatch-hex">#4a4844</div><div class="swatch-use">最弱提示文字</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="sub-label">边框色</div>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#4a4844;"></div>
+        <div class="swatch-info"><div class="swatch-name">--outline</div><div class="swatch-hex">#4a4844</div><div class="swatch-use">可见边框</div></div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#2e2c29;"></div>
+        <div class="swatch-info"><div class="swatch-name">--outline-v</div><div class="swatch-hex">#2e2c29</div><div class="swatch-use">微弱分割线</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note-orange">
+    <strong>优化建议：</strong>电商场景考虑引入浅色模式变体（bg-light: <code>#f9f8f6</code>），商品图在浅色背景上展示效果远好于深色。可通过 <code>.commerce-surface</code> class 局部切换，不影响整体深色基调。
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 03 TYPOGRAPHY -->
+<section class="section" id="typography">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <span class="section-title">字体排版</span>
+  </div>
+
+  <div class="subsection">
+    <div class="sub-label">字体家族</div>
+    <div class="demo" style="display:flex; flex-direction:column; gap:20px;">
+      <div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:32px; font-weight:700; color:var(--on-surface); line-height:1.1;">
+          创作你的商品故事
+        </div>
+        <div style="font-size:11px; color:var(--on-dim); margin-top:4px;">Bricolage Grotesque 700 · 展示标题、页面 Hero</div>
+      </div>
+      <div>
+        <div style="font-family:'Inter',sans-serif; font-size:14px; font-weight:400; color:var(--on-muted); line-height:1.6;">
+          上传商品图，选择场景风格，AI 帮你生成高质量电商主图和投流素材。
+        </div>
+        <div style="font-size:11px; color:var(--on-dim); margin-top:4px;">Inter 400 · 正文、说明文案</div>
+      </div>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; color:var(--lime);">
+          1000×1000 · 4:5 · 9:16 · credit ×4
+        </div>
+        <div style="font-size:11px; color:var(--on-dim); margin-top:4px;">JetBrains Mono 500 · 数值、尺寸、技术信息</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="sub-label">字号体系</div>
+    <div class="type-row">
+      <div class="type-meta"><div class="type-tag">text-[10px]</div><div class="type-info">10px · 极小标注</div></div>
+      <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--on-muted);">SECTION LABEL · 分区标题</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="type-tag">text-xs</div><div class="type-info">12px · 辅助文字</div></div>
+      <div style="font-size:12px; color:var(--on-muted);">标签、时间戳、元数据</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="type-tag">text-sm</div><div class="type-info">14px · 主要 UI</div></div>
+      <div style="font-size:14px; font-weight:500; color:var(--on-surface);">按钮文字 · 表单标签 · 导航项</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="type-tag">text-base</div><div class="type-info">16px · 正文</div></div>
+      <div style="font-size:16px; color:var(--on-muted); font-weight:300;">页面描述文案、说明段落</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="type-tag">text-xl</div><div class="type-info">20px · 子标题</div></div>
+      <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:20px; font-weight:600; color:var(--on-surface);">Section 子标题 · 卡片标题</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="type-tag">text-3xl</div><div class="type-info">30px · 页面标题</div></div>
+      <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:30px; font-weight:700; color:var(--on-surface);">页面主标题</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><div class="type-tag">text-5xl</div><div class="type-info">48px · Hero</div></div>
+      <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:48px; font-weight:800; color:var(--on-surface); line-height:1;">Hero</div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 04 SPACING -->
+<section class="section" id="spacing">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <span class="section-title">间距体系</span>
+  </div>
+  <div class="note" style="margin-bottom:16px;">Tailwind 默认 4px 基准，以下是实际使用频率最高的值</div>
+  <div style="display:flex; flex-direction:column; gap:6px;">
+    <div class="sp-row"><div class="sp-meta">space-1 · 4px</div><div class="sp-bar" style="width:4px;"></div><div class="sp-use">icon 内 gap</div></div>
+    <div class="sp-row"><div class="sp-meta">space-2 · 8px</div><div class="sp-bar" style="width:8px;"></div><div class="sp-use">chip 间距</div></div>
+    <div class="sp-row"><div class="sp-meta">space-3 · 12px</div><div class="sp-bar" style="width:12px;"></div><div class="sp-use">Nav 项间距 (gap-3)</div></div>
+    <div class="sp-row"><div class="sp-meta">space-4 · 16px</div><div class="sp-bar" style="width:16px;"></div><div class="sp-use">默认 padding / gap（最常用）</div></div>
+    <div class="sp-row"><div class="sp-meta">space-5 · 20px</div><div class="sp-bar" style="width:20px;"></div><div class="sp-use">按钮横向 padding (px-5)</div></div>
+    <div class="sp-row"><div class="sp-meta">space-6 · 24px</div><div class="sp-bar" style="width:24px;"></div><div class="sp-use">卡片内 padding</div></div>
+    <div class="sp-row"><div class="sp-meta">space-8 · 32px</div><div class="sp-bar" style="width:32px;"></div><div class="sp-use">section 内容区 padding</div></div>
+    <div class="sp-row"><div class="sp-meta">space-16 · 64px</div><div class="sp-bar" style="width:64px;"></div><div class="sp-use">Nav 高度、大区块间距</div></div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 05 RADIUS -->
+<section class="section" id="radius">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <span class="section-title">圆角</span>
+  </div>
+  <div class="radius-wrap">
+    <div><div class="radius-demo" style="border-radius:6px; border:1px solid var(--outline-v);"><div class="radius-label">--r-sm</div><div class="radius-val">6px</div></div><div style="font-size:10px;color:var(--on-dim);margin-top:4px;">徽章、小 tag</div></div>
+    <div><div class="radius-demo" style="border-radius:8px; border:1px solid var(--outline-v);"><div class="radius-label">--r-md</div><div class="radius-val">8px</div></div><div style="font-size:10px;color:var(--on-dim);margin-top:4px;">计数 chip、缩略图</div></div>
+    <div><div class="radius-demo" style="border-radius:12px; border:1px solid var(--outline-v);"><div class="radius-label">--r-lg</div><div class="radius-val">12px</div></div><div style="font-size:10px;color:var(--on-dim);margin-top:4px;">输入框、小卡片</div></div>
+    <div><div class="radius-demo" style="border-radius:16px; border:1px solid var(--outline-v);"><div class="radius-label">--r-xl</div><div class="radius-val">16px</div></div><div style="font-size:10px;color:var(--on-dim);margin-top:4px;">主卡片、面板（最常用）</div></div>
+    <div><div class="radius-demo" style="border-radius:20px; border:1px solid var(--outline-v);"><div class="radius-label">--r-2xl</div><div class="radius-val">20px</div></div><div style="font-size:10px;color:var(--on-dim);margin-top:4px;">大 Bento 卡片</div></div>
+    <div><div class="radius-demo" style="border-radius:9999px; border:1px solid var(--outline-v);"><div class="radius-label">--r-full</div><div class="radius-val">9999px</div></div><div style="font-size:10px;color:var(--on-dim);margin-top:4px;">所有按钮（胶囊形）</div></div>
+  </div>
+  <div class="note-orange" style="margin-top:16px;">
+    <strong>电商场景优化：</strong>新增电商专属 CTA 按钮使用 <code>--r-lg (12px)</code> 矩形圆角，比胶囊按钮更有「执行感」。胶囊形保留用于工具类操作。
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 06 SHADOWS & GLOW -->
+<section class="section" id="shadows">
+  <div class="section-header">
+    <span class="section-num">06</span>
+    <span class="section-title">阴影 & Glow</span>
+  </div>
+  <div class="shadow-cards">
+    <div>
+      <div class="shadow-card" style="box-shadow: 0 1px 2px rgba(0,0,0,.4);">
+        <div class="shadow-name">shadow-sm</div>
+        <div class="shadow-use">卡片默认态</div>
+      </div>
+    </div>
+    <div>
+      <div class="shadow-card" style="box-shadow: 0 8px 32px rgba(0,0,0,.5), 0 0 1px rgba(255,255,255,.06);">
+        <div class="shadow-name">glow-soft</div>
+        <div class="shadow-use">浮层、模态框</div>
+      </div>
+    </div>
+    <div>
+      <div class="shadow-card" style="box-shadow: 0 0 16px rgba(227,255,116,.30), 0 0 48px rgba(227,255,116,.10); border: 1px solid rgba(227,255,116,.2);">
+        <div class="shadow-name" style="color:var(--lime);">glow-lime</div>
+        <div class="shadow-use">lime 签名按钮</div>
+      </div>
+    </div>
+    <div>
+      <div class="shadow-card" style="box-shadow: 0 0 16px rgba(254,110,0,.35), 0 0 48px rgba(254,110,0,.12); border: 1px solid rgba(254,110,0,.2);">
+        <div class="shadow-name" style="color:var(--orange);">glow-orange</div>
+        <div class="shadow-use">橙色 CTA</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 07 ANIMATION -->
+<section class="section" id="animation">
+  <div class="section-header">
+    <span class="section-num">07</span>
+    <span class="section-title">动画</span>
+  </div>
+  <table class="token-table">
+    <tr><th>名称</th><th>定义</th><th>用途</th></tr>
+    <tr><td><code>fade-in</code></td><td>opacity 0→1 + translateY(8px)→0 · 400ms ease-out</td><td>页面内容进场、结果图出现</td></tr>
+    <tr><td><code>glow-breathe</code></td><td>box-shadow 强弱循环 · 2s ease-in-out infinite</td><td>lime 签名元素、加载中的活跃指示</td></tr>
+    <tr><td><code>skeleton-pulse</code></td><td>opacity 1→0.4→1 · 1.4s ease-in-out infinite</td><td>骨架屏、生成中缩略图</td></tr>
+    <tr><td><code>--ease-out</code></td><td>cubic-bezier(0.16, 1, 0.3, 1)</td><td>所有 UI 过渡（默认）</td></tr>
+    <tr><td><code>--ease-spring</code></td><td>cubic-bezier(0.34, 1.56, 0.64, 1)</td><td>按钮 hover、卡片 translateY 有弹感的场景</td></tr>
+  </table>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 08 BUTTONS -->
+<section class="section" id="buttons">
+  <div class="section-header">
+    <span class="section-num">08</span>
+    <span class="section-title">按钮</span>
+  </div>
+
+  <div class="subsection">
+    <div class="sub-label">现有三级按钮体系</div>
+    <div class="demo">
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+        <div style="text-align:center;">
+          <button class="btn-primary">主要操作</button>
+          <div style="font-size:10px; color:var(--on-dim); margin-top:6px;">btn-primary<br/>暖白 · 胶囊 · h-40</div>
+        </div>
+        <div style="text-align:center;">
+          <button class="btn-ghost">次要操作</button>
+          <div style="font-size:10px; color:var(--on-dim); margin-top:6px;">btn-ghost<br/>透明描边 · 胶囊</div>
+        </div>
+        <div style="text-align:center;">
+          <button class="btn-lime anim-glow">✦ 高亮 CTA</button>
+          <div style="font-size:10px; color:var(--on-dim); margin-top:6px;">btn-lime<br/>签名色 · glow · 稀用</div>
+        </div>
+        <div style="text-align:center;">
+          <button class="btn-orange">橙色 CTA</button>
+          <div style="font-size:10px; color:var(--on-dim); margin-top:6px;">btn-orange<br/>次要高亮</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection">
+    <div class="sub-label">NEW · 电商场景专属 CTA（矩形圆角，更大，更有执行感）</div>
+    <div class="demo">
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+        <div style="text-align:center;">
+          <button class="btn-commerce-primary">✦ 生成场景图 (4)</button>
+          <div style="font-size:10px; color:var(--on-dim); margin-top:6px;">btn-commerce-primary<br/>lime · rounded-lg · h-44 · Bricolage<br/>括号内实时显示 credit 消耗</div>
+        </div>
+        <div style="text-align:center;">
+          <button class="btn-commerce-primary" style="background:var(--surface-cmax); color:var(--on-surface); box-shadow:none;">⬇ 批量下载 (2)</button>
+          <div style="font-size:10px; color:var(--on-dim); margin-top:6px;">btn-commerce-secondary<br/>深色 · 无 glow</div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <strong>为什么需要新 CTA 变体：</strong>现有 btn-lime 是全站稀用签名，不适合在电商工作流里高频出现。commerce-primary 用相同的 lime 色但形状改为 rounded-lg，保持品牌一致的同时降低「用完签名色」的稀缺感。
+    </div>
+  </div>
+
+  <table class="token-table" style="margin-top:8px;">
+    <tr><th>按钮</th><th>bg</th><th>text</th><th>radius</th><th>height</th><th>用途</th></tr>
+    <tr><td><code>btn-primary</code></td><td>#f0ede8</td><td>#111110</td><td>full</td><td>40px</td><td>工具操作、确认</td></tr>
+    <tr><td><code>btn-ghost</code></td><td>transparent</td><td>#f0ede8/80%</td><td>full</td><td>40px</td><td>次要操作、取消</td></tr>
+    <tr><td><code>btn-lime</code></td><td>#E3FF74</td><td>#111110</td><td>full</td><td>40px</td><td>全站签名 CTA（稀用）</td></tr>
+    <tr><td><code>btn-orange</code></td><td>#fe6e00</td><td>#fff</td><td>full</td><td>40px</td><td>次要高亮</td></tr>
+    <tr class="hl"><td><code>btn-commerce-primary</code></td><td>#E3FF74</td><td>#111110</td><td>12px</td><td>44px</td><td>电商生成 CTA（高频）</td></tr>
+    <tr class="hl"><td><code>btn-commerce-secondary</code></td><td>#3a3835</td><td>#f0ede8</td><td>12px</td><td>44px</td><td>电商下载、次操作</td></tr>
+  </table>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 09 CARDS -->
+<section class="section" id="cards">
+  <div class="section-header">
+    <span class="section-num">09</span>
+    <span class="section-title">卡片</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="sub-label">card-warm（标准卡片）</div>
+      <div class="card-warm">
+        <div style="font-size:11px; color:var(--on-muted); margin-bottom:8px;">STANDARD CARD</div>
+        <div style="font-size:14px; font-weight:600; color:var(--on-surface);">任务卡片标题</div>
+        <div style="font-size:12px; color:var(--on-muted); margin-top:4px;">bg: surface-c · border: outline-v · radius: r-xl</div>
+      </div>
+    </div>
+    <div>
+      <div class="sub-label">card-glass（毛玻璃卡片）</div>
+      <div class="card-glass">
+        <div style="font-size:11px; color:var(--on-muted); margin-bottom:8px;">GLASS CARD</div>
+        <div style="font-size:14px; font-weight:600; color:var(--on-surface);">浮层卡片</div>
+        <div style="font-size:12px; color:var(--on-muted); margin-top:4px;">bg: rgba(26,25,23,.7) · blur(12px)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 10 NAV -->
+<section class="section" id="nav">
+  <div class="section-header">
+    <span class="section-num">10</span>
+    <span class="section-title">导航</span>
+  </div>
+  <div class="subsection">
+    <div class="sub-label">顶部导航栏</div>
+    <nav class="nav-demo">
+      <div class="nav-logo-d"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--lime);display:inline-block;"></span>AetherGenix</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:12px; color:var(--on-muted);">余额 <span style="color:var(--lime); font-family:'JetBrains Mono',monospace;">128</span></span>
+        <button class="btn-ghost" style="height:32px; font-size:12px; padding:0 12px;">探索</button>
+        <button class="btn-primary" style="height:32px; font-size:12px; padding:0 14px;">创作</button>
+      </div>
+    </nav>
+    <div style="font-size:11px; color:var(--on-dim); margin-top:8px;"><code>bg: rgba(17,17,16,.8) backdrop-blur(20px) saturate(1.4)</code> · 毛玻璃固定导航</div>
+  </div>
+
+  <div class="subsection">
+    <div class="sub-label">侧边导航</div>
+    <div class="sidenav-demo">
+      <div class="sidenav-item active">
+        <span>⚡</span><span>创作</span>
+      </div>
+      <div class="sidenav-item">
+        <span>🔍</span><span>探索</span>
+      </div>
+      <div class="sidenav-item">
+        <span>🛍️</span><span>电商生成</span>
+      </div>
+      <div class="sidenav-item">
+        <span>📁</span><span>我的项目</span>
+      </div>
+    </div>
+    <div style="font-size:11px; color:var(--on-dim); margin-top:8px;">Active: <code>bg-lime/8 + text-lime + border-left: 2px lime</code></div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 11 INPUTS -->
+<section class="section" id="inputs">
+  <div class="section-header">
+    <span class="section-num">11</span>
+    <span class="section-title">输入控件</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="sub-label">文本输入框</div>
+      <input class="input-demo" placeholder="描述你的场景…" />
+      <div style="margin-top:8px; font-size:11px; color:var(--on-dim);">
+        <code>bg: surface-c · border: outline-v → focus: on-muted · radius: r-lg</code>
+      </div>
+    </div>
+    <div>
+      <div class="sub-label">下拉选择</div>
+      <select class="select-demo">
+        <option>主图 · Square (1:1)</option>
+        <option>信息流 · Portrait (4:5)</option>
+        <option>竖版 · 9:16</option>
+      </select>
+      <div style="margin-top:8px; font-size:11px; color:var(--on-dim);">
+        <code>appearance: none + custom arrow SVG</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 12 BADGES -->
+<section class="section" id="badges">
+  <div class="section-header">
+    <span class="section-num">12</span>
+    <span class="section-title">徽章 & 标签</span>
+  </div>
+  <div class="demo" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <span class="badge-lime">NEW</span>
+    <span class="badge-lime">ready-for-agent</span>
+    <span class="badge-orange">生成中</span>
+    <span class="badge-orange">P0</span>
+    <span class="badge-gray">白底</span>
+    <span class="badge-gray">场景图</span>
+    <span style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);color:#4ade80;font-size:10px;font-weight:700;padding:2px 8px;border-radius:9999px;">完成</span>
+    <span style="background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);color:#ff6b6b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:9999px;">失败</span>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 13 NEW: TEMPLATE PICKER -->
+<section class="section" id="template-picker">
+  <div class="section-header">
+    <span class="section-num">13</span>
+    <span class="section-title">模板选择器 <span class="badge-lime">NEW</span></span>
+  </div>
+  <p class="section-desc">替代现有的 6 个文字按钮。视觉缩略图一目了然，无需打字即可选场景，是「运营型商家」的零摩擦入口。</p>
+
+  <div class="demo">
+    <div class="demo-label">12 格模板缩略图（鼠标悬停显示名称）</div>
+    <div class="tmpl-grid">
+      <div class="tmpl-chip selected" style="background:linear-gradient(135deg,#f5f5f5,#e8e8e0);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">白底</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#232323,#444);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">暗调</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#c8a87a,#a07040);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">暖木</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#87ceeb,#4682b4);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">海边</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#90ee90,#228b22);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">自然</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#ff9999,#cc0033);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">节日</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#e0c8f0,#9b59b6);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">简约紫</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#fffacd,#ffd700);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">奢华金</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#b0c4de,#708090);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">工业风</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#ffe4c4,#deb887);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">暖调</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#e0f7fa,#0097a7);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;">📦</div>
+        <div class="label">清凉</div>
+      </div>
+      <div class="tmpl-chip" style="background:linear-gradient(135deg,#1a1a2e,#16213e); border:1px dashed var(--outline);">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--on-dim);font-size:18px;">＋</div>
+        <div class="label">自定义</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>选中态：</strong><code>border: 2px solid var(--lime)</code> + <code>box-shadow: 0 0 0 3px rgba(227,255,116,.2)</code>。标签 opacity 0→1 on hover/selected。
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 14 NEW: FORMAT PICKER -->
+<section class="section" id="format-picker">
+  <div class="section-header">
+    <span class="section-num">14</span>
+    <span class="section-title">格式选择器 <span class="badge-lime">NEW</span></span>
+  </div>
+  <p class="section-desc">「尺寸 = 用途」的核心设计决策。运营同学看懂「主图」，不需要记 1000×1000。</p>
+
+  <div class="demo">
+    <div class="demo-label">输出格式卡片</div>
+    <div class="format-grid">
+      <div class="format-card selected">
+        <div class="format-thumb" style="width:52px;height:52px;"></div>
+        <div class="format-name">主图</div>
+        <div class="format-size">1:1 · 1000px</div>
+      </div>
+      <div class="format-card">
+        <div class="format-thumb" style="width:44px;height:52px;"></div>
+        <div class="format-name">信息流</div>
+        <div class="format-size">4:5 · 1080px</div>
+      </div>
+      <div class="format-card">
+        <div class="format-thumb" style="width:52px;height:32px;"></div>
+        <div class="format-name">横幅</div>
+        <div class="format-size">16:9 · 1920px</div>
+      </div>
+      <div class="format-card">
+        <div class="format-thumb" style="width:32px;height:52px;"></div>
+        <div class="format-name">竖版</div>
+        <div class="format-size">9:16 · 1080px</div>
+      </div>
+      <div class="format-card">
+        <div class="format-thumb" style="width:44px;height:52px;"></div>
+        <div class="format-name">大图</div>
+        <div class="format-size">4:5 · 1200px</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 15 NEW: PRODUCT LIBRARY -->
+<section class="section" id="product-library">
+  <div class="section-header">
+    <span class="section-num">15</span>
+    <span class="section-title">产品库卡片 <span class="badge-lime">NEW</span></span>
+  </div>
+  <p class="section-desc">商品图持久化的核心 UI。每个 SKU 保存为产品卡片，下次直接点用，不重传。</p>
+
+  <div class="demo">
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:10px; max-width:500px;">
+      <div class="product-card selected">
+        <div class="product-thumb">🧴</div>
+        <div class="product-info">
+          <div class="product-name">精华液</div>
+          <div class="product-tag">美妆</div>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-thumb">🥤</div>
+        <div class="product-info">
+          <div class="product-name">苏打水</div>
+          <div class="product-tag">饮品</div>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-thumb">👟</div>
+        <div class="product-info">
+          <div class="product-name">运动鞋</div>
+          <div class="product-tag">鞋服</div>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-thumb">🕯️</div>
+        <div class="product-info">
+          <div class="product-name">香薰蜡烛</div>
+          <div class="product-tag">家居</div>
+        </div>
+      </div>
+      <div class="product-card" style="aspect-ratio:auto;">
+        <div class="product-add" style="height:100%; min-height:100px;">＋</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>选中态：</strong><code>border-color: var(--lime)</code> + <code>box-shadow: 0 0 0 3px rgba(227,255,116,.15)</code>。
+    「＋」卡片：<code>border: 2px dashed var(--outline)</code> → hover: <code>dashed var(--on-muted)</code>。
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 16 NEW: GENERATION PANEL -->
+<section class="section" id="gen-panel">
+  <div class="section-header">
+    <span class="section-num">16</span>
+    <span class="section-title">电商生成面板 <span class="badge-lime">NEW</span></span>
+  </div>
+  <p class="section-desc">整合模板选择 + 数量 + 格式 + 生成 CTA。按钮显示「生成 (N)」，N 随数量实时更新。</p>
+
+  <div class="demo" style="max-width:420px;">
+    <div class="gen-panel">
+      <div class="gen-product-row">
+        <div style="width:36px;height:36px;border-radius:var(--r-md);background:var(--surface-cmax);display:flex;align-items:center;justify-content:center;font-size:18px;">🧴</div>
+        <div>
+          <div style="font-size:13px; font-weight:600; color:var(--on-surface);">精华液 SKU-001</div>
+          <div style="font-size:10px; color:var(--on-muted);">美妆 · 已分析</div>
+        </div>
+        <span class="badge-lime" style="margin-left:auto;">换</span>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <div class="sub-label" style="margin-bottom:8px;">选场景模板</div>
+        <div class="tmpl-grid">
+          <div class="tmpl-chip selected" style="background:linear-gradient(135deg,#f5f5f5,#e8e8e0);"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;">📦</div><div class="label">白底</div></div>
+          <div class="tmpl-chip" style="background:linear-gradient(135deg,#232323,#444);"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;">📦</div><div class="label">暗调</div></div>
+          <div class="tmpl-chip" style="background:linear-gradient(135deg,#c8a87a,#a07040);"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;">📦</div><div class="label">暖木</div></div>
+          <div class="tmpl-chip" style="background:linear-gradient(135deg,#87ceeb,#4682b4);"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;">📦</div><div class="label">海边</div></div>
+          <div class="tmpl-chip" style="background:linear-gradient(135deg,#90ee90,#228b22);"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;">📦</div><div class="label">自然</div></div>
+          <div class="tmpl-chip" style="background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px dashed var(--outline);"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--on-dim);font-size:16px;">＋</div><div class="label">自定义</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <div class="sub-label" style="margin-bottom:8px;">输出格式</div>
+        <div style="display:flex; gap:6px;">
+          <div class="format-card selected" style="padding:8px 10px; min-width:auto;">
+            <div class="format-thumb" style="width:28px;height:28px;margin-bottom:4px;"></div>
+            <div class="format-name">主图</div>
+            <div class="format-size">1:1</div>
+          </div>
+          <div class="format-card" style="padding:8px 10px; min-width:auto;">
+            <div class="format-thumb" style="width:24px;height:28px;margin-bottom:4px;"></div>
+            <div class="format-name">信息流</div>
+            <div class="format-size">4:5</div>
+          </div>
+          <div class="format-card" style="padding:8px 10px; min-width:auto;">
+            <div class="format-thumb" style="width:18px;height:28px;margin-bottom:4px;"></div>
+            <div class="format-name">竖版</div>
+            <div class="format-size">9:16</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+        <div class="sub-label" style="margin-bottom:0;">数量</div>
+        <div class="count-chips">
+          <div class="count-chip">1</div>
+          <div class="count-chip selected">2</div>
+          <div class="count-chip">4</div>
+        </div>
+      </div>
+
+      <button class="btn-commerce-primary" style="width:100%; justify-content:center;">✦ 生成场景图 (2)</button>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 17 NEW: RECENT LIST -->
+<section class="section" id="recent-list">
+  <div class="section-header">
+    <span class="section-num">17</span>
+    <span class="section-title">结果列表 <span class="badge-lime">NEW</span></span>
+  </div>
+  <p class="section-desc">生成完成后展示结果。支持骨架动画（生成中）、就地微调、多选批量下载。</p>
+
+  <div class="demo" style="max-width:520px;">
+    <div class="recent-list">
+      <div class="recent-header">
+        <div style="font-size:13px; font-weight:700; color:var(--on-surface);">生成结果</div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span style="font-size:11px; color:var(--on-muted);">全选</span>
+          <button class="btn-commerce-primary" style="height:28px; padding:0 12px; font-size:11px; border-radius:var(--r-md);">⬇ 下载 (1)</button>
+        </div>
+      </div>
+
+      <!-- 生成中 -->
+      <div class="recent-row">
+        <input type="checkbox" />
+        <div class="r-thumb gen" style="font-size:18px; color:var(--on-dim);">⌛</div>
+        <div><span class="theme-tag">白底</span></div>
+        <div style="font-size:11px; color:var(--on-muted);">精华液</div>
+        <div style="font-size:11px; color:var(--on-dim); font-style:italic;">生成中…</div>
+      </div>
+
+      <!-- 已完成 -->
+      <div class="recent-row">
+        <input type="checkbox" checked />
+        <div class="r-thumb" style="background:linear-gradient(135deg,#c8e8c8,#a0d0a0); font-size:18px;">🧴</div>
+        <div><span class="theme-tag">自然</span></div>
+        <div style="font-size:11px; color:var(--on-muted);">精华液</div>
+        <div style="font-size:11px; color:var(--on-muted);">刚刚</div>
+      </div>
+      <div class="recent-row">
+        <input type="checkbox" />
+        <div class="r-thumb" style="background:linear-gradient(135deg,#ffd6e0,#ffb3c6); font-size:18px;">🧴</div>
+        <div><span class="theme-tag">节日</span></div>
+        <div style="font-size:11px; color:var(--on-muted);">精华液</div>
+        <div style="font-size:11px; color:var(--on-muted);">2 分钟前</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr />
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 18 TOKEN TABLE -->
+<section class="section" id="token-table">
+  <div class="section-header">
+    <span class="section-num">18</span>
+    <span class="section-title">Token 速查表</span>
+  </div>
+  <table class="token-table">
+    <tr><th>Token</th><th>值</th><th>CSS var</th><th>用途</th></tr>
+    <tr><td>底色</td><td style="background:#111110; color:white; font-family:monospace;">#111110</td><td><code>--bg</code></td><td>页面背景</td></tr>
+    <tr><td>主面色</td><td style="background:#1a1917; color:white; font-family:monospace;">#1a1917</td><td><code>--surface</code></td><td>Nav、侧边栏</td></tr>
+    <tr><td>卡片色</td><td style="background:#242220; color:white; font-family:monospace;">#242220</td><td><code>--surface-c</code></td><td>卡片、面板</td></tr>
+    <tr><td>深卡片</td><td style="background:#2e2c29; color:white; font-family:monospace;">#2e2c29</td><td><code>--surface-ch</code></td><td>表格hover、次层</td></tr>
+    <tr><td>最深</td><td style="background:#3a3835; color:white; font-family:monospace;">#3a3835</td><td><code>--surface-cmax</code></td><td>代码块、产品缩略图背景</td></tr>
+    <tr><td>主文字</td><td style="background:#f0ede8; color:#111; font-family:monospace;">#f0ede8</td><td><code>--on-surface</code></td><td>标题、主要文字</td></tr>
+    <tr><td>次要文字</td><td style="background:#8a8680; color:white; font-family:monospace;">#8a8680</td><td><code>--on-muted</code></td><td>说明文字</td></tr>
+    <tr><td>最弱文字</td><td style="background:#4a4844; color:white; font-family:monospace;">#4a4844</td><td><code>--on-dim</code></td><td>placeholder</td></tr>
+    <tr class="hl"><td>签名色</td><td style="background:#E3FF74; color:#111; font-family:monospace;">#E3FF74</td><td><code>--lime</code></td><td>active、lime CTA、选中态</td></tr>
+    <tr><td>次要高亮</td><td style="background:#fe6e00; color:white; font-family:monospace;">#fe6e00</td><td><code>--orange</code></td><td>次要 CTA、警示</td></tr>
+    <tr><td>分割线弱</td><td style="background:#2e2c29; color:white; font-family:monospace;">#2e2c29</td><td><code>--outline-v</code></td><td>卡片边框（默认）</td></tr>
+    <tr><td>分割线强</td><td style="background:#4a4844; color:white; font-family:monospace;">#4a4844</td><td><code>--outline</code></td><td>可见边框</td></tr>
+    <tr><td>—</td><td colspan="3" style="padding:6px 12px; color:var(--on-dim); font-size:11px;">字体</td></tr>
+    <tr><td>展示字体</td><td colspan="3">Bricolage Grotesque 300/400/500/700/800 · 标题 Hero</td></tr>
+    <tr><td>正文字体</td><td colspan="3">Inter 400/500/600/700 · 所有 UI 文字</td></tr>
+    <tr><td>代码字体</td><td colspan="3">JetBrains Mono 400/500/700 · 数值、代码、尺寸</td></tr>
+    <tr><td>—</td><td colspan="3" style="padding:6px 12px; color:var(--on-dim); font-size:11px;">圆角</td></tr>
+    <tr><td>r-sm</td><td>6px</td><td><code>--r-sm</code></td><td>小 tag、徽章</td></tr>
+    <tr><td>r-md</td><td>8px</td><td><code>--r-md</code></td><td>count chip、缩略图</td></tr>
+    <tr><td>r-lg</td><td>12px</td><td><code>--r-lg</code></td><td>输入框、电商 CTA 按钮</td></tr>
+    <tr class="hl"><td>r-xl</td><td>16px</td><td><code>--r-xl</code></td><td>主卡片、面板（最常用）</td></tr>
+    <tr><td>r-2xl</td><td>20px</td><td><code>--r-2xl</code></td><td>大 Bento 卡片</td></tr>
+    <tr><td>r-full</td><td>9999px</td><td><code>--r-full</code></td><td>所有常规按钮（胶囊形）</td></tr>
+  </table>
+</section>
+
+<div style="height:40px;"></div>
+<div style="background:var(--surface); border-top:1px solid var(--outline-v); color:var(--on-dim); text-align:center; padding:20px; font-size:11px; margin-left:-48px; margin-right:-48px;">
+  AetherGenix Design System v1 · 2026-05-25 · 暖炭黑 × 电石灰 × Lovart 风格
+</div>
+
+</div><!-- /main -->
+</body>
+</html>
