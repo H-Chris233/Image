@@ -14,3 +14,4 @@ backend/data/
 backend/storage/
 .venv/
 output/
+benchmark/
