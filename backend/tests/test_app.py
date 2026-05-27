@@ -1205,7 +1205,7 @@ def test_ecommerce_analyze_surfaces_billing_errors(tmp_path: Path) -> None:
         assert response.json()["detail"] == "余额不足，请充值或更换 API Key 后重试"
 
 
-def test_ecommerce_generate_surfaces_analysis_provider_errors_as_json(tmp_path: Path) -> None:
+def test_ecommerce_generate_falls_back_when_analysis_provider_is_temporarily_unavailable(tmp_path: Path) -> None:
     provider = ChatErrorProvider()
     with make_client(tmp_path, provider=provider) as client:
         login_demo_user(client)
@@ -1218,8 +1218,12 @@ def test_ecommerce_generate_surfaces_analysis_provider_errors_as_json(tmp_path: 
 
         assert response.status_code == 200
         task = wait_for_task(client, response.json()["id"], attempts=120)
-        assert task["status"] == "failed"
-        assert task["error"] == "Upstream request failed"
+        assert task["status"] == "succeeded"
+        assert task["error"] is None
+        assert task["result"]["ecommerce_analysis"]["source"] == "fallback"
+        assert task["result"]["series_plan"]["source"] == "fallback"
+        assert len(task["items"]) == 4
+        assert len(provider.edited_fields) == 4
 
 
 def test_ecommerce_generate_analyzes_all_reference_angles(tmp_path: Path) -> None:

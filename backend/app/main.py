@@ -2410,8 +2410,9 @@ async def _analyze_ecommerce_product(
         if isinstance(parsed, dict):
             parsed["source"] = "vision"
             return parsed
-    except ProviderError:
-        raise
+    except ProviderError as exc:
+        if _should_surface_provider_error(exc):
+            raise
     except Exception:
         pass
     return {
