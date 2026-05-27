@@ -1,5 +1,179 @@
 # AetherGenix · Domain Context
 
+## 当前 L0-L5 尺度地图
+
+更新日期：2026-05-23
+
+当前主线：**设计系统治理 / Design System Governance**。
+
+治理目标：完成设计系统规则、primitives、patterns、accessibility contracts 和 smoke gates，再迁移回原项目架构，成为下一步开发的稳定约束层。治理是桥；回到原项目继续开发才是下游使用场景。
+
+`grill-with-docs` 术语检查：本文件里仍然保留 `交付项目`、`HTML 画册草案`、`先审后生图`、`DeliverableSpec`、`HTML Draft` 等历史探索术语。这些词属于已停放的产品工作流支线；除非用户明确重新激活，否则不能驱动当前设计系统治理，也不能成为 token、component、pattern 或 gate 的事实来源。
+
+ASCII 尺度地图：
+
+```text
+节点命名：
+L0 = 人的长期意图
+L1.x = 项目目标
+L2.x.y = 阶段目标
+L3.x.y.z = 请求 / 工作包
+L4.x.y.z.n = 分支 / 调查线
+L5.x.y.z.n.m = 具体操作
+
+状态机：
+READY -> ACTIVE -> DONE
+ACTIVE -> PARKED
+PARKED -> READY
+READY -> LOCKED
+LOCKED -> READY 仅当用户明确确认解锁条件
+
+状态含义：
+READY  = 可进入，但不是当前光标
+ACTIVE = 当前光标所在
+DONE   = 已完成并可作为事实来源
+PARKED = 已知支线，暂不推进
+LOCKED = 未经用户确认，不能驱动当前决策
+
+L0 STATE=ACTIVE 趁早防住设计债务，并让治理后的设计系统回到原项目架构，支撑下一步开发
+|
+|-- L1.1 STATE=ACTIVE repo-local、AI-ready 的 Warm Charcoal UI 设计系统
+|   |
+|   |-- L2.1.1 STATE=ACTIVE 治理基座
+|   |   |
+|   |   |-- L3.1.1.1 STATE=ACTIVE CONTEXT.md 尺度地图
+|   |   |   |
+|   |   |   `-- L4.1.1.1.1 STATE=ACTIVE 尺度地图结构修正
+|   |   |       |
+|   |   |       `-- L5.1.1.1.1.1 STATE=ACTIVE 改为编号节点 + 状态机 + 父子大纲
+|   |   |
+|   |   |-- L3.1.1.2 STATE=ACTIVE docs/design-system 治理边界
+|   |   |   |
+|   |   |   |-- L4.1.1.2.1 STATE=DONE 文档聚焦边界
+|   |   |   |   |
+|   |   |   |   `-- L5.1.1.2.1.1 STATE=DONE 只保留 tokens、components、patterns、accessibility、governance、smoke gate
+|   |   |   |
+|   |   |   `-- L4.1.1.2.2 STATE=DONE 设计系统漂移门禁
+|   |   |       |
+|   |   |       `-- L5.1.1.2.2.1 STATE=DONE 阻止交付生产、画册、后端建模等词进入 docs/design-system
+|   |   |
+|   |   |-- L3.1.1.3 STATE=ACTIVE 设计系统事实来源
+|   |   |   |
+|   |   |   |-- L4.1.1.3.1 STATE=ACTIVE token source of truth
+|   |   |   |   |
+|   |   |   |   `-- L5.1.1.3.1.1 STATE=ACTIVE 只承认 src/index.css 与 Tailwind v4 @theme 的 token 边界
+|   |   |   |
+|   |   |   |-- L4.1.1.3.2 STATE=ACTIVE repo-local primitives
+|   |   |   |   |
+|   |   |   |   `-- L5.1.1.3.2.1 STATE=ACTIVE 以 src/components/design-system/ 作为新增 UI 的 primitive 入口
+|   |   |   |
+|   |   |   `-- L4.1.1.3.3 STATE=ACTIVE route-to-pattern coverage
+|   |   |       |
+|   |   |       `-- L5.1.1.3.3.1 STATE=ACTIVE 以 docs/design-system/patterns.md 约束页面重做
+|   |   |
+|   |   `-- L3.1.1.4 STATE=ACTIVE 跑偏术语边界
+|   |       |
+|   |       `-- L4.1.1.4.1 STATE=ACTIVE drift term boundary
+|   |           |
+|   |           `-- L5.1.1.4.1.1 STATE=ACTIVE 将交付生产、画册、后端建模等词停放在当前主线之外
+|   |
+|   `-- L2.1.2 STATE=READY 迁移准备
+|       |
+|       |-- L3.1.2.1 STATE=READY 原 AetherGenix 项目架构消费设计系统
+|       |   |
+|       |   |-- L4.1.2.1.1 STATE=READY 活跃路由迁移
+|       |   |   |
+|       |   |   `-- L5.1.2.1.1.1 STATE=READY 逐个 route 迁移到 tokens、primitives、patterns 和 accessibility contracts
+|       |   |
+|       |   |-- L4.1.2.1.2 STATE=READY 旧硬编码和 raw values 收敛
+|       |   |   |
+|       |   |   `-- L5.1.2.1.2.1 STATE=READY 删除、替换或记录页面级 raw value 例外
+|       |   |
+|       |   `-- L4.1.2.1.3 STATE=READY compatibility-only utilities 边界
+|       |       |
+|       |       `-- L5.1.2.1.3.1 STATE=READY 保持 .btn-*、.card-*、.glow-* 只兼容历史 surface
+|       |
+|       `-- L3.1.2.2 STATE=READY 迁移期间保持门禁
+|           |
+|           `-- L4.1.2.2.1 STATE=READY CI gates
+|               |
+|               `-- L5.1.2.2.1.1 STATE=READY 源码变化后运行 lint、build、check:brand、smoke:design-system、test:account
+|
+|-- L1.2 STATE=READY 后续页面开发在原项目架构里继续
+|   |
+|   `-- L2.2.1 STATE=READY 设计系统成为开发约束层
+|       |
+|       `-- L3.2.1.1 STATE=READY 新页面或重做页面先查 pattern 和 primitive
+|           |
+|           `-- L4.2.1.1.1 STATE=READY 页面实现分支
+|               |
+|               `-- L5.2.1.1.1.1 STATE=READY 在既有 route / component 结构里做具体文件修改
+|
+`-- L1.3 STATE=PARKED 更大的产品工作流探索
+    |
+    `-- L2.3.1 STATE=LOCKED 交付生产、画册工作流、产品级后端建模
+        |
+        `-- L3.3.1.1 STATE=LOCKED 只有用户明确重启该支线后才进入定义
+            |
+            `-- L4.3.1.1.1 STATE=LOCKED workflow entities / backend modelling / media production state machines
+                |
+                `-- L5.3.1.1.1.1 STATE=LOCKED 当前不新增相关实体、状态机、页面流程或文档扩写
+```
+
+现象发生在哪条尺度链上：
+
+```text
+L0 -> L1.1 -> L2.1.1 -> L3.1.1.4 -> L4.1.1.4.1 -> L5.1.1.4.1.1
+
+L5.1.1.4.1.1 可见症状：
+  文档里出现 Deliverable / HTML Draft / 画册 / 先审后生图 等词
+
+L4.1.1.4.1 受影响分支：
+  docs/design-system 曾经滑向产品工作流
+  CONTEXT.md glossary 仍保留停放的产品工作流术语
+  smoke gate 需要显式检查跑偏词
+
+L3.1.1.4 请求层误读：
+  设计系统治理任务被误解释成产品定义 / 交付生产任务
+
+L2.1.1 需要干预：
+  用 tokens、primitives、patterns、accessibility、docs、gates 重新锚定治理主线
+
+L1.1 / L0 风险：
+  如果没有治理层，迁移回原项目架构时还会继续复制硬编码颜色、间距、
+  局部组件和页面自造 pattern
+```
+
+当前光标在地图里的位置：
+
+```text
+当前节点：L5.1.1.1.1.1 STATE=ACTIVE
+父分支：  L4.1.1.1.1 STATE=ACTIVE
+工作包：  L3.1.1.1 STATE=ACTIVE
+阶段：    L2.1.1 STATE=ACTIVE
+项目：    L1.1 STATE=ACTIVE
+意图：    L0 STATE=ACTIVE
+```
+
+当前事实：
+
+- `src/index.css` 是 token source of truth。
+- Tailwind v4 `@theme` 是唯一可扩展 token 层。
+- `:root --ag-*` 只保留 easing、glow 等 runtime helpers。
+- `.btn-*`、`.card-*`、`.glow-*` 是 compatibility-only。
+- `src/components/design-system/` 是 repo-local primitive layer。
+- `/design-system` 是内部预览路由，不进入普通导航。
+- `docs/design-system/` 是 AI-ready 设计系统规则入口。
+- `scripts/design-system-smoke.mjs` 是设计系统 smoke gate。
+
+迁移规则：
+
+设计系统治理稳定后，下一步合法动作是迁移回原项目架构：活跃页面应消费 `src/index.css` tokens、`src/components/design-system/` primitives、`docs/design-system/patterns.md` route patterns、accessibility contracts 和 smoke gates。迁移必须通过既有项目架构和路由发生，不另造并行产品工作流。
+
+当前操作规则：
+
+所有下一步建议或编辑都必须能映射到 token、component、pattern、accessibility、governance 或 smoke gate。若它映射到产品工作流、后端建模、图片生成审阅流程或交付生产，先停放在当前主线之外，直到用户明确确认该范围。
+
 ## 核心工作流
 
 **以图生图 (Reference-based Generation)**
@@ -35,6 +209,32 @@
 | **商品图** | 商家已有的原始产品照片，作为参考输入 |
 | **场景图** | AI 生成的最终输出图，包含特定背景/氛围 |
 | **风格模板** | 预设的 style + scenarios 组合，供商家一键选择（白底/渐变/室内/户外/海报/节日） |
+| **细分领域工作流** | 面向某个具体需求场景的稳定创作流程，不只是一个页面或按钮；它包含需求定义、输入材料、生成步骤、结果筛选、批量输出和复用方式。 |
+| **交付物定义** | 每次工作流开始前对最终交付物的明确约束，包括受众、用途、内容结构、页面/素材数量、风格边界、输出格式和验收标准。它由具体需求推动，而不是由预设任务目的决定。 |
+| **中间产物** | 为了得到最终交付物而产生的可编辑过程资产，例如结构草案、HTML 画册草案、页面设计、图片占位、图片提示词、素材规格和生成计划。中间产物必须服务交付物定义，同时也是阶段性交付的一部分，可先给用户审阅、确认和迭代。 |
+| **HTML 画册草案** | 在图片最终生成前即可交付给用户审阅的 HTML 版式草案。它应展示页面比例、排版结构、设计方向、文案层级、图片占位和素材需求，让用户先判断整体规格是否正确。 |
+| **规格** | 设计物料工作流中的一等对象。规格既包括最终交付物的画布、比例、尺寸、页数、导出形式和使用场景约束，也包括中间过程中图片预留、素材占位、生成图和导出资源的局部规格。 |
+| **规格通用性** | 规格系统对不同交付物、画布比例、导出格式、页面结构和图片占位的适配能力。第一批工作应优先保证规格可表达、可审阅、可修改，而不是先堆丰富模板或素材组件。 |
+| **输出规格** | 最终交付物层面的规格，例如画布比例、页面尺寸、页数、导出格式、展示方式和多规格输出要求。当前 HTML 模板主要按 PPT 16:9 长宽比组织，但生产环境不能把 16:9 固化为唯一规格。 |
+| **图片预留规格** | 中间产物层面的图片占位规格，例如图片在页面中的位置、比例、尺寸、裁切方式、语义用途、是否可替换、生成提示词要求和最终导出约束。 |
+| **中间产物审阅工作流** | 用户在最终图片或最终导出完成前，先审阅 HTML 画册草案、输出规格、图片预留规格、页面结构、提示词和素材需求的流程。它的目标是尽早确认方向和规格，减少后续批量生成返工。 |
+| **先审后生图** | 批量设计物料 V1 的强制且不可绕过的状态门禁。系统必须先交付可审阅的 HTML 画册草案和规格说明，用户确认或修改后，才允许进入批量图片生成。 |
+| **画册 / 批量画册** | 由多张生成图、页面或成套视觉资产组成的批量交付物；它可以服务工业品设计物料、组织介绍、产品宣传、活动传播等不同需求，强调稳定输出和成组管理，而不是单张图片的一次性生成。 |
+| **模板化生产** | 使用可复用模板把交付物定义转成一组可执行页面、提示词、版式或素材规格；模板是生产方式，不等于固定业务目标。 |
+| **预设模板** | 生产环境中提供的可进入起点，例如工业品设计物料、组织介绍等。预设模板来自 demo 或历史验证场景，但它只是帮助用户更快开始，不代表系统环境本身被固定为该场景。 |
+| **最佳实践 Demo 模板** | 从已验证 demo 场景中沉淀出的预设模板。它既是用户快速开始的入口，也是验证生产工作流质量的样例，但不能替代自定义交付推理。 |
+| **自定义交付推理** | 用户不进入预设模板时，通过追问式 brief 收敛交付物定义，并据此推理结构、模板、图片占位、提示词和批量输出计划。 |
+| **自定义通用入口** | 面向未知或非预设场景的入口。它不要求用户先选择行业模板，而是通过追问、材料解析和推理，把具体需求转成可执行交付物定义和中间产物。 |
+| **意图对齐输入区** | 交付项目的第一入口。它不是模板选择页，而是一个允许用户输入大量文字、图片、草稿、参考案例、识别结果或零散想法的输入区，用来承接并对齐用户意图。系统基于这个输入区生成交付物定义卡，再推荐模板或自定义路径。 |
+| **用户原始输入** | 用户在意图对齐输入区提供的原始材料和表达，包括文字、图片、草稿、参考案例、识别结果、品牌资料、约束文档和零散想法。它是需求证据层，必须可追踪和可回看，但不能未经解释就直接成为后续生成上下文。 |
+| **系统理解与映射** | 系统基于用户原始输入形成的工作环境上下文。它把原始材料解释并映射到当前 project 的交付物定义、输出规格、页面结构、图片预留规格、提示词方向、缺失信息、风险和中间产物计划。后续 DeliverableSpec、HTML Draft、Review 和图片生成都应基于这一层，而不是直接基于未整理的原始输入。 |
+| **需求对齐** | 系统在开始生产前，把用户给出的文字、图片、识别结果、模板偏好和模糊意图，对齐到当前项目上下文中的交付物定义、输出规格、素材约束和验收标准。需求对齐未完成时，不能自动进入生成阶段。 |
+| **系统理解的交付物定义** | 系统基于用户原始输入和可用材料主动推理出的交付物定义。用户不需要一次性说完整，也不应被迫逐项回答所有问题；系统必须先形成可审阅定义，只追问影响开工的关键缺口，并在开工前交付用户确认。 |
+| **交付物定义卡 / Deliverable Brief** | 需求对齐阶段的第一个可审阅中间产物。它必须分成用户原始输入、系统理解与映射两层：前者作为证据层保留，后者作为工作环境上下文，汇总推荐的模板或自定义路径、初步交付物定义、输出规格判断、缺失信息、风险，以及哪些内容是系统推理、哪些需要用户确认。 |
+| **模板或自定义路径确认** | 用户在交付物定义卡之后明确选择使用某个已存在模板，或进入自定义交付推理。系统可以推荐路径，但不能在用户确认前静默套用模板或自动开工。 |
+| **分层审阅确认** | 用户在 HTML 画册草案阶段分别确认交付物定义、输出规格、页面结构、图片预留规格、图片提示词/素材需求、风格边界和风险。全部层级清楚时，可以一键确认进入下一阶段。 |
+| **交付生产环境** | AetherGenix 在批量设计物料方向上的上层产品定位。它不是单次图片生成器，也不是固定行业模板集合，而是一个承接用户模糊意图和大量材料，并把它们转成交付物定义、中间产物、规格化 HTML 草案、图片生成计划和最终交付的生产环境。 |
+| **交付项目 / Deliverable Project** | 围绕一次交付物定义展开的产品级生产上下文。它包含输入材料、需求对齐、模板或自定义路径、交付物规格、HTML 草案、审阅确认、图片生成和最终组装等阶段。V1 先承认这个产品级边界，等工作流打磨稳定后再考虑正式建模和产品化。 |
 
 ---
 

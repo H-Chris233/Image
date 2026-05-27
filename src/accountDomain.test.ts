@@ -80,7 +80,7 @@ const signedInAccount: AccountInfo = {
 };
 
 const siteSettingsWithRecharge = {
-  recharge_url: 'https://sub.chris233.qzz.io',
+  recharge_url: 'https://sub2api.example.com',
   viewer: {
     authenticated: true,
     is_admin: false,
@@ -149,7 +149,7 @@ test('maps signed-in account with balance and external recharge entry to availab
   assert.equal(model.balance.formatted, '12.3456');
   assert.equal(model.recharge.status, 'available');
   assert.equal(hasExternalRecharge(model.recharge), true);
-  assert.equal(model.recharge.externalUrl, 'https://sub.chris233.qzz.io');
+  assert.equal(model.recharge.externalUrl, 'https://sub2api.example.com');
   assert.equal(model.view.showRechargeAction, true);
   assert.deepEqual(Object.keys(model.view).sort(), ['showRechargeAction', 'showSignInAction', 'showTechnicalConfig']);
 });

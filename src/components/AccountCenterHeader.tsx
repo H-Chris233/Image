@@ -36,7 +36,7 @@ export default function AccountCenterHeader({ current }: AccountCenterHeaderProp
           {t('account_center_area')}
         </div>
         <h1 className="text-4xl font-bold tracking-tighter text-on-surface md:text-5xl">{t('account_center_title')}</h1>
-        <p className="mt-3 max-w-3xl text-xs leading-6 text-white/50">{t('account_center_desc')}</p>
+        <p className="mt-3 max-w-3xl text-xs leading-6 text-on-surface-variant">{t('account_center_desc')}</p>
       </div>
 
       <nav className="grid grid-cols-2 gap-1 sm:flex" aria-label={t('account_center_title')}>
@@ -50,7 +50,7 @@ export default function AccountCenterHeader({ current }: AccountCenterHeaderProp
               className={`inline-flex h-11 min-w-0 items-center justify-center gap-1.5 border px-2 text-xs font-bold transition-colors sm:min-w-[112px] sm:gap-2 sm:px-4 ${
                 active
                   ? 'border-secondary/50 bg-secondary/15 text-secondary'
-                  : 'border-white/10 bg-white/[0.03] text-white/55 hover:border-secondary/30 hover:text-secondary'
+                  : 'border-white/10 bg-white/[0.03] text-on-surface-variant hover:border-secondary/30 hover:text-secondary'
               }`}
             >
               <tab.icon size={15} />

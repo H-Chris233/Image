@@ -4,6 +4,12 @@ import { AccountInfo, formatBalance, getAccount } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import AvatarBadge from '../components/AvatarBadge';
+import {
+  Button,
+  StatusPill,
+  Surface,
+  SurfaceState,
+} from '../components/design-system';
 import { resolveExternalRechargeUrl } from '../rechargeDomain';
 import { useSite } from '../site';
 
@@ -50,33 +56,31 @@ export default function Account() {
       : balanceReady
         ? t('recharge_balance_updated')
         : t('recharge_balance_pending');
-  const balanceStatusClass = loadError ? 'text-secondary' : balanceReady ? 'text-primary' : 'text-white/45';
+  const balanceTone = loadError ? 'error' : balanceReady ? 'success' : loading ? 'running' : 'neutral';
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-3xl flex-col px-4 py-8 sm:px-6 lg:justify-center lg:py-14">
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-3xl flex-col px-4 py-8 text-on-surface sm:px-6 lg:justify-center lg:py-14">
       <header className="mb-7">
-        <p className="mb-3 text-sm font-semibold text-primary">AetherGenix</p>
-        <h1 className="text-3xl font-bold text-on-surface sm:text-5xl">{t('recharge_title')}</h1>
+        <StatusPill tone="commercial" size="sm" className="mb-3">
+          AetherGenix
+        </StatusPill>
+        <h1 className="font-display text-3xl font-bold leading-tight text-on-surface sm:text-5xl">
+          {t('recharge_title')}
+        </h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-on-surface-variant">{t('recharge_desc')}</p>
       </header>
 
       {!authenticated ? (
-        <section className="border border-primary/25 bg-primary/5 px-5 py-7 text-center sm:px-8">
-          <LogIn className="mx-auto mb-4 text-primary" size={30} />
-          <h2 className="text-xl font-bold text-on-surface">{t('recharge_login_required')}</h2>
-          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-on-surface-variant">{t('recharge_login_desc')}</p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <button className="btn-primary w-full sm:w-auto" type="button" onClick={() => openAuthModal('login')}>
-              <LogIn size={16} />
-              {t('top_login')}
-            </button>
-            <button className="btn-ghost w-full sm:w-auto" type="button" onClick={() => openAuthModal('register')}>
-              {t('top_register')}
-            </button>
-          </div>
-        </section>
+        <SurfaceState
+          kind="info"
+          title={t('recharge_login_required')}
+          description={t('recharge_login_desc')}
+          action={{ label: t('top_login'), onClick: () => openAuthModal('login'), iconStart: <LogIn size={14} /> }}
+          secondaryAction={{ label: t('top_register'), onClick: () => openAuthModal('register') }}
+          className="min-h-[300px]"
+        />
       ) : (
-        <section className="border border-white/10 bg-surface/75 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.22)] sm:p-7">
+        <Surface padding="lg">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3">
               <AvatarBadge
@@ -87,65 +91,77 @@ export default function Account() {
                 guestId={account?.viewer.guest_id || viewer?.guest_id}
               />
               <div className="min-w-0">
-                <div className="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
-                  <UserCircle size={14} />
+                <StatusPill tone="neutral" size="sm" className="mb-1">
+                  <UserCircle size={13} />
                   {t('account_logged_in_identity')}
-                </div>
+                </StatusPill>
                 <div className="truncate text-base font-bold text-on-surface">{displayName}</div>
                 {displayEmail ? <div className="truncate text-sm text-on-surface-variant">{displayEmail}</div> : null}
               </div>
             </div>
-            <button
-              className="inline-flex h-11 items-center justify-center gap-2 border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50 sm:min-w-36"
+            <Button
+              variant="ghost"
+              size="lg"
+              iconStart={<RefreshCw className={loading ? 'animate-spin' : undefined} size={16} />}
               disabled={loading}
-              type="button"
               onClick={() => loadAccount().catch(() => undefined)}
+              className="sm:shrink-0"
             >
-              <RefreshCw className={loading ? 'animate-spin' : undefined} size={16} />
               {loading ? t('recharge_refreshing') : loadError ? t('recharge_balance_retry') : t('recharge_refresh')}
-            </button>
+            </Button>
           </div>
 
-          <div className="border-t border-white/10 pt-6">
-            <p className="text-sm font-semibold text-on-surface-variant">{t('recharge_current_balance')}</p>
-            <div className="mt-3 break-all text-5xl font-bold leading-none text-secondary sm:text-6xl">{balanceValue}</div>
-            <div className={`mt-4 inline-flex items-center gap-2 text-sm ${balanceStatusClass}`}>
-              {loading ? (
-                <RefreshCw className="animate-spin" size={16} />
-              ) : loadError || !balanceReady ? (
-                <AlertCircle size={16} />
-              ) : (
-                <CheckCircle2 size={16} />
-              )}
-              {balanceStatusText}
+          <div className="border-t border-white/[0.08] pt-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-on-surface-variant">{t('recharge_current_balance')}</p>
+                <div className="mt-3 break-all font-display text-5xl font-bold leading-none text-secondary sm:text-6xl">
+                  {balanceValue}
+                </div>
+              </div>
+              <StatusPill tone={balanceTone} className="sm:shrink-0">
+                {loading ? (
+                  <RefreshCw className="animate-spin" size={13} />
+                ) : loadError || !balanceReady ? (
+                  <AlertCircle size={13} />
+                ) : (
+                  <CheckCircle2 size={13} />
+                )}
+                {balanceStatusText}
+              </StatusPill>
             </div>
           </div>
 
-          <p className="mt-6 border-t border-white/10 pt-5 text-sm leading-6 text-on-surface-variant">{t('recharge_external_desc')}</p>
+          <p className="mt-6 border-t border-white/[0.08] pt-5 text-sm leading-6 text-on-surface-variant">
+            {t('recharge_external_desc')}
+          </p>
 
           <div className="mt-6">
             {externalRechargeUrl ? (
-              <a
-                className="inline-flex h-12 w-full items-center justify-center gap-2 bg-secondary px-5 text-sm font-bold text-white transition-opacity hover:opacity-90 sm:w-auto sm:min-w-48"
+              <Button
+                as="a"
+                variant="orange"
+                size="lg"
                 href={externalRechargeUrl}
                 rel="noreferrer"
                 target="_blank"
+                iconStart={<Wallet size={16} />}
+                iconEnd={<ExternalLink size={16} />}
+                className="w-full sm:w-auto sm:min-w-48"
               >
-                <Wallet size={16} />
                 {t('account_recharge_action')}
-                <ExternalLink size={16} />
-              </a>
+              </Button>
             ) : (
-              <div className="border border-secondary/25 bg-secondary/10 p-4 text-sm leading-6 text-on-surface">
+              <Surface tone="orange" padding="md" className="text-sm leading-6 text-on-surface">
                 {t('recharge_external_missing')}
-              </div>
+              </Surface>
             )}
           </div>
 
           {externalRechargeUrl ? (
-            <p className="mt-3 text-xs leading-5 text-white/45">{t('recharge_open_external_note')}</p>
+            <p className="mt-3 text-xs leading-5 text-on-surface-variant">{t('recharge_open_external_note')}</p>
           ) : null}
-        </section>
+        </Surface>
       )}
     </div>
   );

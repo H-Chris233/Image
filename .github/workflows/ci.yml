@@ -28,5 +28,21 @@ jobs:
       - name: Typecheck
         run: npm run lint
 
+      - name: Brand residual check
+        run: npm run check:brand
+
+      - name: Design system smoke
+        run: npm run smoke:design-system
+
+      - name: UI smoke
+        run: npm run smoke:ui
+
+      - name: Account domain tests
+        run: npm run test:account
+
       - name: Build
         run: npm run build
+
+      - name: UI smoke gate
+        timeout-minutes: 5
+        run: npm run smoke:ui
