@@ -1674,20 +1674,18 @@ async function runSmokeChecks(page, baseUrl) {
     await assertEscClosesDialog(page, 'Explore detail modal');
   });
 
-  await runCheck('/create entry opens the workflow launcher on mobile', async () => {
+  await runCheck('/create entry shows the local product wizard on mobile', async () => {
     await page.navigate('/create', { width: 390, height: 844 });
     await assertNoUnnamedButtons(page, '/create');
     await assertNoHorizontalOverflow(page, '/create mobile');
     const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
     if (!routedToCreate) throw new Error('/create entry did not stay on /create');
-    await page.waitFor(() => /商品场景图/.test(document.body.innerText || ''), '/create product workflow title');
-    await assertNamedControlsMinTarget(page, '/create workflow launcher controls', [
-      '开始创作',
-    ]);
+    await page.waitFor(() => /PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create product wizard upload guidance');
+    await assertNamedControlsMinTarget(page, '/create product wizard controls', ['\u5f00\u59cb\u521b\u4f5c']);
     await assertNoNamedControls(page, '/create no placeholder workflow controls', [
-      '营销广告图',
-      '文生图',
-      'AI 改图',
+      '\u8425\u9500\u5e7f\u544a\u56fe',
+      '\u6587\u751f\u56fe',
+      'AI \u6539\u56fe',
     ]);
     await assertNoNamedControls(page, '/create no legacy composer controls', [
       '^Image Generation',
@@ -1698,33 +1696,32 @@ async function runSmokeChecks(page, baseUrl) {
     ]);
   });
 
-  await runCheck('/create product workflow opens the guide dialog on tablet', async () => {
+  await runCheck('/create product workflow opens the inline category launcher on tablet', async () => {
     await page.navigate('/create?smoke_auth=1', { width: 1100, height: 900 });
     await assertNoHorizontalOverflow(page, '/create tablet launcher');
     const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
     if (!routedToCreate) throw new Error('/create tablet entry did not stay on /create');
-    await clickMainControl(page, '开始创作', '/create product workflow entry');
-    await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), '/create tablet guide dialog');
-    await assertDialogSemantics(page, 'Create guide tablet dialog');
-    await assertNamedControlsMinTarget(page, '/create tablet guide primary actions', [
-      '^Close$',
+    await clickMainControl(page, '\u5f00\u59cb\u521b\u4f5c', '/create product workflow entry');
+    await page.waitFor(() => /Beauty & Skincare/i.test(document.body.innerText || ''), '/create tablet category launcher');
+    await assertNoHorizontalOverflow(page, '/create tablet category launcher');
+    await assertNoUnnamedButtons(page, '/create tablet category launcher');
+    await assertNoNamedControls(page, '/create category launcher is inline', ['^Close$']);
+    await assertNamedControlsMinTarget(page, '/create tablet category actions', [
+      '^Exit$',
       'Beauty & Skincare',
       'Tech & Electronics',
       'Sports & Outdoor',
     ]);
-    await clickMainControl(page, '^Close$', '/create guide close after tablet assertion');
-    await page.waitFor(() => !document.querySelector('[role="dialog"]'), '/create guide closed after tablet assertion');
   });
 
-  await runCheck('/create guide closes back to the workflow launcher', async () => {
+  await runCheck('/create inline launcher exits back to the product wizard', async () => {
     await page.navigate('/create?smoke_auth=1', { width: 390, height: 844 });
-    await clickMainControl(page, '开始创作', '/create product workflow entry before close');
-    await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), '/create guide dialog before close');
-    await clickMainControl(page, '^Close$', '/create guide close');
-    await page.waitFor(() => !document.querySelector('[role="dialog"]'), '/create guide closes');
-    await assertNoHorizontalOverflow(page, '/create after guide close');
-    await page.waitFor(() => /商品场景图/.test(document.body.innerText || ''), '/create product workflow title after close');
-    await assertNamedControlsMinTarget(page, '/create product workflow remains available', ['开始创作']);
+    await clickMainControl(page, '\u5f00\u59cb\u521b\u4f5c', '/create product workflow entry before exit');
+    await page.waitFor(() => /Beauty & Skincare/i.test(document.body.innerText || ''), '/create category launcher before exit');
+    await clickMainControl(page, '^Exit$', '/create launcher exit');
+    await page.waitFor(() => /PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create product wizard after exit');
+    await assertNoHorizontalOverflow(page, '/create after launcher exit');
+    await assertNamedControlsMinTarget(page, '/create product workflow remains available', ['\u5f00\u59cb\u521b\u4f5c']);
   });
 
   await runCheck('shell icon controls keep 44px tap targets', async () => {

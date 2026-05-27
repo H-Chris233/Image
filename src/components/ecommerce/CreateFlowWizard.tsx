@@ -179,7 +179,7 @@ export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription 
             <button
               type="button"
               onClick={onClose}
-              className="flex items-center gap-1.5 rounded px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+              className="flex min-h-11 items-center gap-1.5 rounded px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
             >
               <X size={14} />
               Exit
@@ -254,14 +254,14 @@ export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription 
             <button
               type="button"
               onClick={goBack}
-              className="flex items-center gap-1.5 rounded px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+              className="flex min-h-11 items-center gap-1.5 rounded px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
             >
               ← 返回
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex items-center gap-1.5 rounded px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+              className="flex min-h-11 items-center gap-1.5 rounded px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
             >
               <X size={14} />
               Exit
@@ -391,14 +391,14 @@ export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription 
             <button
               type="button"
               onClick={goBack}
-              className="flex items-center gap-1.5 rounded px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+              className="flex min-h-11 items-center gap-1.5 rounded px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
             >
               ← 返回
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex items-center gap-1.5 rounded px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+              className="flex min-h-11 items-center gap-1.5 rounded px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
             >
               <X size={14} />
               Exit
