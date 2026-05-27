@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { CloudUpload, X } from 'lucide-react';
 
@@ -99,17 +99,27 @@ export interface WizardResult {
 interface Props {
   onComplete: (result: WizardResult) => void;
   onClose: () => void;
+  initialSceneDescription?: string;
 }
 
-export function CreateFlowWizard({ onComplete, onClose }: Props) {
+export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription }: Props) {
   const [step, setStep] = useState<Step>('category');
   const [selectedCategory, setSelectedCategory] = useState<WizardCategory | null>(null);
   const [productImage, setProductImage] = useState<File | null>(null);
   const [productPreviewUrl, setProductPreviewUrl] = useState<string | null>(null);
-  const [sceneDescription, setSceneDescription] = useState('');
+  const [sceneDescription, setSceneDescription] = useState(initialSceneDescription ?? '');
+  // 复用进来的提示词、或用户手动改过的内容，不应被选类目时的模板文案覆盖。
+  const [sceneTouched, setSceneTouched] = useState(Boolean(initialSceneDescription));
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [imageCount, setImageCount] = useState('2');
   const [dragging, setDragging] = useState(false);
+
+  // 替换图片或向导卸载时回收旧的 object URL，避免内存泄漏。
+  useEffect(() => {
+    return () => {
+      if (productPreviewUrl) URL.revokeObjectURL(productPreviewUrl);
+    };
+  }, [productPreviewUrl]);
 
   const applyFile = useCallback((file: File) => {
     if (!ACCEPTED_TYPES.includes(file.type)) return;
@@ -119,9 +129,9 @@ export function CreateFlowWizard({ onComplete, onClose }: Props) {
 
   const handleCategorySelect = useCallback((cat: WizardCategory) => {
     setSelectedCategory(cat);
-    setSceneDescription(cat.sceneTemplate);
+    setSceneDescription((current) => (sceneTouched ? current : cat.sceneTemplate));
     setStep('upload');
-  }, []);
+  }, [sceneTouched]);
 
   const handleFileChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -421,7 +431,7 @@ export function CreateFlowWizard({ onComplete, onClose }: Props) {
                       className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-950 p-3 text-sm leading-relaxed text-zinc-300 outline-none placeholder:text-zinc-600 focus:border-lime-600 focus:ring-1 focus:ring-lime-600/30 transition-colors"
                       rows={5}
                       value={sceneDescription}
-                      onChange={(e) => setSceneDescription(e.target.value)}
+                      onChange={(e) => { setSceneDescription(e.target.value); setSceneTouched(true); }}
                       placeholder="描述你希望的场景风格…"
                     />
                   </div>

@@ -315,82 +315,6 @@ export type PromptOptimizeResult = {
   usage: Record<string, unknown> | null;
 };
 
-export type EcommercePublishCopyPayload = {
-  product_name?: string;
-  materials?: string;
-  selling_points?: string;
-  scenarios?: string;
-  platform?: string;
-  style?: string;
-  extra_requirements?: string;
-  image_count?: number;
-  size?: string;
-  aspect_ratio?: string;
-  model?: string;
-};
-
-export type EcommercePublishCopyResult = {
-  title: string;
-  body: string;
-  model: string;
-  usage: Record<string, unknown> | null;
-};
-
-export type EcommerceRecommendedPlan = {
-  name: string;
-  platform: string;
-  style: string;
-  image_count: number;
-  materials: string;
-  selling_points: string;
-  scenarios: string;
-  extra_requirements: string;
-  reason: string;
-  screens: {
-    title: string;
-    copy: string;
-    layout_type?: string;
-    visual_goal?: string;
-    copy_density?: string;
-    needs_model?: boolean;
-    needs_specs?: boolean;
-    needs_closeup?: boolean;
-    reference_focus?: string[];
-  }[];
-};
-
-export type EcommerceAnalyzeResult = {
-  analysis: {
-    source?: string;
-    product_type?: string;
-    appearance?: string;
-    visible_material?: string;
-    colors?: string[];
-    shape?: string;
-    details?: string[];
-    selling_points?: string[];
-    target_audience?: string[];
-    use_scenarios?: string[];
-    style_suggestions?: string[];
-    generation_constraints?: string;
-    recommended_plans?: EcommerceRecommendedPlan[];
-    [key: string]: unknown;
-  };
-  reference_notes: ImageReferenceNote[];
-  model: string;
-  form: {
-    product_name: string;
-    materials: string;
-    selling_points: string;
-    scenarios: string;
-    platform: string;
-    style: string;
-    extra_requirements: string;
-    image_count: number;
-  };
-  plans: EcommerceRecommendedPlan[];
-};
-
 export type EcommerceGeneratePayload = {
   product_name?: string;
   materials?: string;
@@ -404,12 +328,6 @@ export type EcommerceGeneratePayload = {
   aspect_ratio?: string;
   quality?: string;
   n?: number;
-  selected_plan?: EcommerceRecommendedPlan | null;
-  analysis?: EcommerceAnalyzeResult['analysis'] | null;
-};
-
-export type EcommerceAnalyzePayload = Omit<EcommerceGeneratePayload, 'quality' | 'n'> & {
-  image_count?: number;
 };
 
 export type EcommerceReferenceImage = ImageReferenceInput;
@@ -641,13 +559,6 @@ export function getHistory(params: { limit?: number; offset?: number; q?: string
   return request<{ items: HistoryItem[] }>(`/api/history${query ? `?${query}` : ''}`);
 }
 
-export function batchDownloadEcommerce(taskIds: string[]): Promise<{ download_url: string }> {
-  return request<{ download_url: string }>('/api/tasks/batch-download', {
-    method: 'POST',
-    body: JSON.stringify({ task_ids: taskIds }),
-  });
-}
-
 export function getInspirations(params: { limit?: number; offset?: number; q?: string; section?: string } = {}) {
   const search = new URLSearchParams();
   if (params.limit) search.set('limit', String(params.limit));
@@ -760,14 +671,7 @@ export function optimizePrompt(payload: PromptOptimizePayload) {
   });
 }
 
-export function generateEcommercePublishCopy(payload: EcommercePublishCopyPayload) {
-  return request<EcommercePublishCopyResult>('/api/ecommerce/publish-copy', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-
-function appendEcommerceForm(form: FormData, payload: EcommerceGeneratePayload | EcommerceAnalyzePayload) {
+function appendEcommerceForm(form: FormData, payload: EcommerceGeneratePayload) {
   if (payload.product_name) form.set('product_name', payload.product_name);
   if (payload.materials) form.set('materials', payload.materials);
   if (payload.selling_points) form.set('selling_points', payload.selling_points);
@@ -778,8 +682,6 @@ function appendEcommerceForm(form: FormData, payload: EcommerceGeneratePayload |
   if (payload.model) form.set('model', payload.model);
   if (payload.size) form.set('size', payload.size);
   if (payload.aspect_ratio) form.set('aspect_ratio', payload.aspect_ratio);
-  if ('selected_plan' in payload && payload.selected_plan) form.set('selected_plan', JSON.stringify(payload.selected_plan));
-  if ('analysis' in payload && payload.analysis) form.set('analysis', JSON.stringify(payload.analysis));
 }
 
 function appendEcommerceReferences(form: FormData, image: File | EcommerceReferenceImage[]) {
@@ -796,17 +698,6 @@ function appendEcommerceReferences(form: FormData, image: File | EcommerceRefere
   }));
   form.set('reference_notes', JSON.stringify(notes));
   extraReferences.forEach((reference) => form.append('reference_image', reference.file));
-}
-
-export function analyzeEcommerceProduct(payload: EcommerceAnalyzePayload, image: File | EcommerceReferenceImage[]) {
-  const form = new FormData();
-  appendEcommerceReferences(form, image);
-  appendEcommerceForm(form, payload);
-  form.set('image_count', String(payload.image_count || 4));
-  return request<EcommerceAnalyzeResult>('/api/ecommerce/analyze', {
-    method: 'POST',
-    body: form,
-  });
 }
 
 export function editImage(payload: GeneratePayload, images: File | File[] | ImageReferenceInput[]) {

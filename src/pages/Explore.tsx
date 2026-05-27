@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AlertCircle, ArrowRight, Copy, Heart, ImageIcon, ImageOff, Loader2, Maximize2, PenLine, RefreshCw, X } from 'lucide-react';
 import { favoriteInspiration, getInspirations, InspirationItem, unfavoriteInspiration } from '../api';
 import { useAuth } from '../auth';
@@ -58,7 +58,6 @@ function getExploreErrorMessage(error: unknown) {
 export default function Explore() {
   const { viewer } = useAuth();
   const { openAuthModal } = useAuthModal();
-  const location = useLocation();
   const navigate = useNavigate();
   const { t } = useSite();
   const { notifyError, notifySuccess } = useNotifier();
@@ -144,13 +143,6 @@ export default function Explore() {
   useEffect(() => {
     loadMore().catch(() => undefined);
   }, [loadMore]);
-
-  useEffect(() => {
-    const routeState = location.state as { openCreateWizard?: boolean } | null;
-    if (!routeState?.openCreateWizard) return;
-    setShowCreateWizard(true);
-    navigate('/explore', { replace: true, state: null });
-  }, [location.state, navigate]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
