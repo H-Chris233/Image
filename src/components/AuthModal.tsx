@@ -196,7 +196,6 @@ function getAuthModalDescription(
   t: ReturnType<typeof useSite>['t'],
 ) {
   if (actionContext === 'history') return t('history_login_desc');
-  if (actionContext === 'favorites') return t('favorites_login_desc');
   if (actionContext === 'generate' || actionContext === 'reuse-prompt') return t('home_generation_login_required');
   return tab === 'login' ? t('login_desc') : t('register_desc');
 }

@@ -139,7 +139,6 @@ const activeSourceFiles = [
   'src/pages/Config.tsx',
   'src/pages/Create.tsx',
   'src/pages/Explore.tsx',
-  'src/pages/Favorites.tsx',
   'src/pages/History.tsx',
   'src/pages/Tasks.tsx',
   'src/pages/Workspace.tsx',

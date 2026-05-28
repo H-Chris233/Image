@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 
 type AuthTab = 'login' | 'register';
-export type AuthModalActionContext = 'generate' | 'reuse-prompt' | 'history' | 'favorites';
+export type AuthModalActionContext = 'generate' | 'reuse-prompt' | 'history';
 
 type AuthModalContextValue = {
   open: boolean;

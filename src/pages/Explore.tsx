@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowRight, Copy, Heart, ImageIcon, ImageOff, Loader2, Maximize2, PenLine, RefreshCw, X } from 'lucide-react';
-import { favoriteInspiration, getInspirations, InspirationItem, unfavoriteInspiration } from '../api';
+import { AlertCircle, ArrowRight, Copy, ImageIcon, ImageOff, Maximize2, PenLine, RefreshCw, X } from 'lucide-react';
+import { getInspirations, InspirationItem } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import { copyTextToClipboard } from '../clipboard';
@@ -65,7 +65,6 @@ export default function Explore() {
   const reusePromptAriaLabel = `${t('home_clone_prompt')} ${t('side_create')}`;
   const [items, setItems] = useState<InspirationItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<InspirationItem | null>(null);
-  const [favoritingIds, setFavoritingIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState<string | null>(null);
@@ -180,28 +179,6 @@ export default function Explore() {
       notifySuccess(t('home_prompt_copied'));
     } else {
       notifyError(t('toast_error'));
-    }
-  }
-
-  async function handleToggleFavorite(item: InspirationItem) {
-    if (!viewer?.authenticated) {
-      notifyError(t('home_favorite_login_required'));
-      openAuthModal('login', '/explore', 'favorites');
-      return;
-    }
-
-    setFavoritingIds((current) => (current.includes(item.id) ? current : [...current, item.id]));
-    try {
-      const result = item.favorited
-        ? await unfavoriteInspiration(item.id)
-        : await favoriteInspiration(item.id);
-      setItems((current) => current.map((entry) => (entry.id === item.id ? result.item : entry)));
-      setSelectedItem((current) => (current?.id === item.id ? result.item : current));
-      notifySuccess(item.favorited ? t('home_favorite_removed') : t('home_favorite_saved'));
-    } catch (error) {
-      notifyError(error);
-    } finally {
-      setFavoritingIds((current) => current.filter((id) => id !== item.id));
     }
   }
 
@@ -330,13 +307,11 @@ export default function Explore() {
 
       <ExploreDetailModal
         item={selectedItem}
-        favoriting={selectedItem ? favoritingIds.includes(selectedItem.id) : false}
         reusePromptAriaLabel={reusePromptAriaLabel}
         reusePromptLabel={reusePromptLabel}
         onClose={() => setSelectedItem(null)}
         onCopyPrompt={(item) => handleCopyPrompt(item).catch(notifyError)}
         onReusePrompt={handleReusePrompt}
-        onToggleFavorite={(item) => handleToggleFavorite(item).catch(notifyError)}
       />
     </div>
   );
@@ -394,11 +369,6 @@ function ExploreCard({
       className="group relative overflow-hidden rounded-2xl bg-[#14120f] shadow-[inset_0_0_0_1px_rgba(240,237,232,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(227,255,116,0.22)] focus-within:shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(227,255,116,0.36)]"
       style={cardStyle}
     >
-      {item.favorited ? (
-        <div className="pointer-events-none absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#E3FF74]/45 bg-[#E3FF74] text-[#1a1917] shadow-[0_10px_28px_rgba(227,255,116,0.28)]">
-          <Heart aria-hidden="true" size={15} fill="currentColor" />
-        </div>
-      ) : null}
       <button
         type="button"
         onClick={() => onOpen(item)}
@@ -449,21 +419,17 @@ function ExploreCard({
 }
 
 function ExploreDetailModal({
-  favoriting,
   item,
   onClose,
   onCopyPrompt,
   onReusePrompt,
-  onToggleFavorite,
   reusePromptAriaLabel,
   reusePromptLabel,
 }: {
-  favoriting: boolean;
   item: InspirationItem | null;
   onClose: () => void;
   onCopyPrompt: (item: InspirationItem) => void;
   onReusePrompt: (item: InspirationItem) => void;
-  onToggleFavorite: (item: InspirationItem) => void;
   reusePromptAriaLabel: string;
   reusePromptLabel: string;
 }) {
@@ -598,7 +564,7 @@ function ExploreDetailModal({
             </p>
           </div>
 
-          <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_44px_44px] gap-2 border-t border-white/10 p-4 sm:p-5">
+          <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_44px] gap-2 border-t border-white/10 p-4 sm:p-5">
             <button
               type="button"
               onClick={() => onReusePrompt(item)}
@@ -622,21 +588,6 @@ function ExploreDetailModal({
             >
               <Copy size={15} />
               <span className="sr-only">{t('prompt_editor_copy')}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onToggleFavorite(item)}
-              disabled={favoriting}
-              aria-label={`${item.favorited ? t('home_unfavorite_case') : t('home_favorite_case')} ${title}`}
-              title={item.favorited ? t('home_unfavorite_case') : t('home_favorite_case')}
-              className={`inline-flex h-11 w-11 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/80 disabled:cursor-not-allowed disabled:opacity-60 ${
-                item.favorited
-                  ? 'border-[#E3FF74]/45 bg-[#E3FF74] text-[#1a1917] shadow-[0_10px_28px_rgba(227,255,116,0.22)] hover:bg-white'
-                  : 'border-white/15 bg-white/5 text-white/75 hover:border-[#E3FF74]/45 hover:bg-[#E3FF74]/10 hover:text-[#E3FF74]'
-              }`}
-            >
-              {favoriting ? <Loader2 className="animate-spin" size={15} /> : item.favorited ? <Heart size={15} fill="currentColor" /> : <Heart size={15} />}
-              <span className="sr-only">{item.favorited ? t('home_unfavorite_case') : t('home_favorite_case')}</span>
             </button>
           </div>
         </aside>

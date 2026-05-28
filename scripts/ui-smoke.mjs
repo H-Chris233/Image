@@ -523,18 +523,16 @@ function buildMockScript() {
       image_url: index === 0 ? brokenImage : item.image_url
     }))
   };
-  const favoriteItem = {
-    id: 'smoke-favorite-1',
+  const inspirationItem = {
+    id: 'smoke-inspiration-1',
     source_url: 'smoke://fixture',
-    source_item_id: 'smoke-favorite-1',
+    source_item_id: 'smoke-inspiration-1',
     section: 'Smoke',
-    title: 'Smoke favorite case',
+    title: 'Smoke inspiration case',
     author: 'Smoke Gate',
-    prompt: 'Favorite case prompt that should render without overflowing the mobile viewport',
+    prompt: 'Inspiration case prompt that should render without overflowing the mobile viewport',
     image_url: imageOne,
     source_link: null,
-    favorited: true,
-    favorite_created_at: '2026-05-18T00:00:00Z',
     synced_at: '2026-05-18T00:00:00Z',
     created_at: '2026-05-18T00:00:00Z',
     updated_at: '2026-05-18T00:00:00Z'
@@ -803,14 +801,6 @@ function buildMockScript() {
       return json({ items });
     }
 
-    if (url.pathname === '/api/inspirations/favorites') {
-      const limit = Number(url.searchParams.get('limit') || 24);
-      const offset = Number(url.searchParams.get('offset') || 0);
-      const query = (url.searchParams.get('q') || '').trim();
-      const items = smokeState() === 'empty' || query ? [] : [favoriteItem];
-      return json({ items, total: items.length, limit, offset });
-    }
-
     if (url.pathname === '/api/inspirations/stats') {
       return json({
         total: 1,
@@ -825,10 +815,6 @@ function buildMockScript() {
       });
     }
 
-    if (url.pathname === '/api/inspirations/smoke-favorite-1/favorite' && ((init && init.method) || '').toUpperCase() === 'DELETE') {
-      return json({ ok: true, item: { ...favoriteItem, favorited: false } });
-    }
-
     const historyPublishMatch = url.pathname.match(/^\\/api\\/history\\/(smoke-image-[12])\\/publish$/);
     if (historyPublishMatch) {
       const id = historyPublishMatch[1];
@@ -841,7 +827,7 @@ function buildMockScript() {
         published_inspiration_id: method !== 'DELETE' ? 'smoke-published-case' : null,
         published_at: method !== 'DELETE' ? '2026-05-18T00:00:03Z' : null
       };
-      if (method === 'POST') return json({ ok: true, item, inspiration: { ...favoriteItem, id: 'smoke-published-case' } });
+      if (method === 'POST') return json({ ok: true, item, inspiration: { ...inspirationItem, id: 'smoke-published-case' } });
       if (method === 'DELETE') return json({ ok: true, item });
     }
 
@@ -867,7 +853,7 @@ function buildMockScript() {
         return json({ detail: longError }, { status: 500 });
       }
       if (state === 'filled') {
-        return json({ items: [favoriteItem], total: 1, limit, offset });
+        return json({ items: [inspirationItem], total: 1, limit, offset });
       }
       return json({ items: [], total: 0, limit, offset });
     }
@@ -1657,10 +1643,10 @@ async function runSmokeChecks(page, baseUrl) {
   await runCheck('/explore detail modal keeps 44px close and action targets', async () => {
     await page.navigate('/explore?smoke_auth=1&smoke_state=filled', { width: 390, height: 844 });
     await page.waitFor(
-      () => Boolean(document.querySelector('button[aria-label*="Smoke favorite case"]')),
+      () => Boolean(document.querySelector('button[aria-label*="Smoke inspiration case"]')),
       '/explore filled fixture card',
     );
-    await clickMainControl(page, '^Preview Smoke favorite case$', '/explore detail open');
+    await clickMainControl(page, '^Preview Smoke inspiration case$', '/explore detail open');
     await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), '/explore detail dialog');
     await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'explore-detail-mobile.png'));
     await assertDialogSemantics(page, 'Explore detail modal');
@@ -1668,8 +1654,7 @@ async function runSmokeChecks(page, baseUrl) {
     await assertNamedControlsMinTarget(page, 'Explore detail modal actions', [
       '^Close$',
       '^Clone Prompt Create$',
-      '^Copy Smoke favorite case$',
-      '^Remove Favorite Smoke favorite case$',
+      '^Copy Smoke inspiration case$',
     ]);
     await assertEscClosesDialog(page, 'Explore detail modal');
   });
@@ -1732,7 +1717,6 @@ async function runSmokeChecks(page, baseUrl) {
     await assertNamedControlsMinTarget(page, 'desktop primary navigation', [
       '^Create$|^创作$',
       '^Task Center$|^任务中心$',
-      '^Favorites$|^我的收藏$',
     ]);
     const languageMenuOpened = await page.evaluate((helpersText) => {
       eval(helpersText);
@@ -1886,7 +1870,6 @@ async function runSmokeChecks(page, baseUrl) {
     await assertNamedControlsMinTarget(page, 'mobile primary navigation', [
       '^Create$|^创作$',
       '^Tasks$|^任务$',
-      '^Favorites$|^收藏$',
       '^Me$|^我的$',
     ]);
   });
@@ -2025,58 +2008,6 @@ async function runSmokeChecks(page, baseUrl) {
     await assertDialogSemantics(page, 'History ImagePreviewModal');
     await assertNoUnnamedButtons(page, 'History ImagePreviewModal open state');
     await assertEscClosesDialog(page, 'History ImagePreviewModal');
-  });
-
-  await runCheck('/favorites signed-out gate has named actions and no mobile overflow', async () => {
-    await page.navigate('/favorites', { width: 390, height: 844 });
-    await page.waitFor(() => /Sign in to manage favorites|登录后管理收藏/.test(document.body.innerText), '/favorites signed-out gate');
-    await assertRouteActionsAndMobile(page, '/favorites signed-out');
-  });
-
-  await runCheck('/favorites empty state has named actions and no mobile overflow', async () => {
-    await page.navigate('/favorites?smoke_auth=1&smoke_state=empty', { width: 390, height: 844 });
-    await page.waitFor(() => /No favorite cases yet|还没有收藏案例/.test(document.body.innerText), '/favorites empty state');
-    await assertRouteActionsAndMobile(page, '/favorites empty');
-  });
-
-  await runCheck('/favorites search-empty state has named actions and no mobile overflow', async () => {
-    await page.navigate('/favorites?smoke_auth=1', { width: 390, height: 844 });
-    await page.waitFor(() => /Smoke favorite case/i.test(document.body.innerText), '/favorites fixture before search');
-    await submitMainSearch(page, 'unmatched smoke favorite query', '^Search$|搜索', '/favorites search-empty');
-    await page.waitFor(() => /No matching favorites|没有匹配的收藏/.test(document.body.innerText), '/favorites search-empty state');
-    await assertRouteActionsAndMobile(page, '/favorites search-empty');
-    await assertFormControlsMinTarget(page, '/favorites search input', ['^Search favorite cases']);
-    await assertNamedControlsMinTarget(page, '/favorites clear search action', ['^Clear search$']);
-  });
-
-  await runCheck('/favorites authenticated surface has named buttons and no mobile overflow', async () => {
-    await page.navigate('/favorites?smoke_auth=1', { width: 390, height: 844 });
-    await page.waitFor(() => /Smoke favorite case/i.test(document.body.innerText), '/favorites fixture item');
-    await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'favorites-card-mobile.png'));
-    await assertRouteActionsAndMobile(page, '/favorites');
-    await assertNamedControlsMinTarget(page, '/favorites card controls', [
-      '^Preview Smoke favorite case$',
-      '^Clone Prompt Smoke favorite case$',
-      '^Remove Favorite Smoke favorite case$',
-    ]);
-  });
-
-  await runCheck('/favorites card preview has dialog semantics and closes with Escape', async () => {
-    await page.navigate('/favorites?smoke_auth=1', { width: 1280, height: 900 });
-    await page.waitFor(() => /Smoke favorite case/i.test(document.body.innerText), '/favorites fixture item for preview');
-    await clickMainControl(page, '^Preview Smoke favorite case$|^预览 Smoke favorite case$', '/favorites preview');
-    await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), '/favorites preview dialog');
-    await assertDialogSemantics(page, 'Favorites ImagePreviewModal');
-    await assertNoUnnamedButtons(page, 'Favorites ImagePreviewModal open state');
-    await assertEscClosesDialog(page, 'Favorites ImagePreviewModal');
-  });
-
-  await runCheck('/favorites remove action reaches local empty state', async () => {
-    await page.navigate('/favorites?smoke_auth=1', { width: 390, height: 844 });
-    await page.waitFor(() => /Smoke favorite case/i.test(document.body.innerText), '/favorites fixture item before remove');
-    await clickMainControl(page, '^Remove Favorite Smoke favorite case$|^取消收藏 Smoke favorite case$', '/favorites remove');
-    await page.waitFor(() => /No favorite cases yet|还没有收藏案例/.test(document.body.innerText), '/favorites empty after remove');
-    await assertRouteActionsAndMobile(page, '/favorites after remove');
   });
 
   await runCheck('/tasks authenticated surface has named buttons and no mobile overflow', async () => {

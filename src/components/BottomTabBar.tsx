@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Heart, ListTodo, PenLine, UserCircle } from 'lucide-react';
+import { ListTodo, PenLine, UserCircle } from 'lucide-react';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 import { isAccountCenterPath } from './AccountCenterHeader';
@@ -12,7 +12,6 @@ export default function BottomTabBar() {
   const tabs = [
     { name: t('bottom_create'), path: '/create', icon: PenLine },
     { name: t('bottom_tasks'), path: '/tasks', icon: ListTodo, badge: activeCount },
-    { name: t('bottom_favorites'), path: '/favorites', icon: Heart },
     { name: t('bottom_me'), path: '/account', icon: UserCircle, isActive: isAccountCenterPath },
   ];
 

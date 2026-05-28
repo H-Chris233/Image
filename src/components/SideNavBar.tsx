@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Heart, ListTodo, PenLine, UserCircle, type LucideIcon } from 'lucide-react';
+import { ListTodo, PenLine, UserCircle, type LucideIcon } from 'lucide-react';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 import { isAccountCenterPath } from './AccountCenterHeader';
@@ -40,7 +40,6 @@ export default function SideNavBar() {
   const mainItems: NavItem[] = [
     { name: t('side_create'), path: '/create', icon: PenLine },
     { name: t('side_tasks'), path: '/tasks', icon: ListTodo, badge: activeCount },
-    { name: t('side_favorites'), path: '/favorites', icon: Heart },
   ];
 
   const accountItem: NavItem = { name: t('account_center_title'), path: '/account', icon: UserCircle };
