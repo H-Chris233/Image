@@ -9,19 +9,72 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 import httpx
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
 
 from .settings import Settings
 
 
 DATA_URL_RE = re.compile(r"^data:image/(?P<kind>png|jpeg|jpg|webp);base64,(?P<data>.+)$", re.I | re.S)
 
+# 与前端 ACCEPTED_TYPES 对齐：CreateFlowWizard.tsx 只接受这三种。
+ALLOWED_UPLOAD_CONTENT_TYPES = frozenset({"image/png", "image/jpeg", "image/webp"})
+
+
+def _looks_like_supported_image(data: bytes) -> bool:
+    """通过 magic bytes 判断是否为受支持的图像格式。客户端 content-type 可伪造，
+    这是权威的内容判断；避免把 .exe 之流伪装成 .png 落盘。"""
+    if len(data) < 12:
+        return False
+    # PNG: 89 50 4E 47 0D 0A 1A 0A
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return True
+    # JPEG: FF D8 FF
+    if data[:3] == b"\xff\xd8\xff":
+        return True
+    # WEBP: "RIFF" + 4 字节大小 + "WEBP"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return True
+    return False
+
 
 async def save_upload(settings: Settings, upload: UploadFile) -> dict[str, str]:
+    # Content-type 初筛（客户端可伪造，但能挡掉明显错误的请求）。
+    content_type_raw = (upload.content_type or "").split(";", 1)[0].strip().lower()
+    if content_type_raw and content_type_raw not in ALLOWED_UPLOAD_CONTENT_TYPES:
+        # 回显前清洗换行/控制符并截断，防日志注入。
+        safe_ct = (upload.content_type or "")[:80].replace("\n", " ").replace("\r", " ")
+        raise HTTPException(
+            status_code=415,
+            detail=f"Unsupported upload content type: {safe_ct}",
+        )
+
+    # 分块读 + 字节上限：避免一次性 await upload.read() 把超大文件全量装内存（DoS 面）。
+    # 防御性 clamp：env 误配(负数/0/超大)不会让服务在边界态崩溃；上限 100MiB 是合理硬顶。
+    max_bytes = max(1, min(settings.max_upload_bytes, 100 * 1024 * 1024))
+    chunk_size = 64 * 1024
+    buffer = bytearray()
+    while True:
+        chunk = await upload.read(chunk_size)
+        if not chunk:
+            break
+        buffer.extend(chunk)
+        if len(buffer) > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Upload exceeds maximum size of {max_bytes} bytes",
+            )
+
+    # Magic bytes 权威校验：拒绝伪装成 .png 的任意二进制 / 非白名单格式。
+    content = bytes(buffer)
+    if not _looks_like_supported_image(content):
+        raise HTTPException(
+            status_code=415,
+            detail="Uploaded file is not a recognized PNG/JPEG/WEBP image",
+        )
+
     suffix = _suffix_from_name(upload.filename, ".png")
     filename = f"{uuid4().hex}{suffix}"
     path = settings.uploads_dir / filename
-    content = await upload.read()
     path.write_bytes(content)
     return {
         "path": str(path),

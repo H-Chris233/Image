@@ -86,6 +86,7 @@ class Settings:
     sub2api_admin_token: str
     sub2api_admin_jwt: str
     recharge_url: str
+    max_upload_bytes: int
     inspiration_source_urls: list[str] | None = None
 
     @classmethod
@@ -150,6 +151,7 @@ class Settings:
             sub2api_admin_token=os.getenv("SUB2API_ADMIN_TOKEN", "").strip(),
             sub2api_admin_jwt=os.getenv("SUB2API_ADMIN_JWT", "").strip(),
             recharge_url=recharge_url,
+            max_upload_bytes=int(os.getenv("MAX_UPLOAD_BYTES", str(15 * 1024 * 1024))),
             inspiration_source_urls=source_urls,
         )
 

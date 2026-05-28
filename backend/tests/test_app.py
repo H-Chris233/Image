@@ -34,6 +34,14 @@ PNG_B64 = (
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
 )
 
+# 测试用占位字节：带正确 magic 头让 save_upload 的内容校验通过（#76）。
+# 这些 bytes 不需要表示有意义的图像内容——只要前几字节满足 PNG/JPEG 头检测即可，
+# FakeProvider 不会真的解码或回显这些 bytes。
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+JPEG_MAGIC = b"\xff\xd8\xff\xe0"
+FAKE_PNG_BYTES = PNG_MAGIC + b"\x00\x00\x00\rIHDR-fake-product-payload"
+FAKE_JPEG_BYTES = JPEG_MAGIC + b"\x00\x10JFIF-fake-product-payload"
+
 
 class FakeProvider:
     def __init__(self) -> None:
@@ -519,6 +527,7 @@ def make_app(tmp_path: Path, auth_client: FakeAuthClient | None = None, provider
         sub2api_admin_token="",
         sub2api_admin_jwt="",
         recharge_url="https://sub2api.example.com",
+        max_upload_bytes=15 * 1024 * 1024,
     )
     app = create_app(settings=settings, provider=provider or FakeProvider(), auth_client=auth_client or FakeAuthClient())
     app.dependency_overrides[_db] = lambda: app.state.db
@@ -668,8 +677,8 @@ def test_ecommerce_analyze_returns_product_plans(tmp_path: Path) -> None:
                 ),
             },
             files=[
-                ("image", ("front.png", b"fake-front", "image/png")),
-                ("reference_image", ("side.png", b"fake-side", "image/png")),
+                ("image", ("front.png", FAKE_PNG_BYTES, "image/png")),
+                ("reference_image", ("side.png", FAKE_PNG_BYTES, "image/png")),
             ],
         )
 
@@ -704,7 +713,7 @@ def test_ecommerce_analyze_forces_user_selected_plan_count(tmp_path: Path) -> No
                 "product_name": "榴莲大全",
                 "image_count": "9",
             },
-            files={"image": ("durian.png", b"fake-product", "image/png")},
+            files={"image": ("durian.png", FAKE_PNG_BYTES, "image/png")},
         )
 
         assert response.status_code == 200
@@ -731,7 +740,7 @@ def test_ecommerce_analyze_uses_category_fallback_for_fresh_food(tmp_path: Path)
                 "scenarios": "水果摊、商超、直播讲解",
                 "image_count": "9",
             },
-            files={"image": ("durian.png", b"fake-product", "image/png")},
+            files={"image": ("durian.png", FAKE_PNG_BYTES, "image/png")},
         )
 
         assert response.status_code == 200
@@ -764,7 +773,7 @@ def test_ecommerce_analyze_builds_fashion_detail_page_script(tmp_path: Path) -> 
                 "scenarios": "淘宝商品详情页、街头穿搭",
                 "image_count": "9",
             },
-            files={"image": ("shirt.png", b"fake-shirt", "image/png")},
+            files={"image": ("shirt.png", FAKE_PNG_BYTES, "image/png")},
         )
 
         assert response.status_code == 200
@@ -789,7 +798,7 @@ def test_ecommerce_analyze_requires_login(tmp_path: Path) -> None:
         response = client.post(
             "/api/ecommerce/analyze",
             data={"product_name": "测试商品"},
-            files={"image": ("product.png", b"fake-product", "image/png")},
+            files={"image": ("product.png", FAKE_PNG_BYTES, "image/png")},
         )
 
         assert response.status_code == 401
@@ -1081,8 +1090,8 @@ def test_edit_persists_upload_and_result(tmp_path: Path) -> None:
             "/api/images/edit",
             data={"prompt": "make it cyberpunk"},
             files=[
-                ("image", ("source.png", b"fake-image", "image/png")),
-                ("image", ("style.png", b"fake-style", "image/png")),
+                ("image", ("source.png", FAKE_PNG_BYTES, "image/png")),
+                ("image", ("style.png", FAKE_PNG_BYTES, "image/png")),
             ],
         )
 
@@ -1116,8 +1125,8 @@ def test_edit_reference_notes_are_sent_to_provider_and_history(tmp_path: Path) -
                 ),
             },
             files=[
-                ("image", ("front.png", b"fake-front", "image/png")),
-                ("image", ("material.png", b"fake-material", "image/png")),
+                ("image", ("front.png", FAKE_PNG_BYTES, "image/png")),
+                ("image", ("material.png", FAKE_PNG_BYTES, "image/png")),
             ],
         )
 
@@ -1141,7 +1150,7 @@ def test_edit_fans_out_multi_image_requests_with_series_prompts(tmp_path: Path) 
             "/api/images/edit",
             data={"prompt": "根据产品图生成四屏详情页", "n": "2", "size": "1K", "aspect_ratio": "9:16"},
             files=[
-                ("image", ("product.png", b"fake-product", "image/png")),
+                ("image", ("product.png", FAKE_PNG_BYTES, "image/png")),
             ],
         )
 
@@ -1178,7 +1187,7 @@ def test_ecommerce_generate_analyzes_product_and_creates_series_edit_task(tmp_pa
                 "size": "1K",
                 "aspect_ratio": "9:16",
             },
-            files={"image": ("product.png", b"fake-product", "image/png")},
+            files={"image": ("product.png", FAKE_PNG_BYTES, "image/png")},
         )
 
         assert response.status_code == 200
@@ -1213,7 +1222,7 @@ def test_ecommerce_analyze_surfaces_billing_errors(tmp_path: Path) -> None:
         response = client.post(
             "/api/ecommerce/analyze",
             data={"product_name": "低余额商品", "image_count": "4"},
-            files={"image": ("product.png", b"fake-product", "image/png")},
+            files={"image": ("product.png", FAKE_PNG_BYTES, "image/png")},
         )
 
         assert response.status_code == 402
@@ -1228,7 +1237,7 @@ def test_ecommerce_generate_falls_back_when_analysis_provider_is_temporarily_una
         response = client.post(
             "/api/ecommerce/generate",
             data={"product_name": "测试商品", "n": "4"},
-            files={"image": ("product.png", b"fake-product", "image/png")},
+            files={"image": ("product.png", FAKE_PNG_BYTES, "image/png")},
         )
 
         assert response.status_code == 200
@@ -1262,8 +1271,8 @@ def test_ecommerce_generate_analyzes_all_reference_angles(tmp_path: Path) -> Non
                 "aspect_ratio": "1:1",
             },
             files=[
-                ("image", ("front.jpg", b"fake-front", "image/jpeg")),
-                ("reference_image", ("side.jpg", b"fake-side", "image/jpeg")),
+                ("image", ("front.jpg", FAKE_JPEG_BYTES, "image/jpeg")),
+                ("reference_image", ("side.jpg", FAKE_JPEG_BYTES, "image/jpeg")),
             ],
         )
 
@@ -1325,7 +1334,7 @@ def test_ecommerce_generate_uses_selected_plan_as_blueprint(tmp_path: Path) -> N
                 "aspect_ratio": "9:16",
                 "selected_plan": json.dumps(selected_plan, ensure_ascii=False),
             },
-            files={"image": ("durian.png", b"fake-product", "image/png")},
+            files={"image": ("durian.png", FAKE_PNG_BYTES, "image/png")},
         )
 
         assert response.status_code == 200
@@ -1389,7 +1398,7 @@ def test_ecommerce_history_edit_uses_product_current_and_extra_references(tmp_pa
                 "size": "1K",
                 "aspect_ratio": "1:1",
             },
-            files={"image": ("product.png", b"fake-product", "image/png")},
+            files={"image": ("product.png", FAKE_PNG_BYTES, "image/png")},
         )
         assert response.status_code == 200
         source_task = wait_for_task(client, response.json()["id"], attempts=120)
@@ -1401,7 +1410,7 @@ def test_ecommerce_history_edit_uses_product_current_and_extra_references(tmp_pa
         edit_response = client.post(
             f"/api/history/{source_item['id']}/edit",
             data={"prompt": "把这一屏改成材质特写，保留商品主体", "size": "1K", "aspect_ratio": "1:1", "quality": "medium"},
-            files={"image": ("scene.png", b"fake-scene", "image/png")},
+            files={"image": ("scene.png", FAKE_PNG_BYTES, "image/png")},
         )
 
         assert edit_response.status_code == 200
@@ -2121,3 +2130,48 @@ def test_auth_client_error_message_collapses_html_to_friendly_string() -> None:
     assert "暂时不可用" in message
     assert "502" in message
     assert "<html" not in message
+
+
+def test_upload_rejects_oversize_file(tmp_path: Path) -> None:
+    """超大上传 → 413，防内存/磁盘耗尽 DoS（#76）。"""
+    with make_client(tmp_path) as client:
+        login_demo_user(client)
+        # 用小一点的上限便于测试，仍走相同代码路径
+        client.app.state.settings = client.app.state.settings.__class__(
+            **{**client.app.state.settings.__dict__, "max_upload_bytes": 1024}
+        )
+        # 1500B 净荷，已带 PNG 头，但超过 1024 上限
+        oversize = PNG_MAGIC + b"\x00" * 1500
+        response = client.post(
+            "/api/images/edit",
+            data={"prompt": "edit", "model": "gpt-image-2"},
+            files={"image": ("big.png", oversize, "image/png")},
+        )
+        assert response.status_code == 413
+        assert "exceeds maximum size" in response.text.lower() or "exceeds maximum size" in response.json().get("detail", "").lower()
+
+
+def test_upload_rejects_unsupported_content_type(tmp_path: Path) -> None:
+    """非白名单 content-type → 415（#76）。"""
+    with make_client(tmp_path) as client:
+        login_demo_user(client)
+        response = client.post(
+            "/api/images/edit",
+            data={"prompt": "edit", "model": "gpt-image-2"},
+            files={"image": ("evil.exe", PNG_MAGIC + b"payload", "application/octet-stream")},
+        )
+        assert response.status_code == 415
+        assert "content type" in response.text.lower()
+
+
+def test_upload_rejects_invalid_magic_bytes(tmp_path: Path) -> None:
+    """content-type 在白名单但 magic 不对 → 415，防伪装（#76）。"""
+    with make_client(tmp_path) as client:
+        login_demo_user(client)
+        response = client.post(
+            "/api/images/edit",
+            data={"prompt": "edit", "model": "gpt-image-2"},
+            files={"image": ("fake.png", b"this is not really a png file at all", "image/png")},
+        )
+        assert response.status_code == 415
+        assert "recognized" in response.text.lower() or "png" in response.text.lower()
