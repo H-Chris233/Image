@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { CloudUpload, X } from 'lucide-react';
+import type { BalanceInfo } from '../../api';
+import { CreditEstimate } from './CreditEstimate';
 
 type Step = 'category' | 'upload' | 'scene';
 
@@ -100,9 +102,11 @@ interface Props {
   onComplete: (result: WizardResult) => void;
   onClose: () => void;
   initialSceneDescription?: string;
+  // 用于在第三步生成按钮上方展示估价；从父组件 Create.tsx 的 account?.balance 透传。
+  balance?: BalanceInfo | null;
 }
 
-export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription }: Props) {
+export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription, balance = null }: Props) {
   const [step, setStep] = useState<Step>('category');
   const [selectedCategory, setSelectedCategory] = useState<WizardCategory | null>(null);
   const [productImage, setProductImage] = useState<File | null>(null);
@@ -483,6 +487,10 @@ export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription 
 
               {/* Sticky generate button */}
               <div className="sticky bottom-0 border-t border-zinc-800 bg-zinc-950 p-4">
+                {/* 估价：按钮上方让用户掏钱前先看到预计消耗（#109） */}
+                <div className="mb-3">
+                  <CreditEstimate balance={balance} imageCount={Number(imageCount)} sizeTier="FAST" />
+                </div>
                 <button
                   type="button"
                   onClick={handleGenerate}
