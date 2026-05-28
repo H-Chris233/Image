@@ -4,7 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { AuthProvider } from './auth.tsx';
 import { AuthModalProvider } from './authModal.tsx';
-import { HomeFeedProvider } from './homeFeed.tsx';
 import { SiteProvider } from './site.tsx';
 import { TaskCenterProvider } from './tasks.tsx';
 import './index.css';
@@ -15,11 +14,9 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <AuthModalProvider>
           <SiteProvider>
-            <HomeFeedProvider>
-              <TaskCenterProvider>
-                <App />
-              </TaskCenterProvider>
-            </HomeFeedProvider>
+            <TaskCenterProvider>
+              <App />
+            </TaskCenterProvider>
           </SiteProvider>
         </AuthModalProvider>
       </AuthProvider>
