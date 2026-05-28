@@ -4,6 +4,7 @@ import { ArrowRight, CloudUpload, Download, ImageIcon, Loader2, PackagePlus, Ref
 import { generateEcommerceImages, getAccount, type AccountInfo, type ImageTask } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
+import RechargeGate from '../components/RechargeGate';
 import { CreateFlowWizard, type WizardResult } from '../components/ecommerce/CreateFlowWizard';
 import { CreditEstimate } from '../components/ecommerce/CreditEstimate';
 import { useNotifier } from '../notifications';
@@ -11,6 +12,7 @@ import { providerImageSize } from '../imageOptions';
 import { useTasks } from '../tasks';
 
 const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
+const FAST_IMAGE_COST = 0.134;
 
 type SubmittedRun = {
   id: string;
@@ -29,6 +31,20 @@ function normalizeCount(value: string): number {
   return Math.max(1, Math.min(4, Number(value) || 2));
 }
 
+function estimateFastGenerationCost(imageCount: number) {
+  if (!Number.isFinite(imageCount) || imageCount <= 0) {
+    return null;
+  }
+  return FAST_IMAGE_COST * imageCount;
+}
+
+function hasInsufficientCredits(balance: AccountInfo['balance'] | null, expectedCost: number | null) {
+  if (expectedCost === null || !balance?.ok || typeof balance.remaining !== 'number') {
+    return false;
+  }
+  return balance.remaining < expectedCost;
+}
+
 export default function Create() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -42,6 +58,8 @@ export default function Create() {
   const [lastResult, setLastResult] = useState<WizardResult | null>(null);
   const [submitted, setSubmitted] = useState<SubmittedRun[]>([]);
   const [loading, setLoading] = useState(false);
+  const [rechargeGateOpen, setRechargeGateOpen] = useState(false);
+  const [rechargeGateExpectedCost, setRechargeGateExpectedCost] = useState<number | null>(null);
   // 始终指向最新的 completeAndGenerate，供 location.state effect 调用，
   // 避免 effect 闭包捕获到陈旧的 account / isOutOfCredits。
   const completeRef = useRef<((result: WizardResult) => Promise<void>) | null>(null);
@@ -100,12 +118,14 @@ export default function Create() {
       openAuthModal('login', '/create', 'generate');
       return;
     }
-    if (isOutOfCredits) {
-      notifyError('免费额度已用完，升级继续');
+
+    const count = normalizeCount(result.imageCount);
+    const expectedCost = estimateFastGenerationCost(count);
+    if (isOutOfCredits || hasInsufficientCredits(account?.balance ?? null, expectedCost)) {
+      openRechargeGate(expectedCost);
       return;
     }
 
-    const count = normalizeCount(result.imageCount);
     setLoading(true);
     notifyInfo('正在提交商品图生成任务');
     try {
@@ -152,7 +172,7 @@ export default function Create() {
       return;
     }
     if (isOutOfCredits) {
-      notifyError('免费额度已用完，升级继续');
+      openRechargeGate(null);
       return;
     }
     setShowWizard(true);
@@ -160,6 +180,23 @@ export default function Create() {
 
   function handleRegenerate() {
     if (lastResult) void runGeneration(lastResult);
+  }
+
+  function openRechargeGate(expectedCost: number | null) {
+    setRechargeGateExpectedCost(expectedCost);
+    setRechargeGateOpen(true);
+  }
+
+  function handleCloseRechargeGate() {
+    setRechargeGateOpen(false);
+    if (viewer?.authenticated) {
+      getAccount().then((data) => setAccount(data)).catch(() => undefined);
+    }
+  }
+
+  function handleRecharge() {
+    setRechargeGateOpen(false);
+    navigate('/recharge');
   }
 
   completeRef.current = completeAndGenerate;
@@ -176,6 +213,14 @@ export default function Create() {
           balance={account?.balance ?? null}
         />
       ) : null}
+
+      <RechargeGate
+        open={rechargeGateOpen}
+        onClose={handleCloseRechargeGate}
+        balance={account?.balance ?? null}
+        expectedCost={rechargeGateExpectedCost}
+        onRecharge={handleRecharge}
+      />
 
       <div className="mb-6 flex flex-col gap-3 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
