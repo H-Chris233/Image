@@ -429,12 +429,25 @@ export function getHistory(params: { limit?: number; offset?: number; q?: string
   return request<{ items: HistoryItem[] }>(`/api/history${query ? `?${query}` : ''}`);
 }
 
-export function getInspirations(params: { limit?: number; offset?: number; q?: string; section?: string } = {}) {
+export function getInspirations(params: {
+  limit?: number;
+  offset?: number;
+  q?: string;
+  section?: string;
+  template_type?: 'github' | 'official' | 'community';
+  smb_categories?: string[];
+  product_categories?: string[];
+  style_tags?: string[];
+} = {}) {
   const search = new URLSearchParams();
   if (params.limit) search.set('limit', String(params.limit));
   if (params.offset) search.set('offset', String(params.offset));
   if (params.q) search.set('q', params.q);
   if (params.section) search.set('section', params.section);
+  if (params.template_type) search.set('template_type', params.template_type);
+  if (params.smb_categories?.length) search.set('smb_categories', params.smb_categories.join(','));
+  if (params.product_categories?.length) search.set('product_categories', params.product_categories.join(','));
+  if (params.style_tags?.length) search.set('style_tags', params.style_tags.join(','));
   const query = search.toString();
   return request<InspirationListResponse>(`/api/inspirations${query ? `?${query}` : ''}`);
 }
