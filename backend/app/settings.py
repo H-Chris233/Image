@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import os
 import hashlib
 from dataclasses import dataclass
@@ -87,6 +86,8 @@ class Settings:
     sub2api_admin_jwt: str
     recharge_url: str
     max_upload_bytes: int
+    dev_allow_mock_sub2api: bool = False
+    dev_mock_sub2api_base_url: str = "mock://sub2api"
     inspiration_source_urls: list[str] | None = None
 
     @classmethod
@@ -152,6 +153,9 @@ class Settings:
             sub2api_admin_jwt=os.getenv("SUB2API_ADMIN_JWT", "").strip(),
             recharge_url=recharge_url,
             max_upload_bytes=int(os.getenv("MAX_UPLOAD_BYTES", str(15 * 1024 * 1024))),
+            dev_allow_mock_sub2api=_env_bool("DEV_ALLOW_MOCK_SUB2API", False),
+            dev_mock_sub2api_base_url=os.getenv("DEV_MOCK_SUB2API_BASE_URL", "mock://sub2api").strip()
+            or "mock://sub2api",
             inspiration_source_urls=source_urls,
         )
 
