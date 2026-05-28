@@ -3,21 +3,25 @@ import type { BalanceInfo } from '../../api';
 interface CreditEstimateProps {
   balance: BalanceInfo | null;
   imageCount: number;
-  quality: string;
+  // 'FAST' | '1K' | '2K' | '4K'（与 providerImageSize 的 scale 一致）
+  sizeTier: string;
 }
 
-const COST_PER_IMAGE: Record<string, number> = {
-  hd: 0.08,
-  high: 0.08,
-  standard: 0.04,
-  low: 0.02,
+// 与后端 `backend/app/settings.py` 的 image_price_* 默认对齐。
+// 后端 `_image_ledger_amount`：FAST 与 1K 共用 image_price_1k。
+// 如果运营覆盖了 IMAGE_PRICE_*_USD env，本前端估价会偏差，但量级和正确维度（按尺寸）已对。
+const COST_PER_IMAGE_BY_TIER: Record<string, number> = {
+  FAST: 0.134,
+  '1K': 0.134,
+  '2K': 0.201,
+  '4K': 0.268,
 };
 
-export function CreditEstimate({ balance, imageCount, quality }: CreditEstimateProps) {
+export function CreditEstimate({ balance, imageCount, sizeTier }: CreditEstimateProps) {
   if (!balance?.ok || typeof balance.remaining !== 'number') return null;
   if (!Number.isFinite(imageCount) || imageCount <= 0) return null;
 
-  const costPerImg = COST_PER_IMAGE[quality.toLowerCase()] ?? 0.04;
+  const costPerImg = COST_PER_IMAGE_BY_TIER[sizeTier.toUpperCase()] ?? COST_PER_IMAGE_BY_TIER.FAST;
   const estimatedCost = costPerImg * imageCount;
   const afterBalance = balance.remaining - estimatedCost;
   const isInsufficient = afterBalance < 0;

@@ -328,7 +328,7 @@ function ResultView({
           <CreditEstimate
             balance={balance}
             imageCount={regenerateCount}
-            quality="auto"
+            sizeTier="FAST"
           />
         ) : null}
       </aside>
