@@ -230,14 +230,14 @@ export default function TopNavBar() {
               <button
                 className="btn-ghost min-h-11"
                 type="button"
-                onClick={() => openAuthModal('login')}
+                onClick={() => openAuthModal('login', location.pathname)}
               >
                 {t('top_login')}
               </button>
               <button
                 className="btn-primary min-h-11"
                 type="button"
-                onClick={() => openAuthModal('register')}
+                onClick={() => openAuthModal('register', location.pathname)}
               >
                 {t('top_register')}
               </button>
