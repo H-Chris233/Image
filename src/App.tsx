@@ -2,7 +2,6 @@ import { Navigate, Routes, Route } from 'react-router-dom';
 import TopNavBar from './components/TopNavBar';
 import SideNavBar from './components/SideNavBar';
 import BottomTabBar from './components/BottomTabBar';
-import { ThemeProvider } from './components/ThemeProvider';
 import Explore from './pages/Explore';
 import Create from './pages/Create';
 import Workspace from './pages/Workspace';
@@ -27,12 +26,11 @@ function RootRedirect() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <div className="min-h-screen bg-background text-on-background overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
-        <TopNavBar />
-        <SideNavBar />
-        <main className="pt-16 lg:pl-60 pb-16 lg:pb-0">
-          <Routes>
+    <div className="min-h-screen bg-background text-on-background overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+      <TopNavBar />
+      <SideNavBar />
+      <main className="pt-16 lg:pl-60 pb-16 lg:pb-0">
+        <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/create" element={<Create />} />
@@ -49,14 +47,13 @@ export default function App() {
             <Route path="/login" element={<Navigate to="/explore" replace />} />
             <Route path="/register" element={<Navigate to="/explore" replace />} />
             <Route path="/ecommerce" element={<Navigate to="/create" replace />} />
-          </Routes>
-        </main>
-        <BottomTabBar />
-        <AnnouncementModal />
-        <AuthModal />
-        <TaskDrawer />
-        <TaskToastStack />
-      </div>
-    </ThemeProvider>
+        </Routes>
+      </main>
+      <BottomTabBar />
+      <AnnouncementModal />
+      <AuthModal />
+      <TaskDrawer />
+      <TaskToastStack />
+    </div>
   );
 }
