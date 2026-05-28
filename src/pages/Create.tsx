@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, CloudUpload, Download, ImageIcon, Loader2, PackagePlus, RefreshCw, Sparkles, Wand2 } from 'lucide-react';
-import { generateEcommerceImages, getAccount, type AccountInfo, type ImageTask } from '../api';
+import { generateEcommerceImages, getAccount, optimizePrompt, type AccountInfo, type ImageTask } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import RechargeGate from '../components/RechargeGate';
@@ -27,8 +27,8 @@ type GenerationRun = {
   task: ImageTask | undefined;
 };
 
-function normalizeCount(value: string): number {
-  return Math.max(1, Math.min(4, Number(value) || 2));
+function normalizeCount(value: string | number): number {
+  return Math.max(1, Math.min(4, Number(value) || 1));
 }
 
 function estimateFastGenerationCost(imageCount: number) {
@@ -129,15 +129,14 @@ export default function Create() {
     setLoading(true);
     notifyInfo('正在提交商品图生成任务');
     try {
-      // 给后端的 prompt 只保留用户真实输入的视觉信号（style = 场景描述）。
-      // 不传 product_name（避免文件名当商品名）、不传 scenarios（避免类目英文名当使用场景）——
-      // 这俩是 #67/#105 修过的；
-      // 同样不传 platform（避免把'淘宝/抖音'硬塞，做别的平台的用户被它带偏）、
-      // 不传 extra_requirements（避免运营追踪 breadcrumb 进 AI 上下文）——#111。
-      // 后端会用'通用电商'与空字符串兜底，不写入 prompt。
+      const optimizeResult = await optimizePrompt({
+        prompt: result.brief || '基于商品图生成电商商品主图',
+        instruction: `请按以下模板风格改写：${result.selectedTemplate.prompt}`,
+      });
+      const optimizedPrompt = optimizeResult.optimized_prompt || optimizeResult.prompt;
       const task = await generateEcommerceImages(
         {
-          style: result.sceneDescription,
+          style: optimizedPrompt,
           size: providerImageSize('FAST', result.aspectRatio),
           aspect_ratio: result.aspectRatio,
           quality: 'auto',
@@ -147,11 +146,12 @@ export default function Create() {
       );
       addTask(task);
       setSubmitted((current) => [
-        { id: task.id, sceneName: result.category.name, count },
+        { id: task.id, sceneName: result.selectedTemplate.title, count },
         ...current,
       ]);
       notifyInfo('已提交，结果会实时显示在下方');
       getAccount().then((data) => setAccount(data)).catch(() => undefined);
+      navigate(`/workspace/${task.id}`);
     } catch (error) {
       notifyError(error);
     } finally {
@@ -261,9 +261,9 @@ export default function Create() {
 
 function CreateHero({ loading, hasPrompt, onStart }: { loading: boolean; hasPrompt: boolean; onStart: () => void }) {
   const steps = [
-    { icon: PackagePlus, title: '选商品类目', desc: 'AI 据类目给出场景描述起点' },
-    { icon: CloudUpload, title: '上传商品图', desc: 'PNG / JPEG / WEBP，多角度更佳' },
-    { icon: Wand2, title: '描述并生成', desc: '调比例与数量，一键出商品大片' },
+    { icon: CloudUpload, title: '上传商品图', desc: 'PNG / JPEG / WEBP，白底图更稳' },
+    { icon: PackagePlus, title: '选择推荐模板', desc: 'AI 分析商品后推荐 3 个 benchmark 风格' },
+    { icon: Wand2, title: '微调并生成', desc: '调比例与数量，按模板改写后一键出图' },
   ];
 
   return (
@@ -273,9 +273,9 @@ function CreateHero({ loading, hasPrompt, onStart }: { loading: boolean; hasProm
           <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-[#E3FF74]/10 text-[#E3FF74]">
             <Sparkles size={22} />
           </div>
-          <h2 className="mt-6 text-2xl font-bold tracking-tight text-[#f0ede8] sm:text-3xl">把商品图变成场景大片</h2>
+          <h2 className="mt-6 text-2xl font-bold tracking-tight text-[#f0ede8] sm:text-3xl">用模板风格生成商品图</h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-on-surface-variant">
-            上传一张商品图，选好类目与场景，AI 直接生成可用于淘宝、抖音的商品大片。整个过程只配置一次。
+            上传一张商品图，AI 推荐 3 个匹配模板；选中模板后自动改写需求并生成可继续编辑的结果。
           </p>
           {hasPrompt ? (
             <div className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#E3FF74]/25 bg-[#E3FF74]/[0.06] px-3 py-2 text-xs font-semibold text-[#E3FF74]">
