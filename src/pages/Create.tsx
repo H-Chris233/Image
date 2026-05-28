@@ -7,6 +7,7 @@ import { useAuthModal } from '../authModal';
 import RechargeGate from '../components/RechargeGate';
 import { CreateFlowWizard, type WizardResult } from '../components/ecommerce/CreateFlowWizard';
 import { CreditEstimate } from '../components/ecommerce/CreditEstimate';
+import { storeLastProductImage } from '../components/ecommerce/productImageSession';
 import { useNotifier } from '../notifications';
 import { providerImageSize } from '../imageOptions';
 import { useTasks } from '../tasks';
@@ -129,6 +130,7 @@ export default function Create() {
     setLoading(true);
     notifyInfo('正在提交商品图生成任务');
     try {
+      await storeLastProductImage(result.productImage);
       const optimizeResult = await optimizePrompt({
         prompt: result.brief || '基于商品图生成电商商品主图',
         instruction: `请按以下模板风格改写：${result.selectedTemplate.prompt}`,

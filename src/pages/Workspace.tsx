@@ -11,9 +11,12 @@ import {
   Loader2,
   RotateCcw,
   Sparkles,
+  Shuffle,
+  X,
   XCircle,
 } from 'lucide-react';
 import {
+  analyzeEcommerceProduct,
   formatDate,
   editHistoryImage,
   generateImage,
@@ -28,8 +31,11 @@ import { useAuth } from '../auth';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import RechargeGate from '../components/RechargeGate';
 import RetryImage from '../components/RetryImage';
-import { Button, SegmentedControl, TextareaControl } from '../components/design-system';
+import { Button, IconButton, SegmentedControl, Surface, TextareaControl } from '../components/design-system';
 import { CreditEstimate } from '../components/ecommerce/CreditEstimate';
+import { TemplateCard, type TemplateCandidate } from '../components/ecommerce/TemplateCard';
+import { readLastProductImage } from '../components/ecommerce/productImageSession';
+import { runGenerationFromTemplate } from '../components/ecommerce/runGeneration';
 import { providerImageSize } from '../imageOptions';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
@@ -44,6 +50,14 @@ const IMAGE_COST_BY_TIER: Record<string, number> = {
 };
 const WORKSPACE_ASPECT_RATIO_OPTIONS = ['1:1', '3:4', '4:3', '16:9', '9:16'] as const;
 const WORKSPACE_IMAGE_COUNT_OPTIONS = ['1', '2', '3', '4'] as const;
+const TEMPLATE_SWAP_LABEL = '换个模板试试';
+const TEMPLATE_SWAP_TITLE = '选择新模板';
+const TEMPLATE_SWAP_SUBTITLE = '用同一张商品图换一个 benchmark 风格再生成一次';
+const TEMPLATE_SWAP_MORE = '都不满意？再来 3 个';
+const TEMPLATE_SWAP_CANCEL = '取消';
+const TEMPLATE_SWAP_IMAGE_MISSING = '无法获取原商品图，请回到创作页';
+const TEMPLATE_SWAP_CREATE_LINK = '/create';
+const TEMPLATE_SWAP_TOAST = '已切换模板生成';
 
 type WorkspaceAspectRatio = (typeof WORKSPACE_ASPECT_RATIO_OPTIONS)[number];
 type WorkspaceImageCount = (typeof WORKSPACE_IMAGE_COUNT_OPTIONS)[number];
@@ -163,6 +177,16 @@ const WORKSPACE_COPY = {
     emptyTitle: '没有可预览结果',
     emptyDescription: '可以复用提示词重新提交。',
     fetchError: '加载任务失败',
+    templateSwapAction: TEMPLATE_SWAP_LABEL,
+    templateSwapTitle: TEMPLATE_SWAP_TITLE,
+    templateSwapSubtitle: TEMPLATE_SWAP_SUBTITLE,
+    templateSwapMore: TEMPLATE_SWAP_MORE,
+    templateSwapCancel: TEMPLATE_SWAP_CANCEL,
+    templateSwapImageMissing: TEMPLATE_SWAP_IMAGE_MISSING,
+    templateSwapCreateLink: '回到创作页',
+    templateSwapToast: TEMPLATE_SWAP_TOAST,
+    templateSwapLoading: '正在推荐模板',
+    templateSwapGenerating: '正在切换模板',
   },
   'en-US': {
     back: 'Back',
@@ -268,6 +292,16 @@ const WORKSPACE_COPY = {
     emptyTitle: 'Task completed, but no previewable assets returned',
     emptyDescription: 'The backend returned a completed task without displayable images. You can still reuse the prompt.',
     fetchError: 'Failed to load task',
+    templateSwapAction: TEMPLATE_SWAP_LABEL,
+    templateSwapTitle: TEMPLATE_SWAP_TITLE,
+    templateSwapSubtitle: TEMPLATE_SWAP_SUBTITLE,
+    templateSwapMore: TEMPLATE_SWAP_MORE,
+    templateSwapCancel: TEMPLATE_SWAP_CANCEL,
+    templateSwapImageMissing: TEMPLATE_SWAP_IMAGE_MISSING,
+    templateSwapCreateLink: '回到创作页',
+    templateSwapToast: TEMPLATE_SWAP_TOAST,
+    templateSwapLoading: '正在推荐模板',
+    templateSwapGenerating: '正在切换模板',
   },
 } as const;
 
@@ -279,7 +313,7 @@ export default function Workspace() {
   const { viewer } = useAuth();
   const { locale } = useSite();
   const { addTask, tasks } = useTasks();
-  const { notifyError, notifyInfo } = useNotifier();
+  const { notifyError, notifyInfo, notifySuccess } = useNotifier();
   const copy = WORKSPACE_COPY[locale];
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [task, setTask] = useState<ImageTask | null>(null);
@@ -289,6 +323,12 @@ export default function Workspace() {
   const [submittingInstructionEdit, setSubmittingInstructionEdit] = useState(false);
   const [rechargeGateOpen, setRechargeGateOpen] = useState(false);
   const [rechargeGateExpectedCost, setRechargeGateExpectedCost] = useState<number | null>(null);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [templateCandidates, setTemplateCandidates] = useState<TemplateCandidate[]>([]);
+  const [templateProductImage, setTemplateProductImage] = useState<File | null>(null);
+  const [templateError, setTemplateError] = useState<string | null>(null);
+  const [analyzingTemplates, setAnalyzingTemplates] = useState(false);
+  const [swappingTemplate, setSwappingTemplate] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [previewImages, setPreviewImages] = useState<{ id: string; url: string; prompt: string; title?: string }[] | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -439,6 +479,80 @@ export default function Workspace() {
     }
   }
 
+  async function openTemplateSwapModal() {
+    if (!task || analyzingTemplates) return;
+    setTemplateModalOpen(true);
+    await loadTemplateRecommendations();
+  }
+
+  async function loadTemplateRecommendations() {
+    if (!task) return;
+    setAnalyzingTemplates(true);
+    setTemplateError(null);
+    try {
+      const productImage = await resolveProductImageFile(task);
+      if (!productImage) {
+        setTemplateCandidates([]);
+        setTemplateProductImage(null);
+        setTemplateError(copy.templateSwapImageMissing);
+        return;
+      }
+
+      setTemplateProductImage(productImage);
+      const result = await analyzeEcommerceProduct(
+        {
+          extra_requirements: task.prompt || '',
+          aspect_ratio: task.aspect_ratio || '1:1',
+          size: task.size,
+          image_count: 3,
+        },
+        [{ file: productImage, primary: true }],
+      );
+      setTemplateCandidates((result.recommended_templates || result.plans || []).slice(0, 3));
+    } catch (err) {
+      setTemplateCandidates([]);
+      setTemplateError(err instanceof Error ? err.message : copy.fetchError);
+    } finally {
+      setAnalyzingTemplates(false);
+    }
+  }
+
+  async function handleTemplatePicked(template: TemplateCandidate) {
+    if (swappingTemplate) return;
+    const expectedCost = estimateGenerationCost(1, 'FAST');
+    if (hasInsufficientCredits(account?.balance ?? null, expectedCost)) {
+      setTemplateModalOpen(false);
+      openRechargeGate(expectedCost);
+      return;
+    }
+
+    setSwappingTemplate(true);
+    setTemplateError(null);
+    try {
+      const productImage = templateProductImage || (task ? await resolveProductImageFile(task) : null);
+      if (!productImage) {
+        setTemplateError(copy.templateSwapImageMissing);
+        setTemplateModalOpen(true);
+        return;
+      }
+
+      setTemplateModalOpen(false);
+      const submittedTask = await runGenerationFromTemplate({
+        brief: '',
+        productImageFile: productImage,
+        selectedTemplate: template,
+      });
+      addTask(submittedTask);
+      notifySuccess(copy.templateSwapToast);
+      getAccount().then((data) => setAccount(data)).catch(() => undefined);
+      navigate(`/workspace/${submittedTask.id}`);
+    } catch (err) {
+      notifyError(err);
+    } finally {
+      setSwappingTemplate(false);
+    }
+  }
+
   async function handleConfigRegenerate(config: WorkspaceRegenerateConfig) {
     if (!task) {
       return;
@@ -568,6 +682,7 @@ export default function Workspace() {
             onRegenerateSelected={() => handleRegenerate(selectedPrompt, 1).catch(() => undefined)}
             onReuseSelectedPrompt={() => handleReusePrompt(selectedPrompt)}
             onSelectImage={setSelectedImageId}
+            onSwapTemplate={() => openTemplateSwapModal().catch(notifyError)}
             regenerating={regenerating}
             submittingInstructionEdit={submittingInstructionEdit}
             selectedImage={selectedImage}
@@ -607,8 +722,187 @@ export default function Workspace() {
         expectedCost={rechargeGateExpectedCost}
         onRecharge={handleRecharge}
       />
+
+      <TemplateSwapModal
+        analyzing={analyzingTemplates}
+        candidates={templateCandidates}
+        copy={copy}
+        error={templateError}
+        generating={swappingTemplate}
+        open={templateModalOpen}
+        onCancel={() => setTemplateModalOpen(false)}
+        onPick={(template) => handleTemplatePicked(template).catch(notifyError)}
+        onRetry={() => loadTemplateRecommendations().catch(notifyError)}
+        onCreate={() => navigate(TEMPLATE_SWAP_CREATE_LINK)}
+      />
     </div>
   );
+}
+
+function TemplateSwapModal({
+  analyzing,
+  candidates,
+  copy,
+  error,
+  generating,
+  open,
+  onCancel,
+  onCreate,
+  onPick,
+  onRetry,
+}: {
+  analyzing: boolean;
+  candidates: TemplateCandidate[];
+  copy: WorkspaceCopy;
+  error: string | null;
+  generating: boolean;
+  open: boolean;
+  onCancel: () => void;
+  onCreate: () => void;
+  onPick: (template: TemplateCandidate) => void;
+  onRetry: () => void;
+}) {
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const titleId = 'template-swap-modal-title';
+  const descriptionId = 'template-swap-modal-description';
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const timer = window.setTimeout(() => {
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusTarget = dialog.querySelector<HTMLElement>('button:not([disabled]), a[href]') || dialog;
+      focusTarget.focus();
+    }, 0);
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancel();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previousFocus && document.contains(previousFocus)) previousFocus.focus();
+    };
+  }, [onCancel, open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[180] flex items-center justify-center p-4">
+      <div aria-hidden="true" className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onCancel} />
+      <Surface
+        ref={dialogRef}
+        aria-describedby={descriptionId}
+        aria-labelledby={titleId}
+        aria-modal="true"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.7)]"
+        padding="none"
+        role="dialog"
+        tabIndex={-1}
+      >
+        <div className="absolute inset-x-0 top-0 h-px bg-[#E3FF74] opacity-60" />
+        <IconButton
+          className="absolute right-3 top-3 z-10"
+          label={copy.templateSwapCancel}
+          icon={<X aria-hidden="true" size={15} />}
+          onClick={onCancel}
+        />
+        <div className="border-b border-white/[0.07] px-5 pb-4 pt-6 sm:px-6">
+          <h2 id={titleId} className="font-display text-xl font-semibold text-[#f0ede8]">{copy.templateSwapTitle}</h2>
+          <p id={descriptionId} className="mt-2 text-sm leading-6 text-on-surface-variant">{copy.templateSwapSubtitle}</p>
+        </div>
+
+        <div className="max-h-[calc(100dvh-13rem)] overflow-y-auto px-5 py-5 sm:px-6">
+          {error ? (
+            <div className="rounded-xl border border-error/30 bg-error-container px-4 py-3 text-sm leading-6 text-on-error-container">
+              <p>{error}</p>
+              {error === copy.templateSwapImageMissing ? (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={onCreate}
+                  className="mt-3 rounded-lg border-error/30 text-on-error-container hover:border-error/50"
+                >
+                  {copy.templateSwapCreateLink}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {analyzing ? (
+            <div className="flex min-h-48 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.025] text-sm text-on-surface-variant">
+              <Loader2 className="mr-2 animate-spin text-[#E3FF74]" size={16} />
+              {copy.templateSwapLoading}
+            </div>
+          ) : candidates.length > 0 ? (
+            <div className="grid gap-3 md:grid-cols-3">
+              {candidates.map((template, index) => (
+                <TemplateCard
+                  key={`${('id' in template && template.id) || ('title' in template && template.title) || ('name' in template && template.name) || 'template'}-${index}`}
+                  template={template}
+                  disabled={generating}
+                  onClick={() => onPick(template)}
+                  actionLabel={generating ? copy.templateSwapGenerating : copy.templateSwapAction}
+                />
+              ))}
+            </div>
+          ) : !error ? (
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-8 text-center text-sm text-on-surface-variant">
+              {copy.templateSwapLoading}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-white/[0.07] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+          <Button variant="ghost" type="button" onClick={onCancel} disabled={generating}>
+            {copy.templateSwapCancel}
+          </Button>
+          <Button
+            variant="ghost"
+            type="button"
+            iconStart={analyzing ? <Loader2 className="animate-spin" size={15} /> : <Shuffle size={15} />}
+            onClick={onRetry}
+            disabled={analyzing || generating}
+          >
+            {copy.templateSwapMore}
+          </Button>
+        </div>
+      </Surface>
+    </div>
+  );
+}
+
+async function resolveProductImageFile(task: ImageTask) {
+  const inputUrl = task.input_image_url || task.items.find((item) => item.input_image_url)?.input_image_url || '';
+  if (inputUrl) {
+    try {
+      return await imageUrlToFile(inputUrl, task.prompt || 'product-image');
+    } catch {
+      return readLastProductImage();
+    }
+  }
+  return readLastProductImage();
+}
+
+async function imageUrlToFile(url: string, fallbackName: string) {
+  const response = await fetch(url, { credentials: 'include' });
+  if (!response.ok) throw new Error(response.statusText);
+  const blob = await response.blob();
+  const type = blob.type || 'image/png';
+  const safeName = fallbackName.trim().replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || 'product-image';
+  return new File([blob], `${safeName}.${extensionForImageType(type)}`, { type });
+}
+
+function extensionForImageType(type: string) {
+  if (type.includes('jpeg') || type.includes('jpg')) return 'jpg';
+  if (type.includes('webp')) return 'webp';
+  return 'png';
 }
 
 function ConnectingState({ copy }: { copy: WorkspaceCopy }) {
@@ -714,6 +1008,7 @@ function SucceededWorkbench({
   onRegenerateSelected,
   onReuseSelectedPrompt,
   onSelectImage,
+  onSwapTemplate,
   regenerating,
   selectedImage,
   selectedImageIndex,
@@ -732,6 +1027,7 @@ function SucceededWorkbench({
   onRegenerateSelected: () => void;
   onReuseSelectedPrompt: () => void;
   onSelectImage: (id: string) => void;
+  onSwapTemplate: () => void;
   regenerating: boolean;
   selectedImage: HistoryItem | null;
   selectedImageIndex: number;
@@ -983,6 +1279,19 @@ function SucceededWorkbench({
             selectedImage={selectedImage}
             submitting={submittingInstructionEdit}
           />
+          <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
+            <Button
+              variant="ghost"
+              iconStart={<Shuffle size={15} aria-hidden="true" />}
+              type="button"
+              fullWidth
+              onClick={onSwapTemplate}
+              disabled={regenerating}
+              className="rounded-lg border-white/15 bg-white/[0.04] text-on-surface-variant hover:border-[#E3FF74]/35 hover:text-[#E3FF74]"
+            >
+              {copy.templateSwapAction}
+            </Button>
+          </div>
         </aside>
       </div>
     </section>

@@ -21,6 +21,7 @@ import {
   TextareaField,
 } from '../design-system';
 import { CreditEstimate } from './CreditEstimate';
+import { TemplateCard } from './TemplateCard';
 import {
   canAnalyze,
   canContinueFromRecommend,
@@ -416,46 +417,13 @@ function RecommendStep({
           {templates.map((template) => {
             const selected = selectedTemplateId === template.id;
             return (
-              <button
+              <TemplateCard
                 key={template.id}
-                type="button"
+                template={template}
+                selected={selected}
                 onClick={() => onSelect(template.id)}
-                aria-pressed={selected}
-                className={[
-                  'group min-w-0 overflow-hidden rounded-2xl border bg-surface text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime/30',
-                  selected
-                    ? 'border-lime shadow-[0_0_0_1px_rgba(227,255,116,0.35),0_0_26px_rgba(227,255,116,0.16)]'
-                    : 'border-white/[0.07] hover:border-white/[0.16] hover:bg-surface-container',
-                ].join(' ')}
-              >
-                <div className="aspect-[4/3] bg-white/[0.04]">
-                  {template.image_url ? (
-                    <img src={template.image_url} alt={template.title} loading="lazy" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-on-surface-variant">
-                      <ImagePlus aria-hidden="true" size={24} />
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="min-w-0 font-display text-base font-semibold leading-6 text-on-surface">{template.title}</h3>
-                    {selected ? <CheckCircle2 aria-hidden="true" size={18} className="shrink-0 text-lime" /> : null}
-                  </div>
-                  {template.curator_note ? (
-                    <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-on-surface-variant">{template.curator_note}</p>
-                  ) : (
-                    <p className="mt-2 min-h-10 text-sm leading-5 text-on-surface-variant">适合商品主图和场景图的模板风格。</p>
-                  )}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {template.style_tags.slice(0, 4).map((tag) => (
-                      <span key={tag} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[11px] font-medium text-on-surface-variant">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </button>
+                actionLabel={selected ? '已选择' : '选择模板'}
+              />
             );
           })}
         </div>
