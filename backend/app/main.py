@@ -232,15 +232,24 @@ ECOMMERCE_PRODUCT_ANALYZER_SYSTEM_PROMPT = f"你是 {PRODUCT_NAME} 的电商商�
 用户会上传一张或多张商品参考图，并提供商品名称、材质、卖点、平台和风格。你的任务是综合识别商品外观并输出可用于后续电商详情页生成的结构化信息和推荐设计方案。
 要求：
 1. 只输出 JSON，不要 Markdown、解释或代码块。
-2. JSON 格式必须是：{"product_type":"...","appearance":"...","visible_material":"...","colors":["..."],"shape":"...","details":["..."],"selling_points":["..."],"target_audience":["..."],"use_scenarios":["..."],"style_suggestions":["..."],"generation_constraints":"...","recommended_plans":[{"name":"...","platform":"...","style":"...","image_count":4,"materials":"...","selling_points":"...","scenarios":"...","extra_requirements":"...","reason":"...","screens":[{"title":"...","copy":"...","layout_type":"hero|model_fit|scene_lifestyle|material_closeup|detail_callout|spec_table|size_chart|multi_angle|comparison|social_cover|conversion","visual_goal":"...","copy_density":"low|medium|high","needs_model":false,"needs_specs":false,"needs_closeup":false,"reference_focus":["..."]}]}]}。
+2. JSON 格式必须是：{"product_type":"...","appearance":"...","visible_material":"...","colors":["..."],"shape":"...","details":["..."],"selling_points":["..."],"target_audience":["..."],"use_scenarios":["..."],"style_suggestions":["..."],"generation_constraints":"...","detected_smb_categories":["cross_border_ecommerce|domestic_ecommerce"],"detected_product_categories":["food|fashion_apparel|beauty_skincare|electronics|home_living|bags_accessories|sports_outdoor|general_merchandise"],"detected_style_tags":["premium_studio"],"recommended_plans":[{"name":"...","platform":"...","style":"...","image_count":4,"materials":"...","selling_points":"...","scenarios":"...","extra_requirements":"...","reason":"...","screens":[{"title":"...","copy":"...","layout_type":"hero|model_fit|scene_lifestyle|material_closeup|detail_callout|spec_table|size_chart|multi_angle|comparison|social_cover|conversion","visual_goal":"...","copy_density":"low|medium|high","needs_model":false,"needs_specs":false,"needs_closeup":false,"reference_focus":["..."]}]}]}。
 3. 如果有正面、侧面、背面、材质细节等多角度参考图，必须把它们合并理解为同一商品的完整外观，不得只依据第一张图。
 4. generation_constraints 要明确说明生成时必须保持商品主体、颜色、材质、比例、结构、轮廓一致，并保留多角度参考图中可见的关键侧面/背面/细节信息。
 5. recommended_plans 给出 3 个适合普通商家的方案，必须覆盖不同用途，例如电商详情页、小红书种草图、白底主图/场景图/直播带货图。每个方案都要能一键填入生成表单。
 6. 每个 recommended_plan 的 image_count 必须等于用户填写字段里的 image_count，screens 数量也必须等于 image_count，方案名不得出现“四屏/三屏/五屏”等和 image_count 不一致的字样。
 7. screens 必须从商品品类和用途出发完整规划，不能只给前 4 屏后面留空；生鲜、水果、食品、服装、数码、家居等品类要使用不同模块。
 8. 电商详情页方案不能只是标题列表，要像真实详情页脚本：至少混合主视觉、场景/模特、参数/规格、材质/细节、对比/卖点、收尾转化等页面类型。不要每屏都要求顶部大标题。
-9. 不确定的信息不要编造，优先根据图片可见信息和用户输入综合判断。
-10. 中文输入输出中文，英文输入输出英文。"""
+9. detected_smb_categories 只能从 cross_border_ecommerce、domestic_ecommerce 中选择；detected_product_categories 只能从第 2 条列出的 8 个类目中选择；detected_style_tags 必须是小写 snake_case，可自由概括风格。
+10. 不确定的信息不要编造，优先根据图片可见信息和用户输入综合判断。
+11. 中文输入输出中文，英文输入输出英文。"""
+
+ECOMMERCE_BENCHMARK_RERANK_SYSTEM_PROMPT = f"你是 {PRODUCT_NAME} 的电商 benchmark 模板召回排序助手。\n" """用户会提供商品分析、商家填写的 brief，以及一组候选 benchmark 模板。你的任务是从候选中选出最适合该商品和商家用途的 3 个模板。
+要求：
+1. 只输出 JSON，不要 Markdown、解释或代码块。
+2. JSON 格式必须是：{"ids":["template_id_1","template_id_2","template_id_3"]}。
+3. 只能返回候选模板中存在的 id，按匹配度从高到低排序。
+4. 优先匹配商品类目、SMB 场景、视觉风格、构图用途和可复用 prompt 质量。
+5. 如果候选少于 3 个，就只返回存在的候选 id。"""
 
 ECOMMERCE_PUBLISH_COPY_SYSTEM_PROMPT = f"你是 {PRODUCT_NAME} 的电商种草文案策划。\n" """用户会提供一个已生成的电商详情页项目参数。你的任务是为小红书/朋友圈/社媒发布生成独立标题和正文。
 用户会提供一个已生成的电商详情页项目参数。你的任务是为小红书/朋友圈/社媒发布生成独立标题和正文。
@@ -262,6 +271,13 @@ INSPIRATION_AI_SEARCH_SYSTEM_PROMPT = f"你是 {PRODUCT_NAME} 的案例库搜索
 3. query 控制在 2-8 个关键词，使用空格分隔，优先保留主体、风格、用途、行业、画面类型和关键视觉元素。
 4. 不要加入“帮我找”“案例”“图片”等无检索价值的词。
 5. 中文输入优先输出中文关键词，英文输入优先输出英文关键词。"""
+
+ECOMMERCE_PRODUCT_CATEGORY_ALIASES = {
+    "fashion_apparel": ["apparel"],
+    "beauty_skincare": ["skincare"],
+    "home_living": ["home"],
+    "bags_accessories": ["bags"],
+}
 
 
 class AuthSendVerifyCodeRequest(BaseModel):
@@ -1183,6 +1199,16 @@ def create_app(
                 prompt=prompt,
                 request=request_model,
             )
+            recommended_templates = await _recall_benchmark_templates(
+                analysis=analysis,
+                request=request_model,
+                db=db,
+                provider=provider,
+                config=config,
+                settings=settings,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         except ProviderError as exc:
             raise HTTPException(status_code=exc.status_code, detail=_provider_error_message(exc)) from exc
         return {
@@ -1190,6 +1216,9 @@ def create_app(
             "reference_notes": _task_reference_notes(ecommerce_uploads),
             "model": settings.prompt_optimizer_model.strip(),
             "form": _ecommerce_form_suggestion_from_analysis(analysis, request_model),
+            "recommended_templates": recommended_templates,
+            # Deprecated compatibility field: D2 still reads free-form plans until
+            # the frontend switches to recommended_templates.
             "plans": _normalize_ecommerce_recommended_plans(analysis, request_model),
         }
 
@@ -2371,6 +2400,179 @@ async def _analyze_ecommerce_product(
         "generation_constraints": "严格参考上传商品图，保持同一商品主体、颜色、材质、比例、结构和轮廓一致。",
         "recommended_plans": [],
     }
+
+
+async def _recall_benchmark_templates(
+    *,
+    analysis: dict[str, Any],
+    request: EcommerceAnalyzeRequest,
+    db: Database,
+    provider: OpenAICompatibleImageClient,
+    config: dict[str, Any],
+    settings: Settings,
+) -> list[dict[str, Any]]:
+    detected = _benchmark_detection_from_analysis(analysis)
+    candidates = db.list_inspirations(
+        limit=20,
+        offset=0,
+        template_type="benchmark",
+        smb_categories=detected["smb_categories"],
+        product_categories=detected["product_categories"],
+    )
+    if not candidates:
+        candidates = db.list_inspirations(limit=20, offset=0, template_type="benchmark")
+    if not candidates:
+        return []
+
+    ordered_ids = await _rerank_benchmark_template_ids(
+        candidates=candidates,
+        analysis=analysis,
+        request=request,
+        provider=provider,
+        config=config,
+        settings=settings,
+    )
+    by_id = {str(item.get("id")): item for item in candidates}
+    ordered_candidates = [by_id[template_id] for template_id in ordered_ids if template_id in by_id]
+    for candidate in candidates:
+        if len(ordered_candidates) >= 3:
+            break
+        if candidate not in ordered_candidates:
+            ordered_candidates.append(candidate)
+    return [_public_recommended_template(item) for item in ordered_candidates[:3]]
+
+
+def _benchmark_detection_from_analysis(analysis: dict[str, Any]) -> dict[str, list[str]]:
+    product_categories = _string_list(analysis.get("detected_product_categories"))
+    return {
+        "smb_categories": _string_list(analysis.get("detected_smb_categories")),
+        "product_categories": _expand_ecommerce_product_categories(product_categories),
+        "style_tags": _string_list(analysis.get("detected_style_tags")),
+    }
+
+
+def _expand_ecommerce_product_categories(values: list[str]) -> list[str]:
+    expanded: list[str] = []
+    for value in values:
+        if value not in expanded:
+            expanded.append(value)
+        for alias in ECOMMERCE_PRODUCT_CATEGORY_ALIASES.get(value, []):
+            if alias not in expanded:
+                expanded.append(alias)
+    return expanded
+
+
+async def _rerank_benchmark_template_ids(
+    *,
+    candidates: list[dict[str, Any]],
+    analysis: dict[str, Any],
+    request: EcommerceAnalyzeRequest,
+    provider: OpenAICompatibleImageClient,
+    config: dict[str, Any],
+    settings: Settings,
+) -> list[str]:
+    try:
+        provider_response = await provider.chat_completion(
+            config,
+            _benchmark_template_rerank_payload(
+                candidates=candidates,
+                analysis=analysis,
+                request=request,
+                settings=settings,
+            ),
+        )
+        parsed = _extract_json_object(_extract_chat_completion_text(provider_response))
+        ids = parsed.get("ids") if isinstance(parsed, dict) else None
+        if isinstance(ids, list):
+            return [str(item).strip() for item in ids if str(item).strip()][:3]
+    except Exception:
+        pass
+    return [str(item.get("id") or "") for item in candidates[:3] if str(item.get("id") or "")]
+
+
+def _benchmark_template_rerank_payload(
+    *,
+    candidates: list[dict[str, Any]],
+    analysis: dict[str, Any],
+    request: EcommerceAnalyzeRequest,
+    settings: Settings,
+) -> dict[str, Any]:
+    candidate_payload = [
+        {
+            "id": item.get("id"),
+            "title": item.get("title"),
+            "prompt": item.get("prompt"),
+            "section": item.get("section"),
+            "smb_categories": _json_string_list(item.get("smb_categories")),
+            "product_categories": _json_string_list(item.get("product_categories")),
+            "style_tags": _json_string_list(item.get("style_tags")),
+            "curator_note": item.get("curator_note") or "",
+        }
+        for item in candidates[:20]
+    ]
+    brief = {
+        "product_name": request.product_name.strip(),
+        "materials": request.materials.strip(),
+        "selling_points": request.selling_points.strip(),
+        "scenarios": request.scenarios.strip(),
+        "platform": request.platform.strip(),
+        "style": request.style.strip(),
+        "extra_requirements": request.extra_requirements.strip(),
+    }
+    return {
+        "model": settings.prompt_optimizer_model.strip(),
+        "messages": [
+            {"role": "system", "content": ECOMMERCE_BENCHMARK_RERANK_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "brief": brief,
+                        "analysis": analysis,
+                        "candidates": candidate_payload,
+                    },
+                    ensure_ascii=False,
+                ),
+            },
+        ],
+        "temperature": 0,
+        "max_tokens": 200,
+        "stream": False,
+    }
+
+
+def _public_recommended_template(item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": item.get("id") or "",
+        "title": item.get("title") or "",
+        "prompt": item.get("prompt") or "",
+        "image_url": item.get("image_url") or "",
+        "section": item.get("section") or "",
+        "smb_categories": _json_string_list(item.get("smb_categories")),
+        "product_categories": _json_string_list(item.get("product_categories")),
+        "style_tags": _json_string_list(item.get("style_tags")),
+        "default_aspect_ratio": item.get("default_aspect_ratio") or "1:1",
+        "default_size": item.get("default_size") or "1024x1024",
+        "curator_note": item.get("curator_note") or "",
+    }
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def _json_string_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return _string_list(value)
+    if not isinstance(value, str) or not value.strip():
+        return []
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return []
+    return _string_list(parsed)
 
 
 def _split_ecommerce_field(value: str | None) -> list[str]:
