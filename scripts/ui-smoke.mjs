@@ -628,7 +628,7 @@ function buildMockScript() {
     try {
       const key = ${JSON.stringify(API_CALL_STORAGE_KEY)};
       const existing = JSON.parse(window.localStorage.getItem(key) || '[]');
-      existing.push(call);
+      existing.push({ at: Date.now(), ...call });
       window.localStorage.setItem(key, JSON.stringify(existing));
     } catch {}
   }
@@ -827,11 +827,24 @@ function buildMockScript() {
 
     if (url.pathname === '/api/tasks') {
       const state = smokeState();
-      return json({ items: state === 'empty' ? [] : state === 'active-drawer' ? [activeTask] : [task] });
+      const items =
+        state === 'empty'
+          ? []
+          : state === 'active-drawer' || state === 'active-workspace'
+            ? [activeTask]
+            : state === 'failed-workspace'
+              ? [failedTask]
+              : state === 'single-workspace'
+                ? [singleImageTask]
+                : state === 'broken-image'
+                  ? [brokenImageTask]
+                  : [task];
+      return json({ items });
     }
 
     if (url.pathname === '/api/tasks/smoke-task') {
       const state = smokeState();
+      recordApiCall({ type: 'task-detail', path: url.pathname, state });
       if (state === 'broken-image') return json(brokenImageTask);
       if (state === 'active-workspace') return json(activeTask);
       if (state === 'failed-workspace') return json(failedTask);
@@ -840,6 +853,7 @@ function buildMockScript() {
     }
 
     if (url.pathname === '/api/tasks/smoke-regenerated-task') {
+      recordApiCall({ type: 'task-detail', path: url.pathname, state: smokeState() });
       return json(regeneratedTask);
     }
 
@@ -2242,6 +2256,27 @@ async function runSmokeChecks(page, baseUrl) {
     }
   });
 
+  await runCheck('/workspace task detail polling is not duplicated', async () => {
+    await page.navigate('/workspace/smoke-task?smoke_state=active-workspace', { width: 1280, height: 900 });
+    await page.waitFor(() => /Generating images|Task progress/i.test(document.body.innerText), '/workspace active polling fixture');
+    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
+    await sleep(1900);
+    const taskDetailCalls = await page.evaluate((key) => {
+      return JSON.parse(window.localStorage.getItem(key) || '[]')
+        .filter((call) => call.type === 'task-detail' && call.path === '/api/tasks/smoke-task');
+    }, API_CALL_STORAGE_KEY);
+    const closePairs = [];
+    for (let index = 1; index < taskDetailCalls.length; index += 1) {
+      const gap = taskDetailCalls[index].at - taskDetailCalls[index - 1].at;
+      if (gap < 1000) {
+        closePairs.push({ gap, previous: taskDetailCalls[index - 1], current: taskDetailCalls[index] });
+      }
+    }
+    if (taskDetailCalls.length > 2 || closePairs.length > 0) {
+      throw new Error(`/workspace task detail requests look duplicated: ${JSON.stringify({ taskDetailCalls, closePairs })}`);
+    }
+  });
+
   await runCheck('/workspace failed task keeps reason and next actions in the workbench', async () => {
     await page.navigate('/workspace/smoke-task?smoke_state=failed-workspace', { width: 390, height: 844 });
     await page.waitFor(() => /Generation failed|Failure reason/i.test(document.body.innerText), '/workspace failed workbench');
@@ -2293,7 +2328,6 @@ async function runSmokeChecks(page, baseUrl) {
     ]);
     await assertNoNamedControls(page, '/workspace selected lane removes duplicated task-scoped actions', [
       '^Reuse prompt$',
-      '^Regenerate$',
     ]);
     const albumState = await page.evaluate(() => {
       const text = document.body.innerText;
@@ -2491,6 +2525,43 @@ async function runSmokeChecks(page, baseUrl) {
       selectedGenerate[0].body?.n !== 1
     ) {
       throw new Error(`/workspace selected regenerate must send selected prompt with n=1: ${JSON.stringify(generateCalls)}`);
+    }
+  });
+
+  await runCheck('/workspace config panel tunes prompt and submits regenerate payload', async () => {
+    await page.navigate('/workspace/smoke-task?smoke_auth=1', { width: 1280, height: 900 });
+    await page.waitFor(() => /Tune and regenerate|Generated assets are ready/i.test(document.body.innerText), '/workspace config panel fixture');
+    await clickMainControl(page, '^Expand$', '/workspace config expand prompt');
+    const promptReady = await page.evaluate(() => {
+      const textarea = document.querySelector('#workspace-regenerate-prompt-input');
+      if (!(textarea instanceof HTMLTextAreaElement)) return false;
+      textarea.focus();
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+      if (setter) {
+        setter.call(textarea, 'Workspace tuned prompt from smoke');
+      } else {
+        textarea.value = 'Workspace tuned prompt from smoke';
+      }
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    });
+    if (!promptReady) throw new Error('/workspace config prompt textarea was not available after expanding');
+    await clickMainControl(page, '^3:4$', '/workspace config aspect ratio');
+    await clickMainControl(page, '^3$', '/workspace config image count');
+    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
+    await clickMainControl(page, '^Regenerate$', '/workspace config regenerate');
+    await page.waitFor(() => window.location.pathname.includes('/workspace/smoke-regenerated-task'), '/workspace config regenerated task route');
+    const generateCalls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
+    const configGenerate = generateCalls.filter((call) => call.type === 'generate');
+    if (
+      configGenerate.length !== 1 ||
+      configGenerate[0].body?.prompt !== 'Workspace tuned prompt from smoke' ||
+      configGenerate[0].body?.size !== '896x1184' ||
+      configGenerate[0].body?.aspect_ratio !== '3:4' ||
+      configGenerate[0].body?.quality !== 'auto' ||
+      configGenerate[0].body?.n !== 3
+    ) {
+      throw new Error(`/workspace config regenerate payload mismatch: ${JSON.stringify(generateCalls)}`);
     }
   });
 
