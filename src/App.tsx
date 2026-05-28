@@ -7,7 +7,6 @@ import Explore from './pages/Explore';
 import Create from './pages/Create';
 import Workspace from './pages/Workspace';
 import History from './pages/History';
-import Favorites from './pages/Favorites';
 import Config from './pages/Config';
 import Account from './pages/Account';
 import Recharge from './pages/Recharge';
@@ -38,7 +37,6 @@ export default function App() {
             <Route path="/create" element={<Create />} />
             <Route path="/workspace/:taskId" element={<Workspace />} />
             <Route path="/history" element={<History />} />
-            <Route path="/favorites" element={<Favorites />} />
             <Route path="/config" element={<Config />} />
             <Route path="/account" element={<Account />} />
             <Route path="/billing" element={<Navigate to="/account" replace />} />

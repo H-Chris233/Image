@@ -1485,7 +1485,7 @@ def test_user_can_publish_and_unpublish_history_as_public_case(tmp_path: Path) -
         assert public_cases_after == []
 
 
-def test_signed_in_user_can_favorite_public_cases(tmp_path: Path) -> None:
+def test_inspiration_favorites_api_is_removed_but_table_is_preserved(tmp_path: Path) -> None:
     with make_client(tmp_path) as client:
         db = client.app.state.db
         db.upsert_inspirations(
@@ -1506,29 +1506,17 @@ def test_signed_in_user_can_favorite_public_cases(tmp_path: Path) -> None:
         )
 
         guest_cases = client.get("/api/inspirations?q=favorite").json()["items"]
-        assert guest_cases[0]["favorited"] is False
-        assert client.post("/api/inspirations/case-fav-1/favorite").status_code == 401
+        assert "favorited" not in guest_cases[0]
+        assert "favorite_created_at" not in guest_cases[0]
+        assert client.get("/api/inspirations/favorites").status_code == 404
+        assert client.post("/api/inspirations/case-fav-1/favorite").status_code == 404
+        assert client.delete("/api/inspirations/case-fav-1/favorite").status_code == 404
 
-        login = client.post("/api/auth/login", json={"email": "demo@example.com", "password": "secret123"})
-        assert login.status_code == 200
-
-        before = client.get("/api/inspirations?q=favorite").json()["items"][0]
-        assert before["favorited"] is False
-
-        favorited = client.post("/api/inspirations/case-fav-1/favorite")
-        assert favorited.status_code == 200
-        assert favorited.json()["item"]["favorited"] is True
-
-        after = client.get("/api/inspirations?q=favorite").json()["items"][0]
-        favorites = client.get("/api/inspirations/favorites").json()
-        assert after["favorited"] is True
-        assert favorites["total"] == 1
-        assert favorites["items"][0]["id"] == "case-fav-1"
-
-        unfavorited = client.delete("/api/inspirations/case-fav-1/favorite")
-        assert unfavorited.status_code == 200
-        assert unfavorited.json()["item"]["favorited"] is False
-        assert client.get("/api/inspirations/favorites").json()["total"] == 0
+        with db.connect() as conn:
+            row = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'inspiration_favorites'"
+            ).fetchone()
+        assert row is not None
 
 
 def test_ai_inspiration_search_keeps_keyword_search_separate(tmp_path: Path) -> None:

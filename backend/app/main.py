@@ -786,72 +786,17 @@ def create_app(
         viewer: ViewerContext = Depends(_viewer),
         db: Database = Depends(_db),
     ) -> dict[str, Any]:
-        favorite_owner_id = viewer.owner_id if viewer.authenticated else None
         return {
             "items": db.list_inspirations(
                 limit=limit,
                 offset=offset,
                 q=q,
                 section=section,
-                favorite_owner_id=favorite_owner_id,
             ),
             "total": db.count_inspirations(q=q, section=section),
             "limit": limit,
             "offset": offset,
         }
-
-    @app.get("/api/inspirations/favorites")
-    async def favorite_inspirations(
-        limit: int = 48,
-        offset: int = 0,
-        q: str = "",
-        section: str = "",
-        viewer: ViewerContext = Depends(_viewer),
-        db: Database = Depends(_db),
-    ) -> dict[str, Any]:
-        _require_authenticated(viewer)
-        return {
-            "items": db.list_inspirations(
-                limit=limit,
-                offset=offset,
-                q=q,
-                section=section,
-                favorite_owner_id=viewer.owner_id,
-                favorites_only=True,
-            ),
-            "total": db.count_inspirations(
-                q=q,
-                section=section,
-                favorite_owner_id=viewer.owner_id,
-                favorites_only=True,
-            ),
-            "limit": limit,
-            "offset": offset,
-        }
-
-    @app.post("/api/inspirations/{inspiration_id}/favorite")
-    async def favorite_inspiration(
-        inspiration_id: str,
-        viewer: ViewerContext = Depends(_viewer),
-        db: Database = Depends(_db),
-    ) -> dict[str, Any]:
-        _require_authenticated(viewer)
-        item = db.set_inspiration_favorite(viewer.owner_id, inspiration_id, True)
-        if item is None:
-            raise HTTPException(status_code=404, detail="Inspiration item not found")
-        return {"ok": True, "item": item}
-
-    @app.delete("/api/inspirations/{inspiration_id}/favorite")
-    async def unfavorite_inspiration(
-        inspiration_id: str,
-        viewer: ViewerContext = Depends(_viewer),
-        db: Database = Depends(_db),
-    ) -> dict[str, Any]:
-        _require_authenticated(viewer)
-        item = db.set_inspiration_favorite(viewer.owner_id, inspiration_id, False)
-        if item is None:
-            raise HTTPException(status_code=404, detail="Inspiration item not found")
-        return {"ok": True, "item": item}
 
     @app.get("/api/inspirations/stats")
     async def inspiration_stats(db: Database = Depends(_db)) -> dict[str, Any]:
@@ -906,7 +851,6 @@ def create_app(
                 offset=request.offset,
                 q=search_query,
                 section=section,
-                favorite_owner_id=viewer.owner_id if viewer.authenticated else None,
             ),
             "total": db.count_inspirations(q=search_query, section=section),
             "limit": request.limit,
