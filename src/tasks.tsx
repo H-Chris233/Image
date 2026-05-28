@@ -181,7 +181,8 @@ export function TaskCenterProvider({ children }: { children: ReactNode }) {
   const activeTaskKey = activeTaskIds.join(':');
 
   useEffect(() => {
-    if (!viewer?.owner_id || activeTaskIds.length === 0) {
+    const pollTaskIds = activeTaskKey ? activeTaskKey.split(':') : [];
+    if (!viewer?.owner_id || pollTaskIds.length === 0) {
       return;
     }
     let cancelled = false;
@@ -194,7 +195,7 @@ export function TaskCenterProvider({ children }: { children: ReactNode }) {
       }
       polling = true;
       try {
-        const updates = await Promise.all(activeTaskIds.map((taskId) => getImageTask(taskId).catch(() => null)));
+        const updates = await Promise.all(pollTaskIds.map((taskId) => getImageTask(taskId).catch(() => null)));
         if (cancelled) {
           return;
         }
@@ -219,7 +220,7 @@ export function TaskCenterProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [activeTaskKey, activeTaskIds, viewer?.owner_id]);
+  }, [activeTaskKey, notifyCompletedTasks, viewer?.owner_id]);
 
   const taskHistoryItems = useMemo(
     () => mergeHistoryItems(tasks.flatMap((task) => task.items || [])),

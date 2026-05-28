@@ -27,18 +27,29 @@ import { useAuth } from '../auth';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import RechargeGate from '../components/RechargeGate';
 import RetryImage from '../components/RetryImage';
-import { Button } from '../components/design-system';
+import { Button, SegmentedControl, TextareaControl } from '../components/design-system';
+import { CreditEstimate } from '../components/ecommerce/CreditEstimate';
+import { providerImageSize } from '../imageOptions';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 
-const POLL_INTERVAL = 1500;
 const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
 const IMAGE_COST_BY_TIER: Record<string, number> = {
   FAST: 0.134,
   '1K': 0.134,
   '2K': 0.201,
   '4K': 0.268,
+};
+const WORKSPACE_ASPECT_RATIO_OPTIONS = ['1:1', '3:4', '4:3', '16:9', '9:16'] as const;
+const WORKSPACE_IMAGE_COUNT_OPTIONS = ['1', '2', '3', '4'] as const;
+
+type WorkspaceAspectRatio = (typeof WORKSPACE_ASPECT_RATIO_OPTIONS)[number];
+type WorkspaceImageCount = (typeof WORKSPACE_IMAGE_COUNT_OPTIONS)[number];
+type WorkspaceRegenerateConfig = {
+  prompt: string;
+  aspectRatio: WorkspaceAspectRatio;
+  imageCount: number;
 };
 
 const WORKSPACE_COPY = {
@@ -92,6 +103,15 @@ const WORKSPACE_COPY = {
     reusePrompt: '复用提示词',
     regenerate: '重新生成',
     retryPrompt: '重试',
+    regenerateConfigTitle: '调整后重新生成',
+    regeneratePromptLabel: 'Prompt',
+    regeneratePromptPlaceholder: '原 prompt 不可用，请重新输入',
+    expandPrompt: '展开',
+    collapsePrompt: '收起',
+    aspectRatioLabel: '画面比例',
+    imageCountLabel: '生成张数',
+    submitRegenerate: '重新生成',
+    submittedRegenerate: '已提交新一轮生成',
     albumSummary: '相册',
     albumTitleFallback: '系列集合',
     albumCurrentAsset: (index: number, total: number) => `当前 ${index} / ${total}`,
@@ -176,6 +196,15 @@ const WORKSPACE_COPY = {
     reusePrompt: 'Reuse prompt',
     regenerate: 'Regenerate',
     retryPrompt: 'Retry prompt',
+    regenerateConfigTitle: 'Tune and regenerate',
+    regeneratePromptLabel: 'Prompt',
+    regeneratePromptPlaceholder: 'Original prompt is unavailable. Enter a new prompt.',
+    expandPrompt: 'Expand',
+    collapsePrompt: 'Collapse',
+    aspectRatioLabel: 'Aspect ratio',
+    imageCountLabel: 'Image count',
+    submitRegenerate: 'Regenerate',
+    submittedRegenerate: '已提交新一轮生成',
     albumSummary: 'Album',
     albumTitleFallback: 'Series collection',
     albumCurrentAsset: (index: number, total: number) => `Current ${index} of ${total}`,
@@ -218,8 +247,8 @@ export default function Workspace() {
   const navigate = useNavigate();
   const { viewer } = useAuth();
   const { locale } = useSite();
-  const { addTask } = useTasks();
-  const { notifyError } = useNotifier();
+  const { addTask, tasks } = useTasks();
+  const { notifyError, notifyInfo } = useNotifier();
   const copy = WORKSPACE_COPY[locale];
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [task, setTask] = useState<ImageTask | null>(null);
@@ -231,45 +260,53 @@ export default function Workspace() {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [previewImages, setPreviewImages] = useState<{ id: string; url: string; prompt: string; title?: string }[] | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const taskFromStore = useMemo(
+    () => (taskId?.trim() ? tasks.find((candidate) => candidate.id === taskId) ?? null : null),
+    [taskId, tasks],
+  );
 
   useEffect(() => {
-    setTask(null);
+    if (!taskFromStore) {
+      return;
+    }
+    setTask(taskFromStore);
     setError(null);
+    setFetchingTask(false);
+  }, [taskFromStore]);
 
+  useEffect(() => {
+    setError(null);
     if (!taskId?.trim()) {
+      setTask(null);
+      setFetchingTask(false);
+      return;
+    }
+
+    if (taskFromStore) {
       setFetchingTask(false);
       return;
     }
 
     let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-
-    async function poll() {
-      try {
-        const nextTask = await getImageTask(taskId!);
+    setTask(null);
+    setFetchingTask(true);
+    getImageTask(taskId)
+      .then((nextTask) => {
         if (cancelled) return;
         setTask(nextTask);
         setError(null);
         setFetchingTask(false);
-        if (nextTask.status === 'queued' || nextTask.status === 'running') {
-          timer = setTimeout(poll, POLL_INTERVAL);
-        }
-      } catch (err: unknown) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : copy.fetchError);
-          setFetchingTask(false);
-        }
-      }
-    }
-
-    setFetchingTask(true);
-    poll();
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : copy.fetchError);
+        setFetchingTask(false);
+      });
 
     return () => {
       cancelled = true;
-      if (timer) clearTimeout(timer);
     };
-  }, [copy.fetchError, taskId]);
+  }, [copy.fetchError, taskFromStore, taskId]);
 
   useEffect(() => {
     if (!viewer?.authenticated) {
@@ -370,6 +407,40 @@ export default function Workspace() {
     }
   }
 
+  async function handleConfigRegenerate(config: WorkspaceRegenerateConfig) {
+    if (!task) {
+      return;
+    }
+    const prompt = config.prompt.trim();
+    if (!prompt) {
+      return;
+    }
+    const imageCount = normalizeImageCount(config.imageCount);
+    const expectedCost = estimateGenerationCost(imageCount, 'FAST');
+    if (hasInsufficientCredits(account?.balance ?? null, expectedCost)) {
+      openRechargeGate(expectedCost);
+      return;
+    }
+
+    setRegenerating(true);
+    try {
+      const submittedTask = await generateImage({
+        prompt,
+        size: providerImageSize('FAST', config.aspectRatio),
+        aspect_ratio: config.aspectRatio,
+        quality: 'auto',
+        n: imageCount,
+      });
+      addTask(submittedTask);
+      notifyInfo(copy.submittedRegenerate);
+      navigate(`/workspace/${submittedTask.id}`);
+    } catch (err) {
+      notifyError(err);
+    } finally {
+      setRegenerating(false);
+    }
+  }
+
   function openRechargeGate(expectedCost: number | null) {
     setRechargeGateExpectedCost(expectedCost);
     setRechargeGateOpen(true);
@@ -428,8 +499,10 @@ export default function Workspace() {
             downloadHref={downloadHref}
             expectedCount={expectedCount}
             images={previewableImages}
+            balance={account?.balance ?? null}
             onPreview={openPreview}
             onPreviewAll={() => openPreview(previewableImages, 0)}
+            onConfigRegenerate={(config) => handleConfigRegenerate(config).catch(() => undefined)}
             onRegenerateSelected={() => handleRegenerate(selectedPrompt, 1).catch(() => undefined)}
             onReuseSelectedPrompt={() => handleReusePrompt(selectedPrompt)}
             onSelectImage={setSelectedImageId}
@@ -444,6 +517,8 @@ export default function Workspace() {
           <EmptyResultState
             copy={copy}
             expectedCount={expectedCount}
+            balance={account?.balance ?? null}
+            onConfigRegenerate={(config) => handleConfigRegenerate(config).catch(() => undefined)}
             onRegenerate={() => handleRegenerate().catch(() => undefined)}
             onReusePrompt={handleReusePrompt}
             regenerating={regenerating}
@@ -562,10 +637,12 @@ function TaskProgressPanel({
 }
 
 function SucceededWorkbench({
+  balance,
   copy,
   downloadHref,
   expectedCount,
   images,
+  onConfigRegenerate,
   onPreview,
   onPreviewAll,
   onRegenerateSelected,
@@ -576,10 +653,12 @@ function SucceededWorkbench({
   selectedImageIndex,
   task,
 }: {
+  balance: AccountInfo['balance'] | null;
   copy: WorkspaceCopy;
   downloadHref: string;
   expectedCount: number | null;
   images: HistoryItem[];
+  onConfigRegenerate: (config: WorkspaceRegenerateConfig) => void;
   onPreview: (images: HistoryItem[], index: number) => void;
   onPreviewAll: () => void;
   onRegenerateSelected: () => void;
@@ -820,6 +899,15 @@ function SucceededWorkbench({
           <div className="mt-6">
             <TaskMetaGrid compact copy={copy} expectedCount={expectedCount} task={task} />
           </div>
+
+          <WorkspaceConfigPanel
+            balance={balance}
+            copy={copy}
+            expectedCount={expectedCount}
+            onRegenerate={onConfigRegenerate}
+            regenerating={regenerating}
+            task={task}
+          />
         </aside>
       </div>
     </section>
@@ -912,15 +1000,19 @@ function FailedTaskPanel({
 }
 
 function EmptyResultState({
+  balance,
   copy,
   expectedCount,
+  onConfigRegenerate,
   onRegenerate,
   onReusePrompt,
   regenerating,
   task,
 }: {
+  balance: AccountInfo['balance'] | null;
   copy: WorkspaceCopy;
   expectedCount: number | null;
+  onConfigRegenerate: (config: WorkspaceRegenerateConfig) => void;
   onRegenerate: () => void;
   onReusePrompt: () => void;
   regenerating: boolean;
@@ -962,7 +1054,125 @@ function EmptyResultState({
               {copy.retryPrompt}
             </Button>
           </div>
+          <WorkspaceConfigPanel
+            balance={balance}
+            copy={copy}
+            expectedCount={expectedCount}
+            onRegenerate={onConfigRegenerate}
+            regenerating={regenerating}
+            task={task}
+          />
         </div>
+      </div>
+    </section>
+  );
+}
+
+function WorkspaceConfigPanel({
+  balance,
+  copy,
+  expectedCount,
+  onRegenerate,
+  regenerating,
+  task,
+}: {
+  balance: AccountInfo['balance'] | null;
+  copy: WorkspaceCopy;
+  expectedCount: number | null;
+  onRegenerate: (config: WorkspaceRegenerateConfig) => void;
+  regenerating: boolean;
+  task: ImageTask;
+}) {
+  const [promptExpanded, setPromptExpanded] = useState(false);
+  const [prompt, setPrompt] = useState(() => getEditablePrompt(task));
+  const [aspectRatio, setAspectRatio] = useState<WorkspaceAspectRatio>(() => normalizeWorkspaceAspectRatio(task.aspect_ratio));
+  const [imageCount, setImageCount] = useState<WorkspaceImageCount>(() => normalizeWorkspaceImageCount(expectedCount));
+  const promptPreview = prompt.trim() || copy.regeneratePromptPlaceholder;
+  const collapsedPrompt = promptPreview.length > 80 ? `${promptPreview.slice(0, 80)}...` : promptPreview;
+  const promptMissing = !prompt.trim();
+
+  useEffect(() => {
+    setPrompt(getEditablePrompt(task));
+    setAspectRatio(normalizeWorkspaceAspectRatio(task.aspect_ratio));
+    setImageCount(normalizeWorkspaceImageCount(expectedCount));
+    setPromptExpanded(false);
+  }, [expectedCount, task]);
+
+  return (
+    <section className="mt-6 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3" aria-labelledby="workspace-regenerate-config-title">
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <SectionLabel icon={<RotateCcw size={14} />} label={copy.regenerateConfigTitle} />
+        <Button
+          variant="plain"
+          size="sm"
+          type="button"
+          className="h-9 px-2 text-xs"
+          onClick={() => setPromptExpanded((current) => !current)}
+          aria-expanded={promptExpanded}
+          aria-controls="workspace-regenerate-prompt"
+        >
+          {promptExpanded ? copy.collapsePrompt : copy.expandPrompt}
+        </Button>
+      </div>
+
+      <h2 id="workspace-regenerate-config-title" className="sr-only">
+        {copy.regenerateConfigTitle}
+      </h2>
+
+      <div className="mt-4 grid gap-4">
+        {promptExpanded ? (
+          <div id="workspace-regenerate-prompt">
+            <label htmlFor="workspace-regenerate-prompt-input" className="text-xs font-medium leading-5 text-on-surface-variant">
+              {copy.regeneratePromptLabel}
+            </label>
+            <TextareaControl
+              id="workspace-regenerate-prompt-input"
+              maxLength={4000}
+              value={prompt}
+              placeholder={copy.regeneratePromptPlaceholder}
+              onChange={(event) => setPrompt(event.target.value)}
+              className="mt-1.5 min-h-36"
+            />
+            <p className="mt-1.5 text-right text-[11px] font-medium text-on-surface-variant">{prompt.length}/4000</p>
+          </div>
+        ) : (
+          <div
+            id="workspace-regenerate-prompt"
+            className={`break-words rounded-lg border border-white/[0.06] bg-black/10 px-3 py-2 text-sm leading-6 [overflow-wrap:anywhere] ${
+              promptMissing ? 'text-on-surface-variant' : 'text-[#f0ede8]'
+            }`}
+          >
+            {collapsedPrompt}
+          </div>
+        )}
+
+        <SegmentedControl
+          label={copy.aspectRatioLabel}
+          value={aspectRatio}
+          options={WORKSPACE_ASPECT_RATIO_OPTIONS.map((value) => ({ value, label: value }))}
+          onChange={setAspectRatio}
+        />
+
+        <SegmentedControl
+          label={copy.imageCountLabel}
+          value={imageCount}
+          options={WORKSPACE_IMAGE_COUNT_OPTIONS.map((value) => ({ value, label: value }))}
+          onChange={setImageCount}
+        />
+
+        <CreditEstimate balance={balance} imageCount={Number(imageCount)} sizeTier="FAST" />
+
+        <Button
+          variant="primary"
+          fullWidth
+          iconStart={<RotateCcw size={15} aria-hidden="true" />}
+          type="button"
+          disabled={regenerating || !prompt.trim()}
+          loading={regenerating}
+          onClick={() => onRegenerate({ prompt, aspectRatio, imageCount: Number(imageCount) })}
+        >
+          {copy.submitRegenerate}
+        </Button>
       </div>
     </section>
   );
@@ -1191,6 +1401,21 @@ function sortImagesByBatch(items: HistoryItem[]) {
 function normalizeImageCount(value: number | null | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 1;
   return Math.max(1, Math.min(9, Math.round(value)));
+}
+
+function normalizeWorkspaceAspectRatio(value: string | null | undefined): WorkspaceAspectRatio {
+  return WORKSPACE_ASPECT_RATIO_OPTIONS.includes(value as WorkspaceAspectRatio)
+    ? (value as WorkspaceAspectRatio)
+    : '1:1';
+}
+
+function normalizeWorkspaceImageCount(value: number | null | undefined): WorkspaceImageCount {
+  const count = Math.max(1, Math.min(4, Math.round(value ?? 1)));
+  return String(count) as WorkspaceImageCount;
+}
+
+function getEditablePrompt(task: ImageTask) {
+  return task.prompt || task.items.find((item) => item.task_prompt || item.prompt)?.task_prompt || task.items[0]?.prompt || '';
 }
 
 function estimateGenerationCost(imageCount: number, size: string | null | undefined) {
