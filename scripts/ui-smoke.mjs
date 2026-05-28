@@ -901,6 +901,16 @@ function buildMockScript() {
       return json({ ok: true });
     }
 
+    const historyEditMatch = url.pathname.match(/^\\/api\\/history\\/(smoke-image-[12]|smoke-single-image-1)\\/edit$/);
+    if (historyEditMatch && ((init && init.method) || '').toUpperCase() === 'POST') {
+      let body = null;
+      try {
+        body = init && typeof init.body === 'string' ? JSON.parse(init.body) : formDataBody(init?.body);
+      } catch {}
+      recordApiCall({ type: 'history-edit', path: url.pathname, historyId: historyEditMatch[1], body });
+      return json(regeneratedTask);
+    }
+
     if (url.pathname === '/api/images/generate' && ((init && init.method) || '').toUpperCase() === 'POST') {
       let body = null;
       try {
@@ -2609,6 +2619,51 @@ async function runSmokeChecks(page, baseUrl) {
       configGenerate[0].body?.n !== 3
     ) {
       throw new Error(`/workspace config regenerate payload mismatch: ${JSON.stringify(generateCalls)}`);
+    }
+  });
+
+  await runCheck('/workspace quick edit background submits history edit payload', async () => {
+    await page.navigate('/workspace/smoke-task?smoke_auth=1', { width: 1280, height: 900 });
+    await page.waitFor(() => /快捷编辑/.test(document.body.innerText) && /换背景/.test(document.body.innerText), '/workspace quick edit fixture');
+    await clickMainControl(page, '换背景', '/workspace quick edit background');
+    const editorReady = await page.evaluate(() => {
+      const textarea = document.querySelector('#workspace-quick-edit-prompt');
+      return textarea instanceof HTMLTextAreaElement &&
+        /想换成什么背景/.test(document.body.innerText) &&
+        document.activeElement === textarea;
+    });
+    if (!editorReady) throw new Error('/workspace quick edit inline editor did not open and focus');
+    await page.insertText('深色大理石台面');
+    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
+    await clickMainControl(page, '^应用$', '/workspace quick edit apply');
+    await page.waitFor(() => window.location.pathname.includes('/workspace/smoke-regenerated-task'), '/workspace quick edit route');
+    const calls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
+    const editCalls = calls.filter((call) => call.type === 'history-edit');
+    if (
+      editCalls.length !== 1 ||
+      editCalls[0].path !== '/api/history/smoke-image-1/edit' ||
+      editCalls[0].body?.prompt !== '深色大理石台面' ||
+      editCalls[0].body?.n !== 1
+    ) {
+      throw new Error(`/workspace quick edit background payload mismatch: ${JSON.stringify(calls)}`);
+    }
+  });
+
+  await runCheck('/workspace quick edit variants submits n=3 history edit payload', async () => {
+    await page.navigate('/workspace/smoke-task?smoke_auth=1', { width: 1280, height: 900 });
+    await page.waitFor(() => /快捷编辑/.test(document.body.innerText) && /出 3 个变体/.test(document.body.innerText), '/workspace quick edit variants fixture');
+    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
+    await clickMainControl(page, '出 3 个变体', '/workspace quick edit variants');
+    await page.waitFor(() => window.location.pathname.includes('/workspace/smoke-regenerated-task'), '/workspace quick edit variants route');
+    const calls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
+    const editCalls = calls.filter((call) => call.type === 'history-edit');
+    if (
+      editCalls.length !== 1 ||
+      editCalls[0].path !== '/api/history/smoke-image-1/edit' ||
+      editCalls[0].body?.prompt !== '保留商品主体，生成 3 个不同构图的变体' ||
+      editCalls[0].body?.n !== 3
+    ) {
+      throw new Error(`/workspace quick edit variants payload mismatch: ${JSON.stringify(calls)}`);
     }
   });
 

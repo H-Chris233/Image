@@ -579,6 +579,7 @@ export function editHistoryImage(id: string, payload: GeneratePayload, reference
   if (payload.size) form.set('size', payload.size);
   if (payload.aspect_ratio) form.set('aspect_ratio', payload.aspect_ratio);
   if (payload.quality) form.set('quality', payload.quality);
+  if (payload.n) form.set('n', String(payload.n));
   appendReferenceInputs(form, referenceImages);
   return request<ImageTask>(`/api/history/${id}/edit`, {
     method: 'POST',
