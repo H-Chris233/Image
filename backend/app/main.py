@@ -12,7 +12,7 @@ from typing import Annotated, Any
 from urllib.parse import urlparse
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -78,6 +78,13 @@ class InspirationAISearchRequest(BaseModel):
     offset: int = Field(default=0, ge=0)
     section: str | None = Field(default=None, max_length=200)
     model: str | None = Field(default=None, max_length=120)
+
+
+def _csv_query_values(value: str | None) -> list[str] | None:
+    if value is None:
+        return None
+    values = [item.strip() for item in value.split(",") if item.strip()]
+    return values or None
 
 
 class EcommercePublishCopyRequest(BaseModel):
@@ -783,17 +790,37 @@ def create_app(
         offset: int = 0,
         q: str = "",
         section: str = "",
+        template_type: str | None = Query(default=None, max_length=40),
+        smb_categories: str | None = Query(default=None, max_length=200),
+        product_categories: str | None = Query(default=None, max_length=400),
+        style_tags: str | None = Query(default=None, max_length=400),
         viewer: ViewerContext = Depends(_viewer),
         db: Database = Depends(_db),
     ) -> dict[str, Any]:
-        return {
-            "items": db.list_inspirations(
+        try:
+            items = db.list_inspirations(
                 limit=limit,
                 offset=offset,
                 q=q,
                 section=section,
-            ),
-            "total": db.count_inspirations(q=q, section=section),
+                template_type=template_type,
+                smb_categories=_csv_query_values(smb_categories),
+                product_categories=_csv_query_values(product_categories),
+                style_tags=_csv_query_values(style_tags),
+            )
+            total = db.count_inspirations(
+                q=q,
+                section=section,
+                template_type=template_type,
+                smb_categories=_csv_query_values(smb_categories),
+                product_categories=_csv_query_values(product_categories),
+                style_tags=_csv_query_values(style_tags),
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {
+            "items": items,
+            "total": total,
             "limit": limit,
             "offset": offset,
         }

@@ -18,6 +18,7 @@ Inspiration benchmark template metadata:
 from __future__ import annotations
 
 import json
+import re
 import secrets
 import sqlite3
 from contextlib import contextmanager
@@ -32,6 +33,9 @@ from .settings import DEFAULT_INSPIRATION_SOURCE_URLS, Settings
 
 LEGACY_OWNER_ID = "legacy:default"
 DEFAULT_SITE_LOCALE = "zh-CN"
+ALLOWED_INSPIRATION_TEMPLATE_TYPES = {"github", "official", "community"}
+ALLOWED_INSPIRATION_SMB_CATEGORIES = {"cross_border_ecommerce", "domestic_ecommerce"}
+INSPIRATION_FILTER_VALUE_PATTERN = re.compile(r"^[a-z_]+$")
 USER_GALLERY_SECTION = "用户作品"
 
 
@@ -1300,10 +1304,22 @@ class Database:
         offset: int = 0,
         q: str = "",
         section: str = "",
+        template_type: str | None = None,
+        smb_categories: list[str] | None = None,
+        product_categories: list[str] | None = None,
+        style_tags: list[str] | None = None,
     ) -> list[dict[str, Any]]:
         limit = max(1, min(limit, 200))
         offset = max(0, offset)
-        where, params = self._inspiration_where(q=q, section=section, table_alias="p")
+        where, params = self._inspiration_where(
+            q=q,
+            section=section,
+            table_alias="p",
+            template_type=template_type,
+            smb_categories=smb_categories,
+            product_categories=product_categories,
+            style_tags=style_tags,
+        )
         order_by = "p.created_at DESC, p.synced_at DESC, p.section ASC, p.title ASC"
         with self.connect() as conn:
             rows = conn.execute(
@@ -1322,8 +1338,20 @@ class Database:
         self,
         q: str = "",
         section: str = "",
+        template_type: str | None = None,
+        smb_categories: list[str] | None = None,
+        product_categories: list[str] | None = None,
+        style_tags: list[str] | None = None,
     ) -> int:
-        where, params = self._inspiration_where(q=q, section=section, table_alias="p")
+        where, params = self._inspiration_where(
+            q=q,
+            section=section,
+            table_alias="p",
+            template_type=template_type,
+            smb_categories=smb_categories,
+            product_categories=product_categories,
+            style_tags=style_tags,
+        )
         with self.connect() as conn:
             row = conn.execute(
                 f"""
@@ -1348,7 +1376,15 @@ class Database:
         return _inspiration_row(row) if row else None
 
     @staticmethod
-    def _inspiration_where(q: str = "", section: str = "", table_alias: str = "") -> tuple[str, list[Any]]:
+    def _inspiration_where(
+        q: str = "",
+        section: str = "",
+        table_alias: str = "",
+        template_type: str | None = None,
+        smb_categories: list[str] | None = None,
+        product_categories: list[str] | None = None,
+        style_tags: list[str] | None = None,
+    ) -> tuple[str, list[Any]]:
         prefix = f"{table_alias}." if table_alias else ""
         clauses = []
         params: list[Any] = []
@@ -1359,7 +1395,50 @@ class Database:
         if section.strip():
             clauses.append(f"{prefix}section = ?")
             params.append(section.strip())
+        if template_type:
+            normalized_template_type = template_type.strip()
+            if normalized_template_type not in ALLOWED_INSPIRATION_TEMPLATE_TYPES:
+                raise ValueError("Invalid template_type filter")
+            clauses.append(f"{prefix}template_type = ?")
+            params.append(normalized_template_type)
+        json_filters = (
+            ("smb_categories", smb_categories, ALLOWED_INSPIRATION_SMB_CATEGORIES),
+            ("product_categories", product_categories, None),
+            ("style_tags", style_tags, None),
+        )
+        for column, values, allowed_values in json_filters:
+            clean_values = Database._validate_inspiration_filter_values(column, values, allowed_values)
+            if not clean_values:
+                continue
+            value_clauses = []
+            for value in clean_values:
+                value_clauses.append(f"{prefix}{column} LIKE ? ESCAPE '\\'")
+                params.append(f'%"{Database._escape_like_value(value)}"%')
+            clauses.append(f"({' OR '.join(value_clauses)})")
         return (f"WHERE {' AND '.join(clauses)}" if clauses else "", params)
+
+    @staticmethod
+    def _escape_like_value(value: str) -> str:
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+    @staticmethod
+    def _validate_inspiration_filter_values(
+        name: str,
+        values: list[str] | None,
+        allowed_values: set[str] | None = None,
+    ) -> list[str]:
+        clean_values = []
+        for value in values or []:
+            clean_value = value.strip()
+            if not clean_value:
+                continue
+            if allowed_values is not None:
+                if clean_value not in allowed_values:
+                    raise ValueError(f"Invalid {name} filter")
+            elif not INSPIRATION_FILTER_VALUE_PATTERN.fullmatch(clean_value):
+                raise ValueError(f"Invalid {name} filter")
+            clean_values.append(clean_value)
+        return clean_values
 
     def inspiration_stats(self) -> dict[str, Any]:
         with self.connect() as conn:

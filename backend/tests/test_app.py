@@ -654,6 +654,92 @@ def test_inspiration_prompt_schema_migration_is_idempotent(tmp_path: Path) -> No
         assert row["curator_note"] == "benchmark seed"
 
 
+def test_inspirations_filter_template_metadata(tmp_path: Path) -> None:
+    with make_client(tmp_path) as client:
+        db = client.app.state.db
+        db.upsert_inspirations(
+            "https://example.com/b3-filter.md",
+            [
+                {
+                    "id": "b3-official-food",
+                    "source_item_id": "b3-official-food",
+                    "section": "B3",
+                    "title": "B3 official food",
+                    "author": "@demo",
+                    "prompt": "b3 filter official food",
+                    "image_url": None,
+                    "source_link": None,
+                    "raw": {},
+                },
+                {
+                    "id": "b3-official-apparel",
+                    "source_item_id": "b3-official-apparel",
+                    "section": "B3",
+                    "title": "B3 official apparel",
+                    "author": "@demo",
+                    "prompt": "b3 filter official apparel",
+                    "image_url": None,
+                    "source_link": None,
+                    "raw": {},
+                },
+                {
+                    "id": "b3-github-food",
+                    "source_item_id": "b3-github-food",
+                    "section": "B3",
+                    "title": "B3 github food",
+                    "author": "@demo",
+                    "prompt": "b3 filter github food",
+                    "image_url": None,
+                    "source_link": None,
+                    "raw": {},
+                },
+            ],
+        )
+        metadata = {
+            "b3-official-food": ("official", ["cross_border_ecommerce"], ["food"], ["clean_white_bg"]),
+            "b3-official-apparel": ("official", ["domestic_ecommerce"], ["apparel"], ["lifestyle"]),
+            "b3-github-food": ("github", ["cross_border_ecommerce"], ["food"], ["advertising"]),
+        }
+        with db.connect() as conn:
+            for inspiration_id, (template_type, smb_categories, product_categories, style_tags) in metadata.items():
+                conn.execute(
+                    """
+                    UPDATE inspiration_prompts
+                    SET template_type = ?,
+                        smb_categories = ?,
+                        product_categories = ?,
+                        style_tags = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        template_type,
+                        json.dumps(smb_categories),
+                        json.dumps(product_categories),
+                        json.dumps(style_tags),
+                        inspiration_id,
+                    ),
+                )
+
+        official = client.get("/api/inspirations?template_type=official")
+        assert official.status_code == 200
+        assert official.json()["total"] == 2
+        assert {item["id"] for item in official.json()["items"]} == {"b3-official-food", "b3-official-apparel"}
+
+        official_products = client.get("/api/inspirations?template_type=official&product_categories=food,apparel")
+        assert official_products.status_code == 200
+        assert official_products.json()["total"] == 2
+        assert {item["id"] for item in official_products.json()["items"]} == {"b3-official-food", "b3-official-apparel"}
+
+        cross_border = client.get("/api/inspirations?smb_categories=cross_border_ecommerce")
+        assert cross_border.status_code == 200
+        assert cross_border.json()["total"] == 2
+        assert {item["id"] for item in cross_border.json()["items"]} == {"b3-official-food", "b3-github-food"}
+
+        invalid = client.get("/api/inspirations", params={"template_type": "' OR 1=1; --"})
+        assert invalid.status_code == 400
+        assert invalid.json()["detail"] == "Invalid template_type filter"
+
+
 def test_session_alias_returns_guest_session(tmp_path: Path) -> None:
     with make_client(tmp_path) as client:
         response = client.get("/api/session")
