@@ -42,10 +42,15 @@ export default function TaskDrawer() {
     prompt: string;
   } | null>(null);
 
-  const activeTasks = useMemo(
-    () => tasks.filter((task) => task.status === 'queued' || task.status === 'running'),
-    [tasks],
-  );
+  // active 任务在前；后接最近 5 个 succeeded/failed —— 让用户打开抽屉就能看到"刚才那个任务好了没"，
+  // 而不是任务一终态就消失只剩 idle 空状态。
+  const displayTasks = useMemo(() => {
+    const active = tasks.filter((task) => task.status === 'queued' || task.status === 'running');
+    const recentDone = tasks
+      .filter((task) => task.status === 'succeeded' || task.status === 'failed')
+      .slice(0, 5);
+    return [...active, ...recentDone];
+  }, [tasks]);
   const titleId = 'task-drawer-title';
 
   useEffect(() => {
@@ -168,7 +173,7 @@ export default function TaskDrawer() {
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-4">
-            {activeTasks.length === 0 ? (
+            {displayTasks.length === 0 ? (
               <div className="flex h-full min-h-[260px] items-center justify-center rounded-2xl border border-outline-variant/70 bg-surface/70 px-5 py-8 text-center">
                 <div className="mx-auto flex max-w-xs flex-col items-center">
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
@@ -190,7 +195,7 @@ export default function TaskDrawer() {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {activeTasks.map((task) => {
+                {displayTasks.map((task) => {
                   const previewImages = task.items
                     .filter((item) => item.image_url)
                     .sort((a, b) => (a.batch_index || 0) - (b.batch_index || 0))
