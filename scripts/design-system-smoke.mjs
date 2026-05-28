@@ -124,7 +124,6 @@ const activeSourceFiles = [
   'src/components/AuthModal.tsx',
   'src/components/BottomTabBar.tsx',
   'src/components/ImagePreviewModal.tsx',
-  'src/components/PromptEditorModal.tsx',
   'src/components/SideNavBar.tsx',
   'src/components/TaskDrawer.tsx',
   'src/components/TopNavBar.tsx',
@@ -149,7 +148,6 @@ const activeSourceFiles = [
 const primitiveMigrationFiles = [
   'src/components/AccountCenterHeader.tsx',
   'src/components/BottomTabBar.tsx',
-  'src/components/PromptEditorModal.tsx',
   'src/components/SideNavBar.tsx',
   'src/pages/Account.tsx',
 ];
