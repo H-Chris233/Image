@@ -6,6 +6,7 @@ import json
 import sqlite3
 import time
 import zipfile
+from dataclasses import replace
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,7 @@ from app.branding import (
     PRODUCT_NAME,
     TRIAL_BALANCE_GRANT_NOTE,
 )
+from app.auth_client import MockAuthClient
 from app.inspirations import cache_inspiration_images, normalize_inspiration_source_url, parse_inspiration_markdown
 from app.main import create_app, _auth_client, _db, _image_size_tier, _provider, _provider_image_size, _settings
 from app.provider import ProviderError
@@ -857,6 +859,105 @@ def seed_benchmark_templates(db: Any) -> list[str]:
                 ),
             )
     return [item["id"] for item in items]
+
+
+def make_dev_mock_app(tmp_path: Path):
+    base_settings = make_app(tmp_path).state.settings
+    return create_app(
+        settings=replace(
+            base_settings,
+            database_path=tmp_path / "mock-data" / "app.sqlite3",
+            storage_dir=tmp_path / "mock-storage",
+            dev_allow_mock_sub2api=True,
+            dev_mock_sub2api_base_url="mock://sub2api-test",
+            provider_base_url="https://sub.chris233.qzz.io/v1",
+            auth_base_url="https://sub.chris233.qzz.io",
+            cors_origins=["http://127.0.0.1:3000", "http://localhost:5173"],
+            cookie_secure=False,
+        )
+    )
+
+
+def test_dev_mock_login_bypasses_sub2api(tmp_path: Path) -> None:
+    app = make_dev_mock_app(tmp_path)
+    assert isinstance(app.state.auth_client, MockAuthClient)
+
+    with TestClient(app) as client:
+        response = client.post("/api/auth/login", json={"email": "Foo@Example.com", "password": "x"})
+
+        assert response.status_code == 200
+        payload = response.json()
+        expected_owner = "mock:" + hashlib.sha256("foo@example.com".encode("utf-8")).hexdigest()[:16]
+        assert payload["ok"] is True
+        assert payload["viewer"]["authenticated"] is True
+        assert payload["viewer"]["owner_id"] == expected_owner
+        assert DEFAULT_SESSION_COOKIE_NAME in client.cookies
+
+        session = client.get("/api/auth/session")
+        assert session.status_code == 200
+        assert session.json()["owner_id"] == expected_owner
+        assert session.json()["user"]["email"] == "foo@example.com"
+
+        config = client.get("/api/config").json()
+        assert config["owner_id"] == expected_owner
+        assert config["managed_by_auth"] is True
+        assert config["api_key_source"] == "managed"
+        with app.state.db.connect() as conn:
+            row = conn.execute("SELECT managed_api_key, base_url FROM owner_config WHERE owner_id = ?", (expected_owner,)).fetchone()
+        assert row["managed_api_key"] == "mock-key-for-foo@example.com"
+        assert row["base_url"] == "mock://sub2api-test"
+
+        register = client.post("/api/auth/register", json={"email": "bar@example.com", "password": "y"})
+        assert register.status_code == 200
+        expected_registered_owner = "mock:" + hashlib.sha256("bar@example.com".encode("utf-8")).hexdigest()[:16]
+        assert register.json()["viewer"]["owner_id"] == expected_registered_owner
+
+
+def test_dev_mock_analyze_returns_recommended_templates(tmp_path: Path) -> None:
+    app = make_dev_mock_app(tmp_path)
+    with TestClient(app) as client:
+        login = client.post("/api/auth/login", json={"email": "demo@example.com", "password": "secret123"})
+        assert login.status_code == 200
+        seed_benchmark_templates(client.app.state.db)
+
+        response = client.post(
+            "/api/ecommerce/analyze",
+            data={
+                "product_name": "Mock product",
+                "image_count": "4",
+                "size": "1024x1024",
+                "aspect_ratio": "1:1",
+            },
+            files={"image": ("mock.png", FAKE_PNG_BYTES, "image/png")},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["analysis"]["source"] == "vision"
+        assert payload["analysis"]["detected_smb_categories"] == ["domestic_ecommerce"]
+        assert payload["analysis"]["detected_product_categories"] == ["home_living"]
+        templates = payload["recommended_templates"]
+        assert len(templates) == 3
+        assert [item["id"] for item in templates] == ["c1-benchmark-1", "c1-benchmark-2", "c1-benchmark-3"]
+        assert all(item["curator_note"] == "C1 seeded benchmark" for item in templates)
+
+
+def test_dev_mock_disabled_by_default(tmp_path: Path) -> None:
+    auth = FakeAuthClient()
+    with make_client(tmp_path, auth_client=auth) as client:
+        response = client.post("/api/auth/login", json={"email": "demo@example.com", "password": "secret123"})
+
+        assert response.status_code == 200
+        assert client.app.state.settings.dev_allow_mock_sub2api is False
+        assert auth.login_base_urls == ["http://127.0.0.1:9878"]
+
+
+def test_dev_mock_prod_guard_refuses_startup(tmp_path: Path) -> None:
+    base_settings = make_app(tmp_path).state.settings
+    settings = replace(base_settings, dev_allow_mock_sub2api=True, cookie_secure=True)
+
+    with pytest.raises(RuntimeError, match="COOKIE_SECURE=true"):
+        create_app(settings=settings)
 
 
 def test_guest_config_masks_api_key(tmp_path: Path) -> None:

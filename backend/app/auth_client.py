@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import hashlib
+import logging
 from typing import Any
 
 import httpx
 
 from .branding import UPSTREAM_SERVICE_LABEL
 from .provider import ProviderError, _friendly_upstream_error, _looks_like_html
+
+logger = logging.getLogger(__name__)
 
 
 class Sub2APIAuthClient:
@@ -199,6 +203,123 @@ class Sub2APIAuthClient:
         if isinstance(payload, dict) and "data" in payload:
             return payload["data"]
         return payload
+
+
+class MockAuthClient(Sub2APIAuthClient):
+    def __init__(self, mock_base_url: str = "mock://sub2api", timeout_seconds: float = 60):
+        super().__init__(timeout_seconds)
+        self.mock_base_url = mock_base_url.strip() or "mock://sub2api"
+        self._keys_by_access_token: dict[str, str] = {}
+
+    async def public_settings(self, base_url: str) -> dict[str, Any]:
+        logger.warning("[DEV-MOCK] public settings returned without contacting sub2api")
+        return {
+            "registration_enabled": True,
+            "email_verify_enabled": False,
+            "backend_mode_enabled": False,
+            "site_name": "AetherGenix Dev Mock",
+            "turnstile_enabled": False,
+        }
+
+    async def send_verify_code(self, base_url: str, payload: dict[str, Any]) -> dict[str, Any]:
+        email = _mock_email(payload)
+        logger.warning("[DEV-MOCK] verify code bypassed for %s", email or "unknown")
+        return {"message": "dev mock verification bypassed", "countdown": 0}
+
+    async def register(self, base_url: str, payload: dict[str, Any]) -> dict[str, Any]:
+        email = _mock_email(payload)
+        logger.warning("[DEV-MOCK] register bypassed for %s", email)
+        return self._auth_result(email)
+
+    async def login(self, base_url: str, payload: dict[str, Any]) -> dict[str, Any]:
+        email = _mock_email(payload)
+        logger.warning("[DEV-MOCK] login bypassed for %s", email)
+        return self._auth_result(email)
+
+    async def login_2fa(self, base_url: str, payload: dict[str, Any]) -> dict[str, Any]:
+        logger.warning("[DEV-MOCK] 2FA bypassed")
+        return self._auth_result("mock-2fa@example.com")
+
+    async def list_keys(self, base_url: str, access_token: str) -> list[dict[str, Any]]:
+        logger.warning("[DEV-MOCK] key list returned without contacting sub2api")
+        key = self._keys_by_access_token.get(access_token) or "mock-key-for-dev@example.com"
+        return [{"id": "mock-managed-key", "key": key, "name": "AetherGenix dev mock key", "status": "active"}]
+
+    async def list_available_groups(self, base_url: str, access_token: str) -> list[dict[str, Any]]:
+        logger.warning("[DEV-MOCK] available groups returned without contacting sub2api")
+        return [{"id": 1, "name": "dev-mock-openai", "platform": "openai", "status": "active"}]
+
+    async def create_key(self, base_url: str, access_token: str, payload: dict[str, Any]) -> dict[str, Any]:
+        logger.warning("[DEV-MOCK] key creation bypassed for %s", payload.get("name") or "unnamed key")
+        key = self._keys_by_access_token.get(access_token) or "mock-key-for-dev@example.com"
+        return {"id": "mock-managed-key", "key": key, "name": payload.get("name") or "dev mock key", "status": "active"}
+
+    async def list_usage(self, base_url: str, access_token: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        logger.warning("[DEV-MOCK] usage list returned empty; mock mode charges 0 credits")
+        return []
+
+    async def payment_checkout_info(self, base_url: str, access_token: str) -> dict[str, Any]:
+        logger.warning("[DEV-MOCK] payment checkout info returned without contacting sub2api")
+        return {"methods": {}, "plans": [], "balance_disabled": True, "help_text": "dev mock mode", "help_image_url": ""}
+
+    async def payment_create_order(self, base_url: str, access_token: str, payload: dict[str, Any]) -> dict[str, Any]:
+        logger.warning("[DEV-MOCK] payment order creation bypassed")
+        return {"order_id": "mock-order", "status": "COMPLETED", "amount": payload.get("amount", 0), "payment_type": payload.get("payment_type")}
+
+    async def payment_list_orders(self, base_url: str, access_token: str, params: dict[str, Any]) -> dict[str, Any]:
+        logger.warning("[DEV-MOCK] payment order list returned empty")
+        return {"items": [], "total": 0, "page": params.get("page", 1), "page_size": params.get("page_size", 20)}
+
+    async def payment_get_order(self, base_url: str, access_token: str, order_id: int) -> dict[str, Any]:
+        logger.warning("[DEV-MOCK] payment order detail returned for %s", order_id)
+        return {"id": order_id, "status": "COMPLETED", "amount": 0, "payment_type": "mock"}
+
+    async def payment_cancel_order(self, base_url: str, access_token: str, order_id: int) -> dict[str, Any]:
+        logger.warning("[DEV-MOCK] payment order cancel bypassed for %s", order_id)
+        return {"message": "mock order cancelled"}
+
+    async def payment_verify_order(self, base_url: str, access_token: str, out_trade_no: str) -> dict[str, Any]:
+        logger.warning("[DEV-MOCK] payment order verify bypassed for %s", out_trade_no)
+        return {"id": "mock-order", "status": "COMPLETED", "out_trade_no": out_trade_no, "amount": 0, "payment_type": "mock"}
+
+    async def admin_update_user_balance(
+        self,
+        base_url: str,
+        admin_token: str,
+        user_id: int,
+        payload: dict[str, Any],
+        *,
+        token_type: str = "api_key",
+    ) -> dict[str, Any]:
+        logger.warning("[DEV-MOCK] admin balance update bypassed for user %s", user_id)
+        return {"id": user_id, "balance": payload.get("balance", 0)}
+
+    def _auth_result(self, email: str) -> dict[str, Any]:
+        normalized = email.strip().lower() or "dev@example.com"
+        digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+        user_id = int(digest[:12], 16) % 2_000_000_000
+        owner_id = f"mock:{digest[:16]}"
+        managed_api_key = f"mock-key-for-{normalized}"
+        access_token = f"mock-access-{digest[:24]}"
+        self._keys_by_access_token[access_token] = managed_api_key
+        return {
+            "access_token": access_token,
+            "refresh_token": f"mock-refresh-{digest[24:48]}",
+            "token_type": "Bearer",
+            "owner_id": owner_id,
+            "managed_api_key": managed_api_key,
+            "provider_base_url": self.mock_base_url,
+            "user": {
+                "id": user_id,
+                "email": normalized,
+                "username": normalized.split("@", 1)[0],
+                "role": "admin",
+            },
+        }
+
+
+def _mock_email(payload: dict[str, Any]) -> str:
+    return str(payload.get("email") or "dev@example.com").strip().lower()
 
 
 def _join_base(base_url: str, path: str) -> str:

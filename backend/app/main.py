@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import ipaddress
 import json
+import logging
+import os
 import zipfile
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -17,7 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from .auth_client import Sub2APIAuthClient
+from .auth_client import MockAuthClient, Sub2APIAuthClient
 from .branding import (
     BACKEND_API_TITLE,
     MANAGED_API_KEY_NAME,
@@ -30,6 +33,8 @@ from .inspirations import normalize_inspiration_source_urls, run_inspiration_syn
 from .provider import OpenAICompatibleImageClient, ProviderError
 from .settings import Settings, is_deprecated_recharge_url
 from .storage import load_stored_image_as_upload, save_provider_image, save_upload
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigUpdate(BaseModel):
@@ -287,7 +292,7 @@ class AuthSendVerifyCodeRequest(BaseModel):
 
 class AuthRegisterRequest(BaseModel):
     email: str = Field(min_length=3, max_length=320)
-    password: str = Field(min_length=6, max_length=256)
+    password: str = Field(min_length=1, max_length=256)
     verify_code: str | None = None
     turnstile_token: str | None = None
     promo_code: str | None = None
@@ -352,12 +357,49 @@ class ImageLedgerCost:
     usage_log: dict[str, Any] | None = None
 
 
+def _validate_dev_mock_sub2api_settings(settings: Settings) -> None:
+    if not settings.dev_allow_mock_sub2api:
+        return
+    failures: list[str] = []
+    if settings.cookie_secure:
+        failures.append("COOKIE_SECURE=true")
+    if os.getenv("PRODUCTION"):
+        failures.append("PRODUCTION is set")
+    public_origins = [origin for origin in settings.cors_origins if _is_public_cors_origin(origin)]
+    if public_origins:
+        failures.append(f"CORS_ORIGINS contains public origin(s): {', '.join(public_origins)}")
+    if failures:
+        message = "DEV_ALLOW_MOCK_SUB2API=true is forbidden with production-like settings: " + "; ".join(failures)
+        logger.critical("[DEV-MOCK] %s", message)
+        raise RuntimeError(message)
+    logger.warning("[DEV-MOCK] DEV_ALLOW_MOCK_SUB2API=true; sub2api auth, chat, and image calls are mocked")
+
+
+def _is_public_cors_origin(origin: str) -> bool:
+    text = str(origin or "").strip()
+    if not text:
+        return False
+    if text == "*":
+        return True
+    parsed = urlparse(text)
+    host = parsed.hostname or text.split(":", 1)[0]
+    host = host.strip("[]").lower()
+    if host in {"localhost", "127.0.0.1", "::1"} or host.endswith(".localhost") or host.endswith(".local"):
+        return False
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return True
+    return not (address.is_loopback or address.is_private or address.is_link_local)
+
+
 def create_app(
     settings: Settings | None = None,
     provider: OpenAICompatibleImageClient | None = None,
     auth_client: Sub2APIAuthClient | None = None,
 ) -> FastAPI:
     settings = settings or Settings.from_env()
+    _validate_dev_mock_sub2api_settings(settings)
     settings.ensure_directories()
     db = Database(settings.database_path)
     db.init(settings)
@@ -390,8 +432,16 @@ def create_app(
     app = FastAPI(title=BACKEND_API_TITLE, version="2.0.0", lifespan=lifespan)
     app.state.settings = settings
     app.state.db = db
-    app.state.provider = provider or OpenAICompatibleImageClient(settings.request_timeout_seconds)
-    app.state.auth_client = auth_client or Sub2APIAuthClient(settings.request_timeout_seconds)
+    app.state.provider = provider or OpenAICompatibleImageClient(
+        settings.request_timeout_seconds,
+        dev_mock_enabled=settings.dev_allow_mock_sub2api,
+        dev_mock_base_url=settings.dev_mock_sub2api_base_url,
+    )
+    app.state.auth_client = auth_client or (
+        MockAuthClient(settings.dev_mock_sub2api_base_url, settings.request_timeout_seconds)
+        if settings.dev_allow_mock_sub2api
+        else Sub2APIAuthClient(settings.request_timeout_seconds)
+    )
     app.state.inspiration_task = None
     app.state.image_tasks = {}
     app.state.last_inspiration_sync = None
@@ -519,6 +569,19 @@ def create_app(
         auth_client: Sub2APIAuthClient = Depends(_auth_client),
     ) -> dict[str, Any]:
         try:
+            if not settings.dev_allow_mock_sub2api and len(payload.password) < 6:
+                raise HTTPException(
+                    status_code=422,
+                    detail=[
+                        {
+                            "type": "string_too_short",
+                            "loc": ["body", "password"],
+                            "msg": "String should have at least 6 characters",
+                            "input": payload.password,
+                            "ctx": {"min_length": 6},
+                        }
+                    ],
+                )
             result = await auth_client.register(_site_auth_base_url(db, settings), payload.model_dump(exclude_none=True))
             viewer_payload = await _complete_auth_flow(
                 db,
@@ -1468,6 +1531,7 @@ def _public_site_settings(settings_data: dict[str, Any], viewer: ViewerContext, 
         },
         "inspiration_sources": settings_data.get("inspiration_sources") or [],
         "recharge_url": _effective_recharge_url(settings_data, settings),
+        "dev_mock_mode": settings.dev_allow_mock_sub2api,
         "viewer": {
             "authenticated": viewer.authenticated,
             "is_admin": viewer.is_admin,
@@ -1611,22 +1675,24 @@ async def _complete_auth_flow(
         raise HTTPException(status_code=502, detail=f"{UPSTREAM_SERVICE_LABEL} login response was missing user credentials")
 
     user_id = int(user["id"])
-    owner_id = f"user:{user_id}"
+    owner_id = str(auth_result.get("owner_id") or f"user:{user_id}")
     display_name = str(user.get("username") or user.get("email") or f"user-{user_id}")
     auth_base_url = _site_auth_base_url(db, settings)
-    provider_base_url = _site_provider_base_url(db, settings)
-    api_key = await _resolve_auth_api_key(
-        db,
-        settings,
-        auth_client,
-        auth_base_url,
-        access_token,
-        owner_id=owner_id,
-        sub2api_user_id=user_id,
-        email=str(user.get("email") or ""),
-        display_name=display_name,
-        grant_trial=grant_trial,
-    )
+    provider_base_url = str(auth_result.get("provider_base_url") or _site_provider_base_url(db, settings)).strip().rstrip("/")
+    api_key = str(auth_result.get("managed_api_key") or "").strip()
+    if not api_key:
+        api_key = await _resolve_auth_api_key(
+            db,
+            settings,
+            auth_client,
+            auth_base_url,
+            access_token,
+            owner_id=owner_id,
+            sub2api_user_id=user_id,
+            email=str(user.get("email") or ""),
+            display_name=display_name,
+            grant_trial=grant_trial,
+        )
 
     db.merge_owner_data(
         request.state.guest_owner_id,
@@ -3638,6 +3704,9 @@ async def _resolve_image_ledger_cost(
     size: str,
     image_count: int,
 ) -> ImageLedgerCost:
+    if settings.dev_allow_mock_sub2api:
+        logger.warning("[DEV-MOCK] image ledger cost forced to 0 credits")
+        return ImageLedgerCost(amount=0, source="dev_mock_sub2api")
     if config.get("api_key_source") == "managed":
         actual = await _sub2api_actual_image_ledger_cost(
             db,
