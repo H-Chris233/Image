@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 type AuthTab = 'login' | 'register';
@@ -35,6 +35,16 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
   const closeAuthModal = useCallback(() => {
     setOpen(false);
   }, []);
+
+  // 401 自愈（#95）：session 过期时弹登录框，pendingPath 保留当前路径，登录成功后留在原页面。
+  useEffect(() => {
+    const handler = () => {
+      const path = typeof window !== 'undefined' ? window.location.pathname : null;
+      openAuthModal('login', path);
+    };
+    window.addEventListener('aether:session-expired', handler);
+    return () => window.removeEventListener('aether:session-expired', handler);
+  }, [openAuthModal]);
 
   const value = useMemo<AuthModalContextValue>(
     () => ({ open, tab, pendingPath, actionContext, openAuthModal, closeAuthModal }),

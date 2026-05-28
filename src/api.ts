@@ -403,6 +403,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     }
   }
   if (!response.ok) {
+    // 401：session 失效。同 tab 派事件让 AuthProvider 自愈 viewer、AuthModalProvider 弹登录框（#95）。
+    // 排除 /api/auth/session 这个探测端点本身——它在未登录时也会 401，dispatch 会让 AuthProvider 的 refresh
+    // 再次调用 getSession 形成循环。
+    if (response.status === 401 && path !== '/api/auth/session' && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('aether:session-expired'));
+    }
     const detail = data?.detail || data?.message || response.statusText;
     throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
   }
