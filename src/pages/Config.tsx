@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Activity, BellRing, CreditCard, EyeOff, Globe2, Loader2, Megaphone, PlugZap, Save, Server, ShieldAlert, UserCircle } from 'lucide-react';
+import { Activity, BellRing, CreditCard, EyeOff, Globe2, Megaphone, PlugZap, Save, Server, ShieldAlert, UserCircle } from 'lucide-react';
 import {
   AccountInfo,
   AppConfig,
@@ -21,7 +21,7 @@ import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import AccountCenterHeader from '../components/AccountCenterHeader';
 import AvatarBadge from '../components/AvatarBadge';
-import { Field } from '../components/design-system';
+import { Button, Field, IconButton } from '../components/design-system';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 
@@ -283,12 +283,12 @@ export default function Config() {
         <div className="mb-6 border border-primary/20 bg-primary/5 p-4 text-xs text-white/60 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div>{t('config_guest_tip_plain')}</div>
           <div className="flex gap-3">
-            <button className="btn-ghost" type="button" onClick={() => openAuthModal('login')}>
+            <Button variant="ghost" type="button" onClick={() => openAuthModal('login')}>
               {t('config_sign_in')}
-            </button>
-            <button className="btn-primary" type="button" onClick={() => openAuthModal('register')}>
+            </Button>
+            <Button variant="primary" type="button" onClick={() => openAuthModal('register')}>
               {t('config_register')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -329,23 +329,27 @@ export default function Config() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <button
-                    className="border border-primary/40 text-primary px-4 py-2 uppercase tracking-widest hover:bg-primary/10 transition-colors disabled:opacity-50"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="uppercase tracking-widest"
                     type="button"
                     onClick={handleSaveSiteSettings}
                     disabled={siteSaving}
+                    loading={siteSaving}
                   >
-                    {siteSaving ? <Loader2 className="inline animate-spin mr-2" size={13} /> : null}
                     {t('config_save_case_sources')}
-                  </button>
-                  <button
-                    className="border border-secondary/40 text-secondary px-4 py-2 uppercase tracking-widest hover:bg-secondary/10 transition-colors disabled:opacity-50"
+                  </Button>
+                  <Button
+                    variant="orange"
+                    size="sm"
+                    className="uppercase tracking-widest"
                     type="button"
                     onClick={handleSyncInspirations}
                     disabled={saving}
                   >
                     {t('config_sync_cases')}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -439,9 +443,13 @@ export default function Config() {
                   value={apiKey}
                   onChange={(event) => setApiKey(event.target.value)}
                 />
-                <button className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-secondary transition-colors" type="button">
-                  <EyeOff size={16} />
-                </button>
+                <IconButton
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-white/30 hover:text-secondary"
+                  variant="plain"
+                  size="sm"
+                  icon={<EyeOff size={16} aria-hidden="true" />}
+                  label={t('config_api_key')}
+                />
               </div>
               <span className="text-[9px] text-white/30 text-right uppercase">
                 {t('config_saved_key', { value: config?.api_key_set ? config.api_key_hint : 'NONE' })}{' '}
@@ -452,34 +460,39 @@ export default function Config() {
                     : `(${t('config_key_manual')})`}
               </span>
               {config?.managed_by_auth && config?.api_key_source === 'manual_override' && (
-                <button
-                  className="self-end text-[10px] uppercase tracking-widest text-secondary hover:text-white transition-colors"
+                <Button
+                  variant="plain"
+                  size="sm"
+                  className="h-auto self-end px-0 py-0 text-[10px] uppercase tracking-widest text-secondary hover:text-white"
                   type="button"
                   onClick={handleResetKey}
                 >
                   {t('config_restore_key')}
-                </button>
+                </Button>
               )}
             </div>
 
             <div className="pt-6 flex flex-col sm:flex-row gap-3 justify-end border-t border-white/10 mt-4">
-              <button
-                className="border border-primary/30 text-primary font-bold px-8 py-3 uppercase tracking-widest hover:bg-primary/10 transition-colors flex items-center justify-center gap-2 text-xs"
+              <Button
+                variant="ghost"
+                className="px-8 uppercase tracking-widest"
+                iconStart={<PlugZap size={14} aria-hidden="true" />}
                 type="button"
                 onClick={handleTest}
                 disabled={saving}
               >
-                <PlugZap size={14} />
                 {t('config_test')}
-              </button>
-              <button
-                className="btn-primary px-8 disabled:opacity-50"
+              </Button>
+              <Button
+                variant="primary"
+                className="px-8 uppercase tracking-widest"
+                iconStart={<Save size={14} aria-hidden="true" />}
                 type="submit"
                 disabled={saving}
+                loading={saving}
               >
-                {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
                 {t('config_save')}
-              </button>
+              </Button>
             </div>
           </form>
           ) : (
@@ -579,13 +592,15 @@ export default function Config() {
                       : t('config_announcement_placeholder')}
                   </p>
                   {siteSettings?.announcement.enabled ? (
-                    <button
-                      className="mt-4 border border-secondary/40 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-secondary transition-colors hover:bg-secondary/10"
+                    <Button
+                      variant="orange"
+                      size="sm"
+                      className="mt-4 uppercase tracking-widest"
                       type="button"
                       onClick={openAnnouncement}
                     >
                       {t('config_view_announcement')}
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
               ) : null}
@@ -754,15 +769,18 @@ export default function Config() {
               ) : null}
 
               {isAdmin ? (
-                <button
-                  className="w-full bg-secondary text-white font-bold px-6 py-3 uppercase tracking-widest transition-opacity hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 text-xs"
+                <Button
+                  variant="orange"
+                  fullWidth
+                  className="uppercase tracking-widest"
+                  iconStart={<Save size={14} aria-hidden="true" />}
                   type="button"
                   onClick={handleSaveSiteSettings}
                   disabled={siteSaving}
+                  loading={siteSaving}
                 >
-                  {siteSaving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
                   {t('site_settings_save')}
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
