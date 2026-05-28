@@ -1,3 +1,20 @@
+"""SQLite persistence for application state.
+
+Inspiration benchmark template metadata:
+- template_type is one of "github", "official", or "community".
+  "github" rows are synced from upstream GitHub prompt collections, "official"
+  rows are hand-curated benchmark templates, and "community" is retained for
+  the previously supported user-published gallery schema.
+- smb_categories stores a JSON array subset of "cross_border_ecommerce" and
+  "domestic_ecommerce".
+- product_categories stores JSON array values such as "food", "apparel",
+  "electronics", "skincare", "home", and "bags".
+- style_tags stores JSON array values such as "clean_white_bg",
+  "natural_scene", "premium_studio", "advertising", and "lifestyle".
+- default_aspect_ratio, default_size, and curator_note are nullable metadata
+  for future template recall and presentation flows.
+"""
+
 from __future__ import annotations
 
 import json
@@ -175,6 +192,13 @@ class Database:
                     synced_at TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
+                    template_type TEXT DEFAULT 'github',
+                    smb_categories TEXT,
+                    product_categories TEXT,
+                    style_tags TEXT,
+                    default_aspect_ratio TEXT,
+                    default_size TEXT,
+                    curator_note TEXT,
                     UNIQUE(source_url, source_item_id)
                 );
 
@@ -270,6 +294,14 @@ class Database:
             conn.execute("ALTER TABLE site_settings ADD COLUMN recharge_url TEXT NOT NULL DEFAULT ''")
         if "trial_balance_usd" not in site_settings_columns:
             conn.execute("ALTER TABLE site_settings ADD COLUMN trial_balance_usd REAL")
+
+        _safe_add_column(conn, "inspiration_prompts", "template_type", "TEXT DEFAULT 'github'")
+        _safe_add_column(conn, "inspiration_prompts", "smb_categories", "TEXT")
+        _safe_add_column(conn, "inspiration_prompts", "product_categories", "TEXT")
+        _safe_add_column(conn, "inspiration_prompts", "style_tags", "TEXT")
+        _safe_add_column(conn, "inspiration_prompts", "default_aspect_ratio", "TEXT")
+        _safe_add_column(conn, "inspiration_prompts", "default_size", "TEXT")
+        _safe_add_column(conn, "inspiration_prompts", "curator_note", "TEXT")
 
         self._ensure_site_settings(conn, settings)
 
@@ -1436,6 +1468,11 @@ def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
         return set()
     rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
     return {str(row["name"]) for row in rows}
+
+
+def _safe_add_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    if column not in _table_columns(conn, table):
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
 
 
 def _is_expired(value: str | None) -> bool:
