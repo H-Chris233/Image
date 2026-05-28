@@ -1,10 +1,10 @@
 """SQLite persistence for application state.
 
 Inspiration benchmark template metadata:
-- template_type is one of "github", "official", or "community".
+- template_type is one of "github", "official", "benchmark", or "community".
   "github" rows are synced from upstream GitHub prompt collections, "official"
-  rows are hand-curated benchmark templates, and "community" is retained for
-  the previously supported user-published gallery schema.
+  and "benchmark" rows are hand-curated benchmark templates, and "community"
+  is retained for the previously supported user-published gallery schema.
 - smb_categories stores a JSON array subset of "cross_border_ecommerce" and
   "domestic_ecommerce".
 - product_categories stores JSON array values such as "food", "apparel",
@@ -33,7 +33,7 @@ from .settings import DEFAULT_INSPIRATION_SOURCE_URLS, Settings
 
 LEGACY_OWNER_ID = "legacy:default"
 DEFAULT_SITE_LOCALE = "zh-CN"
-ALLOWED_INSPIRATION_TEMPLATE_TYPES = {"github", "official", "community"}
+ALLOWED_INSPIRATION_TEMPLATE_TYPES = {"github", "official", "benchmark", "community"}
 ALLOWED_INSPIRATION_SMB_CATEGORIES = {"cross_border_ecommerce", "domestic_ecommerce"}
 INSPIRATION_FILTER_VALUE_PATTERN = re.compile(r"^[a-z_]+$")
 USER_GALLERY_SECTION = "用户作品"

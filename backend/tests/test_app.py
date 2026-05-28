@@ -107,6 +107,9 @@ class FakeProvider:
                                     "target_audience": ["家居用户"],
                                     "use_scenarios": ["沙发", "床头"],
                                     "style_suggestions": ["奶油风电商详情页", "小红书种草"],
+                                    "detected_smb_categories": ["domestic_ecommerce"],
+                                    "detected_product_categories": ["home_living"],
+                                    "detected_style_tags": ["premium_studio"],
                                     "generation_constraints": "保持白色方形抱枕芯主体、颜色、比例和布料质感一致",
                                     "recommended_plans": [
                                         {
@@ -284,6 +287,48 @@ class ChatErrorProvider(FakeProvider):
             "Upstream request failed",
             {"error": {"message": "Upstream request failed", "type": "upstream_error"}},
         )
+
+
+class InvalidEcommerceCategoryProvider(FakeProvider):
+    async def chat_completion(self, config: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
+        if not config.get("api_key"):
+            raise ProviderError(400, "请先在配置页保存访问密钥")
+        self.chat_configs.append(dict(config))
+        self.chat_payloads.append(payload)
+        system_content = payload["messages"][0]["content"] if payload.get("messages") else ""
+        if "电商商品图识别分析师" in system_content:
+            return {
+                "id": "chatcmpl-ecommerce-invalid-category-test",
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": json.dumps(
+                                {
+                                    "product_type": "测试商品",
+                                    "appearance": "测试外观",
+                                    "visible_material": "",
+                                    "colors": [],
+                                    "shape": "",
+                                    "details": [],
+                                    "selling_points": [],
+                                    "target_audience": [],
+                                    "use_scenarios": [],
+                                    "style_suggestions": [],
+                                    "detected_smb_categories": ["invalid_smb"],
+                                    "detected_product_categories": ["beauty_skincare"],
+                                    "detected_style_tags": ["premium_studio"],
+                                    "generation_constraints": "保持商品主体一致",
+                                    "recommended_plans": [],
+                                },
+                                ensure_ascii=False,
+                            ),
+                        }
+                    }
+                ],
+                "usage": {"total_tokens": 10},
+            }
+        return await super().chat_completion(config, payload)
 
 
 class PartiallyBillingErrorProvider(FakeProvider):
@@ -767,6 +812,53 @@ def wait_for_task(client: TestClient, task_id: str, attempts: int = 60, delay: f
     raise AssertionError(f"Task {task_id} did not finish in time")
 
 
+def seed_benchmark_templates(db: Any) -> list[str]:
+    items = [
+        {
+            "id": f"c1-benchmark-{index}",
+            "source_item_id": f"c1-benchmark-{index}",
+            "section": "C1",
+            "title": f"C1 benchmark template {index}",
+            "author": "@demo",
+            "prompt": f"premium studio ecommerce prompt {index}",
+            "image_url": f"https://example.com/c1-{index}.png",
+            "source_link": None,
+            "raw": {},
+        }
+        for index in range(1, 6)
+    ]
+    db.upsert_inspirations("https://example.com/c1-benchmarks.md", items)
+    metadata = {
+        "c1-benchmark-1": (["domestic_ecommerce"], ["home_living"], ["premium_studio"]),
+        "c1-benchmark-2": (["domestic_ecommerce"], ["home_living"], ["clean_white_bg"]),
+        "c1-benchmark-3": (["domestic_ecommerce"], ["home_living"], ["lifestyle"]),
+        "c1-benchmark-4": (["cross_border_ecommerce"], ["beauty_skincare"], ["premium_studio"]),
+        "c1-benchmark-5": (["cross_border_ecommerce"], ["fashion_apparel"], ["lifestyle"]),
+    }
+    with db.connect() as conn:
+        for inspiration_id, (smb_categories, product_categories, style_tags) in metadata.items():
+            conn.execute(
+                """
+                UPDATE inspiration_prompts
+                SET template_type = 'benchmark',
+                    smb_categories = ?,
+                    product_categories = ?,
+                    style_tags = ?,
+                    default_aspect_ratio = '1:1',
+                    default_size = '1024x1024',
+                    curator_note = 'C1 seeded benchmark'
+                WHERE id = ?
+                """,
+                (
+                    json.dumps(smb_categories),
+                    json.dumps(product_categories),
+                    json.dumps(style_tags),
+                    inspiration_id,
+                ),
+            )
+    return [item["id"] for item in items]
+
+
 def test_guest_config_masks_api_key(tmp_path: Path) -> None:
     with make_client(tmp_path) as client:
         response = client.put("/api/config", json={"api_key": "sk-test-123456", "user_name": "Neo"})
@@ -843,6 +935,76 @@ def test_ecommerce_publish_copy_uses_current_provider_key(tmp_path: Path) -> Non
         chat_payload = provider.chat_payloads[-1]
         assert "电商种草文案策划" in chat_payload["messages"][0]["content"]
         assert "可定做尺寸" in chat_payload["messages"][1]["content"]
+
+
+def test_ecommerce_analyze_returns_recommended_templates_when_benchmarks_exist(tmp_path: Path) -> None:
+    provider = FakeProvider()
+    with make_client(tmp_path, provider=provider) as client:
+        login_demo_user(client)
+        seeded_ids = set(seed_benchmark_templates(client.app.state.db))
+
+        response = client.post(
+            "/api/ecommerce/analyze",
+            data={
+                "product_name": "天鹅绒PP棉抱枕芯",
+                "platform": "淘宝",
+                "image_count": "4",
+                "size": "1024x1024",
+                "aspect_ratio": "1:1",
+            },
+            files=[("image", ("front.png", FAKE_PNG_BYTES, "image/png"))],
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        templates = payload["recommended_templates"]
+        assert len(templates) == 3
+        assert {item["id"] for item in templates}.issubset(seeded_ids)
+        assert {item["id"] for item in templates}.issubset({"c1-benchmark-1", "c1-benchmark-2", "c1-benchmark-3"})
+        assert templates[0]["prompt"]
+        assert templates[0]["image_url"].startswith("https://example.com/c1-")
+        assert templates[0]["smb_categories"] == ["domestic_ecommerce"]
+        assert templates[0]["product_categories"] == ["home_living"]
+        assert templates[0]["default_aspect_ratio"] == "1:1"
+        assert templates[0]["default_size"] == "1024x1024"
+        assert templates[0]["curator_note"] == "C1 seeded benchmark"
+        assert len(payload["plans"]) == 3
+
+
+def test_ecommerce_analyze_returns_empty_recommended_when_no_benchmarks(tmp_path: Path) -> None:
+    provider = FakeProvider()
+    with make_client(tmp_path, provider=provider) as client:
+        login_demo_user(client)
+
+        response = client.post(
+            "/api/ecommerce/analyze",
+            data={
+                "product_name": "天鹅绒PP棉抱枕芯",
+                "platform": "淘宝",
+                "image_count": "4",
+            },
+            files=[("image", ("front.png", FAKE_PNG_BYTES, "image/png"))],
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["recommended_templates"] == []
+        assert len(payload["plans"]) == 3
+
+
+def test_ecommerce_analyze_filter_validation_errors_propagate(tmp_path: Path) -> None:
+    provider = InvalidEcommerceCategoryProvider()
+    with make_client(tmp_path, provider=provider) as client:
+        login_demo_user(client)
+
+        response = client.post(
+            "/api/ecommerce/analyze",
+            data={"product_name": "测试商品", "image_count": "4"},
+            files=[("image", ("front.png", FAKE_PNG_BYTES, "image/png"))],
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Invalid smb_categories filter"
 
 
 def test_ecommerce_analyze_returns_product_plans(tmp_path: Path) -> None:
