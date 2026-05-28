@@ -30,6 +30,18 @@ test('falls back to effective admin recharge URL when public URL is empty', () =
   );
 });
 
+test('does not fall back to raw admin recharge URL', () => {
+  assert.equal(
+    resolveExternalRechargeUrl({
+      recharge_url: '',
+      upstream: {
+        effective_recharge_url: '',
+      },
+    }),
+    '',
+  );
+});
+
 test('rejects unsafe or missing recharge URLs', () => {
   assert.equal(resolveExternalRechargeUrl({ recharge_url: 'javascript:alert(1)' }), '');
   assert.equal(resolveExternalRechargeUrl({ recharge_url: 'ftp://example.com/recharge' }), '');
