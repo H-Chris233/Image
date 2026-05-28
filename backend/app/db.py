@@ -1199,6 +1199,7 @@ class Database:
         q: str = "",
         section: str = "",
         template_type: str | None = None,
+        exclude_template_types: list[str] | None = None,
         smb_categories: list[str] | None = None,
         product_categories: list[str] | None = None,
         style_tags: list[str] | None = None,
@@ -1210,6 +1211,7 @@ class Database:
             section=section,
             table_alias="p",
             template_type=template_type,
+            exclude_template_types=exclude_template_types,
             smb_categories=smb_categories,
             product_categories=product_categories,
             style_tags=style_tags,
@@ -1233,6 +1235,7 @@ class Database:
         q: str = "",
         section: str = "",
         template_type: str | None = None,
+        exclude_template_types: list[str] | None = None,
         smb_categories: list[str] | None = None,
         product_categories: list[str] | None = None,
         style_tags: list[str] | None = None,
@@ -1242,6 +1245,7 @@ class Database:
             section=section,
             table_alias="p",
             template_type=template_type,
+            exclude_template_types=exclude_template_types,
             smb_categories=smb_categories,
             product_categories=product_categories,
             style_tags=style_tags,
@@ -1275,6 +1279,7 @@ class Database:
         section: str = "",
         table_alias: str = "",
         template_type: str | None = None,
+        exclude_template_types: list[str] | None = None,
         smb_categories: list[str] | None = None,
         product_categories: list[str] | None = None,
         style_tags: list[str] | None = None,
@@ -1295,6 +1300,15 @@ class Database:
                 raise ValueError("Invalid template_type filter")
             clauses.append(f"{prefix}template_type = ?")
             params.append(normalized_template_type)
+        excluded_template_types = Database._validate_inspiration_filter_values(
+            "exclude_template_types",
+            exclude_template_types,
+            ALLOWED_INSPIRATION_TEMPLATE_TYPES,
+        )
+        if excluded_template_types:
+            placeholders = ", ".join("?" for _ in excluded_template_types)
+            clauses.append(f"{prefix}template_type NOT IN ({placeholders})")
+            params.extend(excluded_template_types)
         json_filters = (
             ("smb_categories", smb_categories, ALLOWED_INSPIRATION_SMB_CATEGORIES),
             ("product_categories", product_categories, None),

@@ -786,6 +786,62 @@ def test_inspirations_filter_template_metadata(tmp_path: Path) -> None:
         assert invalid.json()["detail"] == "Invalid template_type filter"
 
 
+def test_inspirations_filter_exclude_template_types(tmp_path: Path) -> None:
+    with make_client(tmp_path) as client:
+        db = client.app.state.db
+        db.upsert_inspirations(
+            "https://example.com/d7-filter.md",
+            [
+                {
+                    "id": "d7-github",
+                    "source_item_id": "d7-github",
+                    "section": "D7",
+                    "title": "D7 github",
+                    "author": "@demo",
+                    "prompt": "public github inspiration",
+                    "image_url": None,
+                    "source_link": None,
+                    "raw": {},
+                },
+                {
+                    "id": "d7-community",
+                    "source_item_id": "d7-community",
+                    "section": "D7",
+                    "title": "D7 community",
+                    "author": "@demo",
+                    "prompt": "public community inspiration",
+                    "image_url": None,
+                    "source_link": None,
+                    "raw": {},
+                },
+                {
+                    "id": "d7-benchmark",
+                    "source_item_id": "d7-benchmark",
+                    "section": "D7",
+                    "title": "D7 benchmark",
+                    "author": "@demo",
+                    "prompt": "private benchmark template",
+                    "image_url": None,
+                    "source_link": None,
+                    "raw": {},
+                },
+            ],
+        )
+        with db.connect() as conn:
+            conn.execute("UPDATE inspiration_prompts SET template_type = 'community' WHERE id = 'd7-community'")
+            conn.execute("UPDATE inspiration_prompts SET template_type = 'benchmark' WHERE id = 'd7-benchmark'")
+
+        response = client.get("/api/inspirations?exclude_template_types=benchmark")
+
+        assert response.status_code == 200
+        assert response.json()["total"] == 2
+        assert {item["id"] for item in response.json()["items"]} == {"d7-github", "d7-community"}
+
+        invalid = client.get("/api/inspirations", params={"exclude_template_types": "benchmark,' OR 1=1; --"})
+        assert invalid.status_code == 400
+        assert invalid.json()["detail"] == "Invalid exclude_template_types filter"
+
+
 def test_session_alias_returns_guest_session(tmp_path: Path) -> None:
     with make_client(tmp_path) as client:
         response = client.get("/api/session")
