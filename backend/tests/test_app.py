@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import sqlite3
 import time
 import zipfile
 from io import BytesIO
@@ -543,6 +544,114 @@ def make_client(
     provider: FakeProvider | None = None,
 ) -> TestClient:
     return TestClient(make_app(tmp_path, auth_client=auth_client, provider=provider))
+
+
+def test_inspiration_prompt_schema_migration_is_idempotent(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "app.sqlite3"
+    db_path.parent.mkdir(parents=True)
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            """
+            CREATE TABLE inspiration_prompts (
+                id TEXT PRIMARY KEY,
+                source_url TEXT NOT NULL,
+                source_item_id TEXT NOT NULL,
+                section TEXT NOT NULL,
+                title TEXT NOT NULL,
+                author TEXT,
+                prompt TEXT NOT NULL,
+                image_url TEXT,
+                source_link TEXT,
+                raw_json TEXT,
+                synced_at TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(source_url, source_item_id)
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO inspiration_prompts (
+                id, source_url, source_item_id, section, title, author, prompt,
+                image_url, source_link, raw_json, synced_at, created_at, updated_at
+            )
+            VALUES (
+                'legacy-id', 'https://example.com/README.md', 'legacy-item', 'UI',
+                'Legacy prompt', '@demo', 'old prompt', NULL, NULL, '{}',
+                '2026-05-01T00:00:00+00:00', '2026-05-01T00:00:00+00:00',
+                '2026-05-01T00:00:00+00:00'
+            )
+            """
+        )
+
+    app = make_app(tmp_path)
+    app.state.db.init(app.state.settings)
+    app.state.db.init(app.state.settings)
+
+    expected_columns = {
+        "template_type",
+        "smb_categories",
+        "product_categories",
+        "style_tags",
+        "default_aspect_ratio",
+        "default_size",
+        "curator_note",
+    }
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(inspiration_prompts)").fetchall()}
+        assert expected_columns.issubset(columns)
+        migrated = conn.execute("SELECT * FROM inspiration_prompts WHERE id = 'legacy-id'").fetchone()
+        assert migrated["template_type"] == "github"
+        assert migrated["smb_categories"] is None
+        assert migrated["product_categories"] is None
+        assert migrated["style_tags"] is None
+        assert migrated["default_aspect_ratio"] is None
+        assert migrated["default_size"] is None
+        assert migrated["curator_note"] is None
+        conn.execute(
+            """
+            UPDATE inspiration_prompts
+            SET template_type = 'official',
+                smb_categories = '["cross_border_ecommerce"]',
+                product_categories = '["food"]',
+                style_tags = '["clean_white_bg"]',
+                default_aspect_ratio = '1:1',
+                default_size = '2K',
+                curator_note = 'benchmark seed'
+            WHERE id = 'legacy-id'
+            """
+        )
+
+    app.state.db.upsert_inspirations(
+        "https://example.com/README.md",
+        [
+            {
+                "id": "legacy-id",
+                "source_item_id": "legacy-item",
+                "section": "Products",
+                "title": "Updated prompt",
+                "author": "@demo",
+                "prompt": "new prompt",
+                "image_url": None,
+                "source_link": None,
+                "raw": {},
+            }
+        ],
+    )
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT * FROM inspiration_prompts WHERE id = 'legacy-id'").fetchone()
+        assert row["section"] == "Products"
+        assert row["template_type"] == "official"
+        assert row["smb_categories"] == '["cross_border_ecommerce"]'
+        assert row["product_categories"] == '["food"]'
+        assert row["style_tags"] == '["clean_white_bg"]'
+        assert row["default_aspect_ratio"] == "1:1"
+        assert row["default_size"] == "2K"
+        assert row["curator_note"] == "benchmark seed"
 
 
 def test_session_alias_returns_guest_session(tmp_path: Path) -> None:
