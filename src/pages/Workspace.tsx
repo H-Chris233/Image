@@ -17,14 +17,18 @@ import {
 import {
   formatDate,
   generateImage,
+  getAccount,
   getImageTask,
-  HistoryItem,
-  ImageTask,
+  type AccountInfo,
+  type HistoryItem,
+  type ImageTask,
   publishHistory,
   taskDownloadUrl,
   unpublishHistory,
 } from '../api';
+import { useAuth } from '../auth';
 import ImagePreviewModal from '../components/ImagePreviewModal';
+import RechargeGate from '../components/RechargeGate';
 import RetryImage from '../components/RetryImage';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
@@ -32,6 +36,12 @@ import { useTasks } from '../tasks';
 
 const POLL_INTERVAL = 1500;
 const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
+const IMAGE_COST_BY_TIER: Record<string, number> = {
+  FAST: 0.134,
+  '1K': 0.134,
+  '2K': 0.201,
+  '4K': 0.268,
+};
 
 const WORKSPACE_COPY = {
   'zh-CN': {
@@ -226,14 +236,18 @@ type WorkspaceCopy = typeof WORKSPACE_COPY['en-US'];
 export default function Workspace() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
+  const { viewer } = useAuth();
   const { locale } = useSite();
   const { addTask } = useTasks();
   const { notifyError } = useNotifier();
   const copy = WORKSPACE_COPY[locale];
+  const [account, setAccount] = useState<AccountInfo | null>(null);
   const [task, setTask] = useState<ImageTask | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fetchingTask, setFetchingTask] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
+  const [rechargeGateOpen, setRechargeGateOpen] = useState(false);
+  const [rechargeGateExpectedCost, setRechargeGateExpectedCost] = useState<number | null>(null);
   const [publishingImageId, setPublishingImageId] = useState<string | null>(null);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [previewImages, setPreviewImages] = useState<{ id: string; url: string; prompt: string; title?: string }[] | null>(null);
@@ -277,6 +291,26 @@ export default function Workspace() {
       if (timer) clearTimeout(timer);
     };
   }, [copy.fetchError, taskId]);
+
+  useEffect(() => {
+    if (!viewer?.authenticated) {
+      setAccount(null);
+      return;
+    }
+
+    let cancelled = false;
+    getAccount()
+      .then((data) => {
+        if (!cancelled) setAccount(data);
+      })
+      .catch(() => {
+        if (!cancelled) setAccount(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [viewer?.authenticated, viewer?.owner_id]);
 
   const images: HistoryItem[] = task?.items ?? [];
   const previewableImages = useMemo(() => sortImagesByBatch(images.filter((img) => Boolean(img.image_url))), [images]);
@@ -334,17 +368,25 @@ export default function Workspace() {
     if (!task || !prompt) {
       return;
     }
+    const fallbackCount = publishableImages.length > 0 ? publishableImages.length : images.length || 1;
+    const imageCount = normalizeImageCount(count ?? expectedCount ?? fallbackCount);
+    const expectedCost = estimateGenerationCost(imageCount, task.size);
+    if (hasInsufficientCredits(account?.balance ?? null, expectedCost)) {
+      openRechargeGate(expectedCost);
+      return;
+    }
+
     setRegenerating(true);
     try {
-      const fallbackCount = publishableImages.length > 0 ? publishableImages.length : images.length || 1;
       const submittedTask = await generateImage({
         prompt,
         size: task.size,
         aspect_ratio: task.aspect_ratio,
         quality: task.quality,
-        n: normalizeImageCount(count ?? expectedCount ?? fallbackCount),
+        n: imageCount,
       });
       addTask(submittedTask);
+      getAccount().then((data) => setAccount(data)).catch(() => undefined);
       navigate(`/workspace/${submittedTask.id}`);
     } catch (err) {
       notifyError(err);
@@ -372,6 +414,23 @@ export default function Workspace() {
     } finally {
       setPublishingImageId(null);
     }
+  }
+
+  function openRechargeGate(expectedCost: number | null) {
+    setRechargeGateExpectedCost(expectedCost);
+    setRechargeGateOpen(true);
+  }
+
+  function handleCloseRechargeGate() {
+    setRechargeGateOpen(false);
+    if (viewer?.authenticated) {
+      getAccount().then((data) => setAccount(data)).catch(() => undefined);
+    }
+  }
+
+  function handleRecharge() {
+    setRechargeGateOpen(false);
+    navigate('/recharge');
   }
 
   return (
@@ -450,6 +509,14 @@ export default function Workspace() {
           onClose={() => setPreviewImages(null)}
         />
       ) : null}
+
+      <RechargeGate
+        open={rechargeGateOpen}
+        onClose={handleCloseRechargeGate}
+        balance={account?.balance ?? null}
+        expectedCost={rechargeGateExpectedCost}
+        onRecharge={handleRecharge}
+      />
     </div>
   );
 }
@@ -1194,6 +1261,34 @@ function sortImagesByBatch(items: HistoryItem[]) {
 function normalizeImageCount(value: number | null | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 1;
   return Math.max(1, Math.min(9, Math.round(value)));
+}
+
+function estimateGenerationCost(imageCount: number, size: string | null | undefined) {
+  if (!Number.isFinite(imageCount) || imageCount <= 0) {
+    return null;
+  }
+  return IMAGE_COST_BY_TIER[resolveCostTier(size)] * imageCount;
+}
+
+function resolveCostTier(size: string | null | undefined) {
+  const normalized = (size ?? '').toUpperCase();
+  if (normalized.includes('4K') || normalized.includes('4096')) {
+    return '4K';
+  }
+  if (normalized.includes('2K') || normalized.includes('2048')) {
+    return '2K';
+  }
+  if (normalized.includes('1K') || normalized.includes('1024')) {
+    return '1K';
+  }
+  return 'FAST';
+}
+
+function hasInsufficientCredits(balance: AccountInfo['balance'] | null, expectedCost: number | null) {
+  if (expectedCost === null || !balance?.ok || typeof balance.remaining !== 'number') {
+    return false;
+  }
+  return balance.remaining < expectedCost;
 }
 
 function numberFromUnknown(value: unknown) {
