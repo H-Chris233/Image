@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { deleteHistory, formatDate, generateImage, getHistory, HistoryItem, taskDownloadUrl } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
+import { Button, IconButton } from '../components/design-system';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import MasonryGrid from '../components/MasonryGrid';
 import RetryImage from '../components/RetryImage';
@@ -312,14 +313,14 @@ export default function History() {
                 type="text"
               />
               {query.trim() ? (
-                <button
+                <IconButton
                   aria-label={t('history_clear_search')}
-                  className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="absolute right-0 top-1/2 -translate-y-1/2"
+                  icon={<X size={14} aria-hidden="true" />}
+                  label={t('history_clear_search')}
                   onClick={handleClearSearch}
-                  type="button"
-                >
-                  <X size={14} />
-                </button>
+                  variant="plain"
+                />
               ) : null}
             </label>
           </div>
@@ -338,10 +339,9 @@ export default function History() {
           icon={<LogIn size={24} />}
           title={t('history_login_title')}
           action={(
-            <button className="btn-primary min-h-11" type="button" onClick={() => openAuthModal('login', '/history', 'history')}>
-              <LogIn size={16} />
+            <Button variant="primary" iconStart={<LogIn size={16} aria-hidden="true" />} type="button" onClick={() => openAuthModal('login', '/history', 'history')}>
               {t('top_login')}
-            </button>
+            </Button>
           )}
         />
       ) : loadError && visibleGroups.length === 0 ? (
@@ -351,10 +351,9 @@ export default function History() {
           icon={<AlertCircle size={24} />}
           title={t('history_error_title')}
           action={(
-            <button className="btn-primary min-h-11" type="button" onClick={() => load(0, false).catch(() => undefined)}>
-              <RefreshCw size={16} />
+            <Button variant="primary" iconStart={<RefreshCw size={16} aria-hidden="true" />} type="button" onClick={() => load(0, false).catch(() => undefined)}>
               {t('history_retry')}
-            </button>
+            </Button>
           )}
         />
       ) : loading && visibleGroups.length === 0 ? (
@@ -366,19 +365,18 @@ export default function History() {
           icon={hasSearch ? <Search size={24} /> : <Sparkles size={24} />}
           title={hasSearch ? t('history_search_empty_title') : t('history_empty_title')}
           action={hasSearch ? (
-            <button
-              className="inline-flex h-11 items-center gap-2 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container"
+            <Button
+              variant="ghost"
+              iconStart={<X size={16} aria-hidden="true" />}
               type="button"
               onClick={handleClearSearch}
             >
-              <X size={16} />
               {t('history_clear_search')}
-            </button>
+            </Button>
           ) : (
-            <button className="btn-primary min-h-11" type="button" onClick={() => navigate('/create')}>
-              <Sparkles size={16} />
+            <Button variant="primary" iconStart={<Sparkles size={16} aria-hidden="true" />} type="button" onClick={() => navigate('/create')}>
               {t('history_create_action')}
-            </button>
+            </Button>
           )}
         />
       ) : (
@@ -399,14 +397,15 @@ export default function History() {
 
           {hasMore ? (
             <div className="mt-12 flex justify-center">
-              <button
+              <Button
+                variant="ghost"
+                iconStart={<ArrowDown size={14} aria-hidden="true" />}
                 onClick={() => load(offset, true)}
                 disabled={loading}
-                className="flex min-h-11 items-center gap-2 rounded-lg border border-outline-variant px-8 py-3 text-sm text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-50"
+                loading={loading}
               >
-                {loading ? <Loader2 className="animate-spin" size={14} /> : <ArrowDown size={14} />}
                 {t('history_load_more')}
-              </button>
+              </Button>
             </div>
           ) : null}
         </>
@@ -534,6 +533,7 @@ function HistoryCard({
           const hasImage = Boolean(slot.image_url);
           const hiddenLabel = hiddenSlotCount > 0 && slotIndex === visibleSlots.length - 1 ? `+${hiddenSlotCount}` : null;
           if (hasImage) {
+            // TODO(F2): keep raw button because this wraps the full masonry media preview; Button's text wrapper changes the image overlay layout.
             return (
               <button
                 key={slot.id}
@@ -623,39 +623,40 @@ function HistoryCard({
               <span>{downloadLabel}</span>
             </a>
           ) : (
-            <button
+            <Button
               aria-label={downloadLabel}
-              className="flex h-11 min-w-0 cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-bold uppercase tracking-wide text-white/35"
               disabled
+              fullWidth
+              iconStart={downloadIcon}
               type="button"
               title={downloadLabel}
+              variant="ghost"
             >
-              {downloadIcon}
-              <span>{downloadLabel}</span>
-            </button>
+              {downloadLabel}
+            </Button>
           )}
-          <button
+          <Button
             onClick={onRegenerate}
-            className={`flex h-11 min-w-0 items-center justify-center gap-2 rounded-lg px-3 text-xs font-black uppercase tracking-wide ${colors.btnBg} ${colors.btnText} ${colors.btnShadow} transition-all duration-300 hover:brightness-110`}
+            className="uppercase tracking-wide"
+            fullWidth
+            iconStart={<RefreshCw size={14} aria-hidden="true" />}
             type="button"
+            variant={index % 2 === 0 ? 'primary' : 'orange'}
           >
-            <RefreshCw size={14} />
-            <span>{t('history_regenerate')}</span>
-          </button>
+            {t('history_regenerate')}
+          </Button>
         </div>
 
         <div className="mt-3 flex justify-end border-t border-white/10 pt-3">
-          <button
+          <IconButton
             ref={deleteButtonRef}
             aria-label={t('history_delete')}
             onClick={() => setConfirmingDelete(true)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-error/35 bg-error/10 text-error transition-all hover:border-error hover:bg-error/20"
             disabled={confirmingDelete || deleting}
-            title={t('history_delete')}
-            type="button"
-          >
-            <Trash2 size={14} />
-          </button>
+            icon={<Trash2 size={14} aria-hidden="true" />}
+            label={t('history_delete')}
+            variant="danger"
+          />
         </div>
 
         {confirmingDelete ? (
@@ -694,25 +695,29 @@ function HistoryCard({
                 </div>
               </div>
               <div className="grid shrink-0 grid-cols-1 gap-2 border-t border-outline-variant/70 bg-surface-container px-4 py-3 sm:grid-cols-2 sm:p-4">
-                <button
+                <Button
                   ref={cancelDeleteRef}
-                  className="inline-flex h-11 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
+                  variant="ghost"
+                  fullWidth
                   type="button"
                   disabled={deleting}
                   onClick={closeDeleteConfirm}
                 >
                   {t('history_delete_cancel')}
-                </button>
-                <button
+                </Button>
+                <Button
                   ref={confirmDeleteRef}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-error bg-error px-3 text-sm font-black uppercase text-on-error transition-colors hover:bg-error/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  variant="danger"
+                  fullWidth
+                  className="uppercase"
+                  iconStart={<Trash2 size={14} aria-hidden="true" />}
                   type="button"
                   disabled={deleting}
                   onClick={() => confirmDelete().catch(() => undefined)}
+                  loading={deleting}
                 >
-                  {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
-                  <span className="truncate">{deleteConfirmLabel}</span>
-                </button>
+                  {deleteConfirmLabel}
+                </Button>
               </div>
             </div>
           </div>

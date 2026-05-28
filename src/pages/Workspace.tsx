@@ -27,6 +27,7 @@ import { useAuth } from '../auth';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import RechargeGate from '../components/RechargeGate';
 import RetryImage from '../components/RetryImage';
+import { Button } from '../components/design-system';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
@@ -388,16 +389,17 @@ export default function Workspace() {
   return (
     <div className="min-h-screen text-[#f0ede8]">
       <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
-        <button
+        <Button
+          variant="plain"
+          iconStart={<ArrowLeft size={15} aria-hidden="true" />}
+          className="mb-5 px-2"
           type="button"
           onClick={() => navigate(-1)}
-          className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm text-on-surface-variant transition-colors hover:bg-white/[0.04] hover:text-[#E3FF74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
           aria-label={copy.back}
           title={copy.back}
         >
-          <ArrowLeft size={15} />
-          <span>{copy.back}</span>
-        </button>
+          {copy.back}
+        </Button>
 
         {isMissingTask ? (
           <MissingTaskState copy={copy} error={error} onBack={() => navigate(-1)} onCreate={() => navigate('/create')} />
@@ -639,14 +641,15 @@ function SucceededWorkbench({
                 <div className="w-full shrink-0 xl:w-[260px]">
                   <SectionLabel icon={<Download size={14} />} label={copy.collectionActions} />
                   <div className="mt-3 grid grid-cols-2 gap-2 xl:grid-cols-1">
-                    <button
+                    <Button
+                      variant="ghost"
+                      fullWidth
+                      iconStart={<ImageIcon size={15} aria-hidden="true" />}
                       type="button"
                       onClick={onPreviewAll}
-                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-white/20 bg-white/5 px-2 text-center text-sm font-semibold text-white transition-colors hover:border-[#E3FF74]/45 hover:text-[#E3FF74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 sm:gap-2 sm:px-3"
                     >
-                      <ImageIcon size={15} />
-                      <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.previewAll}</span>
-                    </button>
+                      {copy.previewAll}
+                    </Button>
                     <a
                       href={downloadHref}
                       download
@@ -665,6 +668,7 @@ function SucceededWorkbench({
           <div className={`mt-4 grid gap-3 ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3'}`}>
             {images.map((img, index) => {
               const isSelected = selectedImage?.id === img.id;
+              // TODO(F2): keep raw button because this wraps a full selectable image tile; Button's text wrapper changes the thumbnail overlay layout.
               return (
                 <button
                   key={img.id}
@@ -779,33 +783,37 @@ function SucceededWorkbench({
           <div className="mt-5 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
             <SectionLabel icon={<ImageIcon size={14} />} label={copy.selectedActions} />
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
-              <button
+              <Button
+                variant="ghost"
+                fullWidth
+                iconStart={<ImageIcon size={15} aria-hidden="true" />}
                 type="button"
                 onClick={() => selectedImage && selectedImageIndex >= 0 ? onPreview(images, selectedImageIndex) : undefined}
                 disabled={!selectedImage}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 text-center text-sm font-semibold text-white transition-colors hover:border-[#E3FF74]/45 hover:text-[#E3FF74] disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
               >
-                <ImageIcon size={15} />
-                <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.previewSelected}</span>
-              </button>
-              <button
+                {copy.previewSelected}
+              </Button>
+              <Button
+                variant="ghost"
+                fullWidth
+                iconStart={<Sparkles size={15} aria-hidden="true" />}
                 type="button"
                 onClick={onReuseSelectedPrompt}
                 disabled={!selectedPrompt}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-center text-sm font-semibold text-on-surface-variant transition-colors hover:border-white/30 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
               >
-                <Sparkles size={15} />
-                <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.reuseSelectedPrompt}</span>
-              </button>
-              <button
+                {copy.reuseSelectedPrompt}
+              </Button>
+              <Button
+                variant="ghost"
+                fullWidth
+                iconStart={<RotateCcw size={15} aria-hidden="true" />}
                 type="button"
                 onClick={onRegenerateSelected}
                 disabled={regenerating || !selectedPrompt}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-center text-sm font-semibold text-on-surface-variant transition-colors hover:border-white/30 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
+                loading={regenerating}
               >
-                {regenerating ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
-                <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.createVariant}</span>
-              </button>
+                {copy.createVariant}
+              </Button>
             </div>
           </div>
 
@@ -876,23 +884,26 @@ function FailedTaskPanel({
         <aside className="border-t border-white/[0.07] bg-[#1a1917] p-5 sm:p-6 lg:border-l lg:border-t-0">
           <TaskMetaGrid copy={copy} expectedCount={expectedCount} task={task} />
           <div className="mt-6 grid grid-cols-1 gap-2">
-            <button
+            <Button
+              variant="ghost"
+              fullWidth
+              iconStart={<Sparkles size={15} aria-hidden="true" />}
               type="button"
               onClick={onReusePrompt}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 text-center text-sm font-semibold text-white transition-colors hover:border-[#E3FF74]/45 hover:text-[#E3FF74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
             >
-              <Sparkles size={15} />
-              <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.revisePrompt}</span>
-            </button>
-            <button
+              {copy.revisePrompt}
+            </Button>
+            <Button
+              variant="ghost"
+              fullWidth
+              iconStart={<RotateCcw size={15} aria-hidden="true" />}
               type="button"
               onClick={onRegenerate}
               disabled={regenerating || !task.prompt}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-center text-sm font-semibold text-on-surface-variant transition-colors hover:border-white/30 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
+              loading={regenerating}
             >
-              {regenerating ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
-              <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.retrySameSettings}</span>
-            </button>
+              {copy.retrySameSettings}
+            </Button>
           </div>
         </aside>
       </div>
@@ -930,23 +941,26 @@ function EmptyResultState({
         <div className="w-full shrink-0 lg:w-[340px]">
           <TaskMetaGrid compact copy={copy} expectedCount={expectedCount} task={task} />
           <div className="mt-4 grid gap-2">
-            <button
+            <Button
+              variant="ghost"
+              fullWidth
+              iconStart={<Sparkles size={15} aria-hidden="true" />}
               type="button"
               onClick={onReusePrompt}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 text-center text-sm font-semibold text-white transition-colors hover:border-[#E3FF74]/45 hover:text-[#E3FF74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
             >
-              <Sparkles size={15} />
-              <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.reusePrompt}</span>
-            </button>
-            <button
+              {copy.reusePrompt}
+            </Button>
+            <Button
+              variant="ghost"
+              fullWidth
+              iconStart={<RotateCcw size={15} aria-hidden="true" />}
               type="button"
               onClick={onRegenerate}
               disabled={regenerating || !task.prompt}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] px-3 text-center text-sm font-semibold text-on-surface-variant transition-colors hover:border-white/30 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
+              loading={regenerating}
             >
-              {regenerating ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
-              <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.retryPrompt}</span>
-            </button>
+              {copy.retryPrompt}
+            </Button>
           </div>
         </div>
       </div>
@@ -982,22 +996,22 @@ function MissingTaskState({
             </p>
           ) : null}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <button
+            <Button
+              variant="primary"
+              iconStart={<Sparkles size={15} aria-hidden="true" />}
               type="button"
               onClick={onCreate}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#f0ede8] px-5 py-2.5 text-sm font-semibold text-[#1a1917] transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1917]"
             >
-              <Sparkles size={15} />
               {copy.createAction}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              iconStart={<ArrowLeft size={15} aria-hidden="true" />}
               type="button"
               onClick={onBack}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-outline-variant/50 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container/50 hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1917]"
             >
-              <ArrowLeft size={15} />
               {copy.goBackAction}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

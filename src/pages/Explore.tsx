@@ -8,6 +8,7 @@ import { useAuthModal } from '../authModal';
 import { copyTextToClipboard } from '../clipboard';
 import MasonryGrid from '../components/MasonryGrid';
 import RetryImage from '../components/RetryImage';
+import { Button, IconButton } from '../components/design-system';
 import { CreateFlowWizard, type WizardResult } from '../components/ecommerce/CreateFlowWizard';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
@@ -211,14 +212,14 @@ export default function Explore() {
             <h1 className="mt-3 font-display text-4xl font-bold tracking-tight text-[#f0ede8] sm:text-5xl">{t('home_title')}</h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-on-surface-variant">{t('explore_desc')}</p>
           </div>
-          <button
+          <Button
+            variant="primary"
+            iconEnd={<ArrowRight size={16} aria-hidden="true" />}
             type="button"
             onClick={handleStartCreating}
-            className="btn-primary min-h-11 w-fit px-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#111110]"
           >
             {t('explore_cta')}
-            <ArrowRight size={16} />
-          </button>
+          </Button>
         </div>
         <div className="mt-6 flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
           <span className="h-px w-8 bg-[#E3FF74]/60" />
@@ -237,14 +238,14 @@ export default function Explore() {
         <ExploreStatePanel
           accent="error"
           action={(
-            <button
+            <Button
+              variant="primary"
+              iconStart={<RefreshCw size={16} aria-hidden="true" />}
               type="button"
               onClick={() => loadMore({ force: true }).catch(() => undefined)}
-              className="btn-primary h-11 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/45"
             >
-              <RefreshCw size={16} />
               {t('history_retry')}
-            </button>
+            </Button>
           )}
           description={loadErrorMessage || t('toast_error')}
           icon={<AlertCircle size={24} />}
@@ -291,14 +292,15 @@ export default function Explore() {
                 {loadErrorMessage || t('toast_error')}
               </div>
             </div>
-            <button
+            <Button
+              variant="danger"
+              size="sm"
+              iconStart={<RefreshCw size={14} aria-hidden="true" />}
               type="button"
               onClick={() => loadMore({ force: true }).catch(() => undefined)}
-              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-lg border border-error/30 px-3 text-xs font-semibold text-error transition-colors hover:bg-error/15"
             >
-              <RefreshCw size={14} />
               {t('history_retry')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -369,6 +371,7 @@ function ExploreCard({
       className="group relative overflow-hidden rounded-2xl bg-[#14120f] shadow-[inset_0_0_0_1px_rgba(240,237,232,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(227,255,116,0.22)] focus-within:shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(227,255,116,0.36)]"
       style={cardStyle}
     >
+      {/* TODO(F2): keep raw button because this wraps the full media card; Button's text wrapper changes the gallery overlay layout. */}
       <button
         type="button"
         onClick={() => onOpen(item)}
@@ -543,16 +546,13 @@ function ExploreDetailModal({
                 {title}
               </h2>
             </div>
-            <button
+            <IconButton
               ref={closeButtonRef}
-              type="button"
-              aria-label={t('modal_close')}
-              title={t('modal_close')}
+              variant="plain"
+              icon={<X size={16} aria-hidden="true" />}
+              label={t('modal_close')}
               onClick={onClose}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-white/10 hover:text-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/80"
-            >
-              <X size={16} />
-            </button>
+            />
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
@@ -565,30 +565,28 @@ function ExploreDetailModal({
           </div>
 
           <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_44px] gap-2 border-t border-white/10 p-4 sm:p-5">
-            <button
+            <Button
+              variant="primary"
+              fullWidth
+              className="justify-between"
+              iconStart={<PenLine size={15} className="shrink-0" aria-hidden="true" />}
+              iconEnd={<ArrowRight size={15} className="shrink-0" aria-hidden="true" />}
               type="button"
               onClick={() => onReusePrompt(item)}
               disabled={!canReuse}
               aria-label={reusePromptAriaLabel}
-              className="btn-primary h-11 min-w-0 justify-between gap-2 px-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#191713] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span className="flex min-w-0 items-center gap-2">
-                <PenLine size={15} className="shrink-0" />
-                <span className="truncate">{reusePromptLabel}</span>
-              </span>
-              <ArrowRight size={15} className="shrink-0" />
-            </button>
-            <button
+              {reusePromptLabel}
+            </Button>
+            <IconButton
+              variant="ghost"
+              icon={<Copy size={15} aria-hidden="true" />}
+              label={`${t('prompt_editor_copy')} ${title}`}
               type="button"
               onClick={() => onCopyPrompt(item)}
               disabled={!canReuse}
-              aria-label={`${t('prompt_editor_copy')} ${title}`}
               title={t('prompt_editor_copy')}
-              className="inline-flex h-11 w-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 text-sm font-semibold text-white/75 transition-colors hover:border-[#E3FF74]/45 hover:bg-[#E3FF74]/10 hover:text-[#E3FF74] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/80 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Copy size={15} />
-              <span className="sr-only">{t('prompt_editor_copy')}</span>
-            </button>
+            />
           </div>
         </aside>
       </div>
