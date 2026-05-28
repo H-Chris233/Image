@@ -109,10 +109,11 @@ export default function Create() {
     setLoading(true);
     notifyInfo('正在提交商品图生成任务');
     try {
+      // 不再把文件名当 product_name、不再把类目英文名当 scenarios——
+      // 这俩值语义错位、会污染后端 prompt（曾导致"阀门→数码产品"等失真）。
+      // 留空让后端的"未填写"兜底；用户输入的场景描述走 style 字段，是真正的视觉信号。
       const task = await generateEcommerceImages(
         {
-          product_name: result.productImage.name.replace(/\.[^.]+$/, ''),
-          scenarios: result.category.nameEn,
           platform: '淘宝/抖音',
           style: result.sceneDescription,
           extra_requirements: '从 /create 商品图向导提交',
