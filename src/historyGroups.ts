@@ -13,8 +13,6 @@ export type HistoryGroup = {
   items: HistoryItem[];
   images: HistoryGroupImage[];
   createdAt: string;
-  publishedCount: number;
-  allPublished: boolean;
   taskPrompt: string;
   title: string;
   ecommerceName: string;
@@ -56,8 +54,6 @@ export function groupHistoryItems(items: HistoryItem[]) {
       const images = sorted
         .filter((item) => item.image_url)
         .map((item) => ({ id: item.id, url: item.image_url || '', prompt: item.prompt, item }));
-      const publishableItems = sorted.filter((item) => item.status === 'succeeded' && Boolean(item.image_url));
-      const publishedCount = publishableItems.filter((item) => item.published).length;
       const createdAt = sorted.reduce(
         (latest, item) => (new Date(item.created_at).getTime() > new Date(latest).getTime() ? item.created_at : latest),
         first.created_at,
@@ -70,8 +66,6 @@ export function groupHistoryItems(items: HistoryItem[]) {
         items: sorted,
         images,
         createdAt,
-        publishedCount,
-        allPublished: publishableItems.length > 0 && publishedCount === publishableItems.length,
         taskPrompt,
         title: ecommerceName || (images.length > 1 ? `${first.mode.toUpperCase()} BATCH` : first.mode.toUpperCase()),
         ecommerceName,

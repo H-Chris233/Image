@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Search, Download, Trash2, RefreshCw, ArrowDown, Loader2, Maximize2, Globe2, Archive, AlertCircle, LogIn, Sparkles, X, ImageOff } from 'lucide-react';
+import { Search, Download, Trash2, RefreshCw, ArrowDown, Loader2, Maximize2, Archive, AlertCircle, LogIn, Sparkles, X, ImageOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { deleteHistory, formatDate, generateImage, getHistory, HistoryItem, publishHistory, taskDownloadUrl, unpublishHistory } from '../api';
+import { deleteHistory, formatDate, generateImage, getHistory, HistoryItem, taskDownloadUrl } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import ImagePreviewModal from '../components/ImagePreviewModal';
@@ -120,7 +120,6 @@ export default function History() {
     initialIndex?: number;
     prompt: string;
   } | null>(null);
-  const [publishingIds, setPublishingIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -177,7 +176,6 @@ export default function History() {
       setSubmittedQuery('');
       setRemovedIds([]);
       setPreviewItem(null);
-      setPublishingIds([]);
       load(0, false, '').catch(() => undefined);
       return undefined;
     }
@@ -226,37 +224,6 @@ export default function History() {
       notifyError(err);
     } finally {
       setLoading(false);
-    }
-  }
-
-  function replaceHistoryItem(nextItem: HistoryItem) {
-    setItems((current) => {
-      const exists = current.some((item) => item.id === nextItem.id);
-      if (!exists) {
-        return [nextItem, ...current];
-      }
-      return current.map((item) => (item.id === nextItem.id ? nextItem : item));
-    });
-  }
-
-  async function handleTogglePublish(group: HistoryGroup) {
-    const publishableItems = group.items.filter((item) => item.status === 'succeeded' && Boolean(item.image_url));
-    const targets = group.allPublished ? publishableItems : publishableItems.filter((item) => !item.published);
-    if (targets.length === 0) {
-      return;
-    }
-    setPublishingIds((current) => (current.includes(group.key) ? current : [...current, group.key]));
-    try {
-      const results = await Promise.all(
-        targets.map((item) => (group.allPublished ? unpublishHistory(item.id) : publishHistory(item.id))),
-      );
-      for (const result of results) {
-        replaceHistoryItem(result.item);
-      }
-    } catch (err) {
-      notifyError(err);
-    } finally {
-      setPublishingIds((current) => current.filter((id) => id !== group.key));
     }
   }
 
@@ -423,11 +390,9 @@ export default function History() {
               <HistoryCard
                 group={group}
                 index={index}
-                isPublishing={publishingIds.includes(group.key)}
                 onDelete={() => handleDelete(group)}
                 onPreview={(imageId) => openPreview(group, imageId)}
                 onRegenerate={() => handleRegenerate(group)}
-                onTogglePublish={() => handleTogglePublish(group)}
               />
             )}
           />
@@ -462,19 +427,15 @@ export default function History() {
 function HistoryCard({
   group,
   index,
-  isPublishing,
   onDelete,
   onPreview,
   onRegenerate,
-  onTogglePublish,
 }: {
   group: HistoryGroup;
   index: number;
-  isPublishing: boolean;
   onDelete: () => Promise<void>;
   onPreview: (imageId?: string) => void;
   onRegenerate: () => void;
-  onTogglePublish: () => void;
 }) {
   const { t } = useSite();
   const cancelDeleteRef = useRef<HTMLButtonElement | null>(null);
@@ -493,7 +454,6 @@ function HistoryCard({
   const errorText = group.items.find((historyItem) => historyItem.error)?.error || (issueCount > 0 ? t('history_failed') : '');
   const visibleSlots = isBatch ? group.items.slice(0, 6) : [item];
   const hiddenSlotCount = Math.max(0, group.items.length - visibleSlots.length);
-  const publishDisabled = isPublishing || group.images.length === 0;
   const downloadHref = isBatch && item.task_id ? taskDownloadUrl(item.task_id) : previewImage || '';
   const downloadLabel = isBatch ? t('history_download_zip') : t('history_download');
   const downloadIcon = isBatch ? <Archive size={14} /> : <Download size={14} />;
@@ -639,11 +599,6 @@ function HistoryCard({
           {item.aspect_ratio ? <span>{item.aspect_ratio}</span> : null}
           {isBatch ? <span>{group.images.length}/{group.items.length}</span> : null}
           {issueCount > 0 ? <span className="text-error">{issueCount} {t('history_failed')}</span> : null}
-          {group.allPublished ? (
-            <span className="text-tertiary">{t('history_published')}</span>
-          ) : group.publishedCount > 0 ? (
-            <span className="text-tertiary">{t('history_published')} {group.publishedCount}/{group.images.length}</span>
-          ) : null}
         </div>
         <p className={`mb-3 line-clamp-4 break-words text-sm leading-6 ${colors.textId} transition-colors`}>
           {group.taskPrompt}
@@ -689,21 +644,7 @@ function HistoryCard({
           </button>
         </div>
 
-        <div className="mt-3 flex items-center gap-2 border-t border-white/10 pt-3">
-          <button
-            aria-label={group.allPublished ? t('history_unpublish_case') : t('history_publish_case')}
-            className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg border px-3 text-[11px] font-bold uppercase tracking-wide transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
-              group.allPublished
-                ? 'border-tertiary/35 bg-tertiary/10 text-tertiary hover:bg-tertiary/20'
-                : 'border-white/15 bg-white/5 text-white/60 hover:border-tertiary/35 hover:text-tertiary'
-            }`}
-            type="button"
-            onClick={onTogglePublish}
-            disabled={publishDisabled}
-          >
-            {isPublishing ? <Loader2 className="animate-spin" size={14} /> : <Globe2 size={14} />}
-            <span className="truncate">{group.allPublished ? t('history_unpublish_case') : t('history_publish_case')}</span>
-          </button>
+        <div className="mt-3 flex justify-end border-t border-white/10 pt-3">
           <button
             ref={deleteButtonRef}
             aria-label={t('history_delete')}

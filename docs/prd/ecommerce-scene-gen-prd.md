@@ -537,7 +537,7 @@ interface ModelOption {
 
 ### 10.7 共享与发布（Sharing & Publishing）
 
-**当前状态：** `publishHistory` 将图片发布到站内灵感图库（inspiration）。  
+**当前状态：** 历史图片不再支持一键发布到站内灵感图库（inspiration）。  
 **缺失：** 外部分享链接、嵌入代码、品牌水印。
 
 **M6 API 契约：**
