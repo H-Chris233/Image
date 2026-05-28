@@ -172,6 +172,7 @@ export default function Create() {
           onComplete={completeAndGenerate}
           onClose={() => { setShowWizard(false); setInitialScene(''); }}
           initialSceneDescription={initialScene || undefined}
+          balance={account?.balance ?? null}
         />
       ) : null}
 
