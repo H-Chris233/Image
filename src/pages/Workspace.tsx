@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import {
   formatDate,
+  editHistoryImage,
   generateImage,
   getAccount,
   getImageTask,
@@ -51,6 +52,12 @@ type WorkspaceRegenerateConfig = {
   aspectRatio: WorkspaceAspectRatio;
   imageCount: number;
 };
+type WorkspaceInstructionEditConfig = {
+  image: HistoryItem | null;
+  prompt: string;
+  n: number;
+};
+type QuickEditKind = 'background' | 'lighting' | 'elements';
 
 const WORKSPACE_COPY = {
   'zh-CN': {
@@ -112,6 +119,18 @@ const WORKSPACE_COPY = {
     imageCountLabel: '生成张数',
     submitRegenerate: '重新生成',
     submittedRegenerate: '已提交新一轮生成',
+    quickEditTitle: '快捷编辑',
+    quickEditBackground: '🌅 换背景',
+    quickEditLighting: '💡 换光线',
+    quickEditElements: '🎨 加场景元素',
+    quickEditVariants: '🔀 出 3 个变体',
+    quickEditBackgroundPrompt: '想换成什么背景？（例：海边日落 / 深色大理石台面 / 简洁白底）',
+    quickEditLightingPrompt: '想要什么光线？（例：自然柔光 / 工作室硬光 / 黄昏暖光）',
+    quickEditElementsPrompt: '想加什么场景元素？（例：白色羊毛地毯、绿植、咖啡杯）',
+    quickEditPresetVariantPrompt: '保留商品主体，生成 3 个不同构图的变体',
+    applyQuickEdit: '应用',
+    cancelQuickEdit: '取消',
+    submittedEdit: '已提交编辑任务',
     albumSummary: '相册',
     albumTitleFallback: '系列集合',
     albumCurrentAsset: (index: number, total: number) => `当前 ${index} / ${total}`,
@@ -205,6 +224,18 @@ const WORKSPACE_COPY = {
     imageCountLabel: 'Image count',
     submitRegenerate: 'Regenerate',
     submittedRegenerate: '已提交新一轮生成',
+    quickEditTitle: '快捷编辑',
+    quickEditBackground: '🌅 换背景',
+    quickEditLighting: '💡 换光线',
+    quickEditElements: '🎨 加场景元素',
+    quickEditVariants: '🔀 出 3 个变体',
+    quickEditBackgroundPrompt: '想换成什么背景？（例：海边日落 / 深色大理石台面 / 简洁白底）',
+    quickEditLightingPrompt: '想要什么光线？（例：自然柔光 / 工作室硬光 / 黄昏暖光）',
+    quickEditElementsPrompt: '想加什么场景元素？（例：白色羊毛地毯、绿植、咖啡杯）',
+    quickEditPresetVariantPrompt: '保留商品主体，生成 3 个不同构图的变体',
+    applyQuickEdit: '应用',
+    cancelQuickEdit: '取消',
+    submittedEdit: '已提交编辑任务',
     albumSummary: 'Album',
     albumTitleFallback: 'Series collection',
     albumCurrentAsset: (index: number, total: number) => `Current ${index} of ${total}`,
@@ -255,6 +286,7 @@ export default function Workspace() {
   const [error, setError] = useState<string | null>(null);
   const [fetchingTask, setFetchingTask] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
+  const [submittingInstructionEdit, setSubmittingInstructionEdit] = useState(false);
   const [rechargeGateOpen, setRechargeGateOpen] = useState(false);
   const [rechargeGateExpectedCost, setRechargeGateExpectedCost] = useState<number | null>(null);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
@@ -441,6 +473,35 @@ export default function Workspace() {
     }
   }
 
+  async function handleInstructionEdit(config: WorkspaceInstructionEditConfig) {
+    const prompt = config.prompt.trim();
+    if (!config.image || !prompt) {
+      return;
+    }
+    const imageCount = normalizeImageCount(config.n);
+    const expectedCost = estimateGenerationCost(imageCount, config.image.size || task?.size);
+    if (hasInsufficientCredits(account?.balance ?? null, expectedCost)) {
+      openRechargeGate(expectedCost);
+      return;
+    }
+
+    setSubmittingInstructionEdit(true);
+    try {
+      const submittedTask = await editHistoryImage(config.image.id, {
+        prompt,
+        n: imageCount,
+      });
+      addTask(submittedTask);
+      getAccount().then((data) => setAccount(data)).catch(() => undefined);
+      notifyInfo(copy.submittedEdit);
+      navigate(`/workspace/${submittedTask.id}`);
+    } catch (err) {
+      notifyError(err);
+    } finally {
+      setSubmittingInstructionEdit(false);
+    }
+  }
+
   function openRechargeGate(expectedCost: number | null) {
     setRechargeGateExpectedCost(expectedCost);
     setRechargeGateOpen(true);
@@ -503,10 +564,12 @@ export default function Workspace() {
             onPreview={openPreview}
             onPreviewAll={() => openPreview(previewableImages, 0)}
             onConfigRegenerate={(config) => handleConfigRegenerate(config).catch(() => undefined)}
+            onInstructionEdit={(config) => handleInstructionEdit(config).catch(() => undefined)}
             onRegenerateSelected={() => handleRegenerate(selectedPrompt, 1).catch(() => undefined)}
             onReuseSelectedPrompt={() => handleReusePrompt(selectedPrompt)}
             onSelectImage={setSelectedImageId}
             regenerating={regenerating}
+            submittingInstructionEdit={submittingInstructionEdit}
             selectedImage={selectedImage}
             selectedImageIndex={selectedImageIndex}
             task={task}
@@ -519,9 +582,11 @@ export default function Workspace() {
             expectedCount={expectedCount}
             balance={account?.balance ?? null}
             onConfigRegenerate={(config) => handleConfigRegenerate(config).catch(() => undefined)}
+            onInstructionEdit={(config) => handleInstructionEdit(config).catch(() => undefined)}
             onRegenerate={() => handleRegenerate().catch(() => undefined)}
             onReusePrompt={handleReusePrompt}
             regenerating={regenerating}
+            submittingInstructionEdit={submittingInstructionEdit}
             task={task}
           />
         ) : null}
@@ -643,6 +708,7 @@ function SucceededWorkbench({
   expectedCount,
   images,
   onConfigRegenerate,
+  onInstructionEdit,
   onPreview,
   onPreviewAll,
   onRegenerateSelected,
@@ -651,6 +717,7 @@ function SucceededWorkbench({
   regenerating,
   selectedImage,
   selectedImageIndex,
+  submittingInstructionEdit,
   task,
 }: {
   balance: AccountInfo['balance'] | null;
@@ -659,6 +726,7 @@ function SucceededWorkbench({
   expectedCount: number | null;
   images: HistoryItem[];
   onConfigRegenerate: (config: WorkspaceRegenerateConfig) => void;
+  onInstructionEdit: (config: WorkspaceInstructionEditConfig) => void;
   onPreview: (images: HistoryItem[], index: number) => void;
   onPreviewAll: () => void;
   onRegenerateSelected: () => void;
@@ -667,6 +735,7 @@ function SucceededWorkbench({
   regenerating: boolean;
   selectedImage: HistoryItem | null;
   selectedImageIndex: number;
+  submittingInstructionEdit: boolean;
   task: ImageTask;
 }) {
   const selectedPrompt = selectedImage?.prompt || task.prompt || '';
@@ -908,6 +977,12 @@ function SucceededWorkbench({
             regenerating={regenerating}
             task={task}
           />
+          <QuickEditPanel
+            copy={copy}
+            onSubmit={(prompt, n) => onInstructionEdit({ image: selectedImage, prompt, n })}
+            selectedImage={selectedImage}
+            submitting={submittingInstructionEdit}
+          />
         </aside>
       </div>
     </section>
@@ -1004,18 +1079,22 @@ function EmptyResultState({
   copy,
   expectedCount,
   onConfigRegenerate,
+  onInstructionEdit,
   onRegenerate,
   onReusePrompt,
   regenerating,
+  submittingInstructionEdit,
   task,
 }: {
   balance: AccountInfo['balance'] | null;
   copy: WorkspaceCopy;
   expectedCount: number | null;
   onConfigRegenerate: (config: WorkspaceRegenerateConfig) => void;
+  onInstructionEdit: (config: WorkspaceInstructionEditConfig) => void;
   onRegenerate: () => void;
   onReusePrompt: () => void;
   regenerating: boolean;
+  submittingInstructionEdit: boolean;
   task: ImageTask;
 }) {
   return (
@@ -1061,6 +1140,12 @@ function EmptyResultState({
             onRegenerate={onConfigRegenerate}
             regenerating={regenerating}
             task={task}
+          />
+          <QuickEditPanel
+            copy={copy}
+            onSubmit={(prompt, n) => onInstructionEdit({ image: null, prompt, n })}
+            selectedImage={null}
+            submitting={submittingInstructionEdit}
           />
         </div>
       </div>
@@ -1174,6 +1259,120 @@ function WorkspaceConfigPanel({
           {copy.submitRegenerate}
         </Button>
       </div>
+    </section>
+  );
+}
+
+function QuickEditPanel({
+  copy,
+  onSubmit,
+  selectedImage,
+  submitting,
+}: {
+  copy: WorkspaceCopy;
+  onSubmit: (prompt: string, n: number) => void;
+  selectedImage: HistoryItem | null;
+  submitting: boolean;
+}) {
+  const [draft, setDraft] = useState<{ kind: QuickEditKind; value: string } | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const disabled = !selectedImage || submitting;
+  const prompt = draft ? quickEditPromptFor(copy, draft.kind) : '';
+
+  useEffect(() => {
+    if (!draft) {
+      return;
+    }
+    textareaRef.current?.focus();
+  }, [draft?.kind]);
+
+  function openEditor(kind: QuickEditKind) {
+    if (disabled) {
+      return;
+    }
+    setDraft({ kind, value: '' });
+  }
+
+  function closeEditor() {
+    setDraft(null);
+  }
+
+  function submitDraft() {
+    if (!draft) {
+      return;
+    }
+    const instruction = draft.value.trim();
+    if (!instruction) {
+      return;
+    }
+    onSubmit(instruction, 1);
+  }
+
+  function submitVariants() {
+    if (disabled) {
+      return;
+    }
+    onSubmit(copy.quickEditPresetVariantPrompt, 3);
+  }
+
+  return (
+    <section className="mt-6 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3" aria-labelledby="workspace-quick-edit-title">
+      <SectionLabel icon={<Sparkles size={14} />} label={copy.quickEditTitle} />
+      <h2 id="workspace-quick-edit-title" className="sr-only">
+        {copy.quickEditTitle}
+      </h2>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Button variant="ghost" fullWidth type="button" onClick={() => openEditor('background')} disabled={disabled}>
+          {copy.quickEditBackground}
+        </Button>
+        <Button variant="ghost" fullWidth type="button" onClick={() => openEditor('lighting')} disabled={disabled}>
+          {copy.quickEditLighting}
+        </Button>
+        <Button variant="ghost" fullWidth type="button" onClick={() => openEditor('elements')} disabled={disabled}>
+          {copy.quickEditElements}
+        </Button>
+        <Button variant="ghost" fullWidth type="button" onClick={submitVariants} disabled={disabled} loading={submitting}>
+          {copy.quickEditVariants}
+        </Button>
+      </div>
+
+      {draft ? (
+        <div className="mt-3" data-testid="workspace-quick-edit-inline-editor">
+          <label htmlFor="workspace-quick-edit-prompt" className="text-xs font-medium leading-5 text-on-surface-variant">
+            {prompt}
+          </label>
+          <TextareaControl
+            ref={textareaRef}
+            id="workspace-quick-edit-prompt"
+            value={draft.value}
+            placeholder={prompt}
+            maxLength={1000}
+            onChange={(event) => setDraft((current) => current ? { ...current, value: event.target.value } : current)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                closeEditor();
+              }
+            }}
+            className="mt-1.5 min-h-24"
+          />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Button
+              variant="primary"
+              type="button"
+              onClick={submitDraft}
+              disabled={submitting || !draft.value.trim()}
+              loading={submitting}
+            >
+              {copy.applyQuickEdit}
+            </Button>
+            <Button variant="ghost" type="button" onClick={closeEditor} disabled={submitting}>
+              {copy.cancelQuickEdit}
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -1416,6 +1615,12 @@ function normalizeWorkspaceImageCount(value: number | null | undefined): Workspa
 
 function getEditablePrompt(task: ImageTask) {
   return task.prompt || task.items.find((item) => item.task_prompt || item.prompt)?.task_prompt || task.items[0]?.prompt || '';
+}
+
+function quickEditPromptFor(copy: WorkspaceCopy, kind: QuickEditKind) {
+  if (kind === 'background') return copy.quickEditBackgroundPrompt;
+  if (kind === 'lighting') return copy.quickEditLightingPrompt;
+  return copy.quickEditElementsPrompt;
 }
 
 function estimateGenerationCost(imageCount: number, size: string | null | undefined) {
