@@ -537,6 +537,47 @@ function buildMockScript() {
     created_at: '2026-05-18T00:00:00Z',
     updated_at: '2026-05-18T00:00:00Z'
   };
+  const recommendedTemplates = [
+    {
+      id: 'smoke-template-clean',
+      title: 'Clean Hero Shot',
+      prompt: 'Clean white-background product hero, crisp commercial lighting, premium ecommerce composition.',
+      image_url: imageOne,
+      section: 'Smoke',
+      smb_categories: ['cross-border'],
+      product_categories: ['skincare'],
+      style_tags: ['clean', 'premium'],
+      default_aspect_ratio: '4:3',
+      default_size: '1184x896',
+      curator_note: 'White-background hero composition with a high-end catalog feel.'
+    },
+    {
+      id: 'smoke-template-scene',
+      title: 'Lifestyle Scene',
+      prompt: 'Warm lifestyle product scene with natural props and balanced depth.',
+      image_url: imageTwo,
+      section: 'Smoke',
+      smb_categories: ['domestic'],
+      product_categories: ['home'],
+      style_tags: ['lifestyle', 'warm'],
+      default_aspect_ratio: '1:1',
+      default_size: '1024x1024',
+      curator_note: 'Natural scene template for marketplace product storytelling.'
+    },
+    {
+      id: 'smoke-template-detail',
+      title: 'Detail Closeup',
+      prompt: 'Macro detail product closeup with sharp materials and controlled reflections.',
+      image_url: imageOne,
+      section: 'Smoke',
+      smb_categories: ['cross-border'],
+      product_categories: ['jewelry'],
+      style_tags: ['detail', 'sharp'],
+      default_aspect_ratio: '3:4',
+      default_size: '896x1184',
+      curator_note: 'Closeup-oriented template for material and texture emphasis.'
+    }
+  ];
 
   function makeHistoryItem(id, batchIndex, imageUrl, prompt, taskResult = null) {
     return {
@@ -590,6 +631,22 @@ function buildMockScript() {
       existing.push(call);
       window.localStorage.setItem(key, JSON.stringify(existing));
     } catch {}
+  }
+
+  function formDataBody(body) {
+    if (!(body instanceof FormData)) return null;
+    const data = {};
+    for (const [key, value] of body.entries()) {
+      const normalized = value instanceof File
+        ? { name: value.name, type: value.type, size: value.size }
+        : value;
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        data[key] = Array.isArray(data[key]) ? [...data[key], normalized] : [data[key], normalized];
+      } else {
+        data[key] = normalized;
+      }
+    }
+    return data;
   }
 
   try {
@@ -827,8 +884,50 @@ function buildMockScript() {
       try {
         body = init && typeof init.body === 'string' ? JSON.parse(init.body) : null;
       } catch {}
-      recordApiCall({ type: 'generate', body });
+      recordApiCall({ type: 'generate', path: url.pathname, body });
       return json(regeneratedTask);
+    }
+
+    if (url.pathname === '/api/ecommerce/generate' && ((init && init.method) || '').toUpperCase() === 'POST') {
+      recordApiCall({ type: 'ecommerce-generate', path: url.pathname, body: formDataBody(init?.body) });
+      return json(regeneratedTask);
+    }
+
+    if (url.pathname === '/api/ecommerce/analyze' && ((init && init.method) || '').toUpperCase() === 'POST') {
+      recordApiCall({ type: 'ecommerce-analyze' });
+      return json({
+        analysis: { product_type: 'smoke product', style_suggestions: ['clean', 'premium'] },
+        reference_notes: [],
+        model: 'smoke-model',
+        form: {
+          product_name: '',
+          materials: '',
+          selling_points: '',
+          scenarios: '',
+          platform: '',
+          style: '',
+          extra_requirements: '',
+          image_count: 1
+        },
+        recommended_templates: recommendedTemplates,
+        plans: []
+      });
+    }
+
+    if (url.pathname === '/api/prompts/optimize' && ((init && init.method) || '').toUpperCase() === 'POST') {
+      let body = null;
+      try {
+        body = init && typeof init.body === 'string' ? JSON.parse(init.body) : null;
+      } catch {}
+      recordApiCall({ type: 'prompt-optimize', body });
+      return json({
+        prompt: 'Optimized smoke ecommerce prompt',
+        optimized_prompt: 'Optimized smoke ecommerce prompt',
+        original_prompt: body?.prompt || '',
+        instruction: body?.instruction || '',
+        model: 'smoke-model',
+        usage: null
+      });
     }
 
     if (url.pathname === '/api/inspirations') {
@@ -1695,32 +1794,96 @@ async function runSmokeChecks(page, baseUrl) {
     ]);
   });
 
-  await runCheck('/create product workflow opens the inline category launcher on tablet', async () => {
+  await runCheck('/create formato 2.5 wizard recommends templates and reaches tune step', async () => {
     await page.navigate('/create?smoke_auth=1', { width: 1100, height: 900 });
-    await assertNoHorizontalOverflow(page, '/create tablet launcher');
+    await assertNoHorizontalOverflow(page, '/create formato 2.5 entry');
     const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
     if (!routedToCreate) throw new Error('/create tablet entry did not stay on /create');
-    await clickMainControl(page, '\u5f00\u59cb\u521b\u4f5c', '/create product workflow entry');
-    await page.waitFor(() => /Beauty & Skincare/i.test(document.body.innerText || ''), '/create tablet category launcher');
-    await assertNoHorizontalOverflow(page, '/create tablet category launcher');
-    await assertNoUnnamedButtons(page, '/create tablet category launcher');
-    await assertNoNamedControls(page, '/create category launcher is inline', ['^Close$']);
-    await assertNamedControlsMinTarget(page, '/create tablet category actions', [
-      '^Exit$',
-      'Beauty & Skincare',
-      'Tech & Electronics',
-      'Sports & Outdoor',
-    ]);
+    await clickMainControl(page, '\u5f00\u59cb\u521b\u4f5c', '/create formato 2.5 entry');
+    await page.waitFor(() => /上传商品图|PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create upload brief step');
+    await assertNoHorizontalOverflow(page, '/create upload brief step');
+    await assertNoUnnamedButtons(page, '/create upload brief step');
+    await assertNamedControlsMinTarget(page, '/create upload brief controls', ['^关闭$', '^下一步$']);
+
+    await page.evaluate(() => {
+      const file = new File(['smoke image'], 'smoke-product.webp', { type: 'image/webp' });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      const dropZone = document.querySelector('label[for="wizard-product-image-input"]');
+      if (!dropZone) throw new Error('upload drop zone not found');
+      dropZone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
+      const textarea = document.querySelector('textarea');
+      if (!(textarea instanceof HTMLTextAreaElement)) throw new Error('brief textarea not found');
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+      if (valueSetter) valueSetter.call(textarea, 'Make the product look premium and clean');
+      else textarea.value = 'Make the product look premium and clean';
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.waitFor(() => /smoke-product\.webp/i.test(document.body.innerText || ''), '/create uploaded product preview');
+    await clickMainControl(page, '^下一步$', '/create analyze product image');
+    await page.waitFor(() => /Clean Hero Shot|Lifestyle Scene|Detail Closeup/.test(document.body.innerText || ''), '/create recommended templates');
+    const recommendState = await page.evaluate(() => {
+      const text = document.body.innerText || '';
+      return {
+        ok:
+          /2\/3/.test(text) &&
+          /Clean Hero Shot/.test(text) &&
+          /Lifestyle Scene/.test(text) &&
+          /Detail Closeup/.test(text) &&
+          /都不满意/.test(text),
+        text: text.slice(0, 800),
+      };
+    });
+    if (!recommendState.ok) throw new Error(`/create recommend step missing formato 2.5 content: ${JSON.stringify(recommendState)}`);
+    await assertNoHorizontalOverflow(page, '/create recommend templates');
+    await clickMainControl(page, 'Clean Hero Shot', '/create select recommended template');
+    await clickMainControl(page, '^下一步$', '/create advance to tune');
+    await page.waitFor(() => /AI 会用「Clean Hero Shot」风格生成 1 张/.test(document.body.innerText || ''), '/create tune step');
+    await assertNamedControlsMinTarget(page, '/create tune controls', ['^返回上一步$', '^生成$']);
+    await assertNoHorizontalOverflow(page, '/create tune step');
   });
 
-  await runCheck('/create inline launcher exits back to the product wizard', async () => {
+  await runCheck('/create formato 2.5 generate optimizes selected template prompt', async () => {
     await page.navigate('/create?smoke_auth=1', { width: 390, height: 844 });
-    await clickMainControl(page, '\u5f00\u59cb\u521b\u4f5c', '/create product workflow entry before exit');
-    await page.waitFor(() => /Beauty & Skincare/i.test(document.body.innerText || ''), '/create category launcher before exit');
-    await clickMainControl(page, '^Exit$', '/create launcher exit');
-    await page.waitFor(() => /PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create product wizard after exit');
-    await assertNoHorizontalOverflow(page, '/create after launcher exit');
-    await assertNamedControlsMinTarget(page, '/create product workflow remains available', ['\u5f00\u59cb\u521b\u4f5c']);
+    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
+    await clickMainControl(page, '\u5f00\u59cb\u521b\u4f5c', '/create formato 2.5 generate entry');
+    await page.evaluate(() => {
+      const file = new File(['smoke image'], 'mobile-product.png', { type: 'image/png' });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      const dropZone = document.querySelector('label[for="wizard-product-image-input"]');
+      if (!dropZone) throw new Error('upload drop zone not found');
+      dropZone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
+      const textarea = document.querySelector('textarea');
+      if (!(textarea instanceof HTMLTextAreaElement)) throw new Error('brief textarea not found');
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+      if (valueSetter) valueSetter.call(textarea, 'Premium marketplace main image');
+      else textarea.value = 'Premium marketplace main image';
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.waitFor(() => /mobile-product\.png/i.test(document.body.innerText || ''), '/create mobile uploaded preview');
+    await clickMainControl(page, '^下一步$', '/create mobile analyze product');
+    await page.waitFor(() => /Clean Hero Shot/.test(document.body.innerText || ''), '/create mobile templates');
+    await clickMainControl(page, 'Clean Hero Shot', '/create mobile select template');
+    await clickMainControl(page, '^下一步$', '/create mobile tune step');
+    await page.waitFor(() => /生成 1 张/.test(document.body.innerText || ''), '/create mobile tune ready');
+    await clickMainControl(page, '^生成$', '/create mobile generate');
+    await page.waitFor(() => window.location.pathname.includes('/workspace/smoke-regenerated-task'), '/create navigates to generated workspace');
+    const calls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
+    const optimizeCall = calls.find((call) => call.type === 'prompt-optimize');
+    const generateCall = calls.find((call) => call.type === 'ecommerce-generate');
+    if (
+      !optimizeCall ||
+      !/Premium marketplace main image/.test(optimizeCall.body?.prompt || '') ||
+      !/Clean white-background product hero/.test(optimizeCall.body?.instruction || '') ||
+      !generateCall ||
+      generateCall.path !== '/api/ecommerce/generate' ||
+      generateCall.body?.style !== 'Optimized smoke ecommerce prompt' ||
+      generateCall.body?.n !== '1' ||
+      generateCall.body?.image?.name !== 'mobile-product.png'
+    ) {
+      throw new Error(`/create formato 2.5 generate calls mismatch: ${JSON.stringify(calls)}`);
+    }
   });
 
   await runCheck('shell icon controls keep 44px tap targets', async () => {

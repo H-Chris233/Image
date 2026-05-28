@@ -210,10 +210,25 @@ export type PromptOptimizePayload = {
 
 export type PromptOptimizeResult = {
   prompt: string;
+  optimized_prompt?: string;
   original_prompt: string;
   instruction: string;
   model: string;
   usage: Record<string, unknown> | null;
+};
+
+export type RecommendedTemplate = {
+  id: string;
+  title: string;
+  prompt: string;
+  image_url: string | null;
+  section: string;
+  smb_categories: string[];
+  product_categories: string[];
+  style_tags: string[];
+  default_aspect_ratio: string | null;
+  default_size: string | null;
+  curator_note: string | null;
 };
 
 export type EcommerceGeneratePayload = {
@@ -232,6 +247,66 @@ export type EcommerceGeneratePayload = {
 };
 
 export type EcommerceReferenceImage = ImageReferenceInput;
+
+export type EcommerceRecommendedPlan = {
+  name: string;
+  platform: string;
+  style: string;
+  image_count: number;
+  materials: string;
+  selling_points: string;
+  scenarios: string;
+  extra_requirements: string;
+  reason: string;
+  screens: {
+    title: string;
+    copy: string;
+    layout_type?: string;
+    visual_goal?: string;
+    copy_density?: string;
+    needs_model?: boolean;
+    needs_specs?: boolean;
+    needs_closeup?: boolean;
+    reference_focus?: string[];
+  }[];
+};
+
+export type EcommerceAnalyzeResponse = {
+  analysis: {
+    source?: string;
+    product_type?: string;
+    appearance?: string;
+    visible_material?: string;
+    colors?: string[];
+    shape?: string;
+    details?: string[];
+    selling_points?: string[];
+    target_audience?: string[];
+    use_scenarios?: string[];
+    style_suggestions?: string[];
+    generation_constraints?: string;
+    recommended_plans?: EcommerceRecommendedPlan[];
+    [key: string]: unknown;
+  };
+  reference_notes: ImageReferenceNote[];
+  model: string;
+  form: {
+    product_name: string;
+    materials: string;
+    selling_points: string;
+    scenarios: string;
+    platform: string;
+    style: string;
+    extra_requirements: string;
+    image_count: number;
+  };
+  plans: EcommerceRecommendedPlan[];
+  recommended_templates: RecommendedTemplate[];
+};
+
+export type EcommerceAnalyzePayload = Omit<EcommerceGeneratePayload, 'quality' | 'n'> & {
+  image_count?: number;
+};
 
 export type PublicAuthSettings = {
   registration_enabled: boolean;
@@ -523,7 +598,7 @@ export function optimizePrompt(payload: PromptOptimizePayload) {
   });
 }
 
-function appendEcommerceForm(form: FormData, payload: EcommerceGeneratePayload) {
+function appendEcommerceForm(form: FormData, payload: EcommerceGeneratePayload | EcommerceAnalyzePayload) {
   if (payload.product_name) form.set('product_name', payload.product_name);
   if (payload.materials) form.set('materials', payload.materials);
   if (payload.selling_points) form.set('selling_points', payload.selling_points);
@@ -565,6 +640,17 @@ export function editImage(payload: GeneratePayload, images: File | File[] | Imag
   form.set('n', String(payload.n || 1));
   appendReferenceInputs(form, referenceList);
   return request<ImageTask>('/api/images/edit', {
+    method: 'POST',
+    body: form,
+  });
+}
+
+export function analyzeEcommerceProduct(payload: EcommerceAnalyzePayload, image: File | EcommerceReferenceImage[]) {
+  const form = new FormData();
+  appendEcommerceReferences(form, image);
+  appendEcommerceForm(form, payload);
+  form.set('image_count', String(payload.image_count || 3));
+  return request<EcommerceAnalyzeResponse>('/api/ecommerce/analyze', {
     method: 'POST',
     body: form,
   });
