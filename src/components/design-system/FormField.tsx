@@ -8,6 +8,7 @@ import type {
 import { cx } from './cx';
 
 type FieldLayout = 'stack' | 'inline';
+type FieldVariant = 'default' | 'accent';
 
 export type FieldProps = {
   id?: string;
@@ -16,6 +17,7 @@ export type FieldProps = {
   error?: ReactNode;
   required?: boolean;
   layout?: FieldLayout;
+  variant?: FieldVariant;
   className?: string;
   children: (field: { id: string; describedBy?: string; invalid: boolean }) => ReactNode;
 };
@@ -126,6 +128,7 @@ export function Field({
   error,
   required = false,
   layout = 'stack',
+  variant = 'default',
   className,
   children,
 }: FieldProps) {
@@ -136,9 +139,20 @@ export function Field({
   const describedBy = [helpId, errorId].filter(Boolean).join(' ') || undefined;
   const invalid = Boolean(error);
 
+  const fieldClassName =
+    variant === 'accent'
+      ? 'flex flex-col gap-2'
+      : layout === 'inline'
+        ? 'grid gap-2 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-start'
+        : 'grid gap-1.5';
+  const labelClassName =
+    variant === 'accent'
+      ? 'mb-1 text-[10px] font-bold uppercase tracking-widest text-secondary'
+      : 'text-xs font-medium leading-5 text-on-surface-variant';
+
   return (
-    <div className={cx(layout === 'inline' ? 'grid gap-2 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-start' : 'grid gap-1.5', className)}>
-      <label htmlFor={id} className="text-xs font-medium leading-5 text-on-surface-variant">
+    <div className={cx(fieldClassName, className)}>
+      <label htmlFor={id} className={labelClassName}>
         {label}
         {required ? <span className="ml-1 text-lime" aria-hidden="true">*</span> : null}
       </label>

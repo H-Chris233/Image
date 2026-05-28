@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Activity, BellRing, CreditCard, EyeOff, Globe2, Loader2, Megaphone, PlugZap, Save, Server, ShieldAlert, UserCircle } from 'lucide-react';
 import {
@@ -21,6 +21,7 @@ import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import AccountCenterHeader from '../components/AccountCenterHeader';
 import AvatarBadge from '../components/AvatarBadge';
+import { Field } from '../components/design-system';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
 
@@ -349,12 +350,15 @@ export default function Config() {
               </div>
 
               <div className="border-t border-secondary/10 pt-4">
-                <Field label={t('site_inspiration_sources_body')}>
-                  <textarea
-                    className="min-h-28 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50 resize-y"
-                    value={siteDraft.inspiration_sources}
-                    onChange={(event) => setSiteDraft((current) => ({ ...current, inspiration_sources: event.target.value }))}
-                  />
+                <Field label={t('site_inspiration_sources_body')} variant="accent">
+                  {({ id }) => (
+                    <textarea
+                      id={id}
+                      className="min-h-28 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50 resize-y"
+                      value={siteDraft.inspiration_sources}
+                      onChange={(event) => setSiteDraft((current) => ({ ...current, inspiration_sources: event.target.value }))}
+                    />
+                  )}
                 </Field>
                 {inspirationStats?.source_counts?.length ? (
                   <div className="mt-4 grid grid-cols-1 gap-2 text-[10px] text-white/45 md:grid-cols-2">
@@ -374,41 +378,51 @@ export default function Config() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             {isAdmin ? (
               <>
-                <Field label={t('config_user_name')}>
-                  <input
-                    className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-                    disabled={config?.managed_by_auth}
-                    value={config?.user_name || ''}
-                    onChange={(event) => setConfig((current) => current && { ...current, user_name: event.target.value })}
-                  />
+                <Field label={t('config_user_name')} variant="accent">
+                  {({ id }) => (
+                    <input
+                      id={id}
+                      className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                      disabled={config?.managed_by_auth}
+                      value={config?.user_name || ''}
+                      onChange={(event) => setConfig((current) => current && { ...current, user_name: event.target.value })}
+                    />
+                  )}
                 </Field>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Field label={t('config_model')}>
-                    <input className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50" value={config?.model || 'gpt-image-2'} onChange={(event) => setConfig((current) => current && { ...current, model: event.target.value })} />
+                  <Field label={t('config_model')} variant="accent">
+                    {({ id }) => (
+                      <input id={id} className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50" value={config?.model || 'gpt-image-2'} onChange={(event) => setConfig((current) => current && { ...current, model: event.target.value })} />
+                    )}
                   </Field>
-                  <Field label={t('config_size')}>
-                    <>
-                      <input
-                        className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-                        list="image-size-options"
-                        value={config?.default_size || '2K'}
-                        onChange={(event) => setConfig((current) => current && { ...current, default_size: event.target.value })}
-                      />
-                      <datalist id="image-size-options">
-                        <option value="1K" label="1K (1080p)" />
-                        <option value="2K" label="2K (1440p)" />
-                        <option value="4K" label="4K (2160p)" />
-                      </datalist>
-                    </>
+                  <Field label={t('config_size')} variant="accent">
+                    {({ id }) => (
+                      <>
+                        <input
+                          id={id}
+                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                          list="image-size-options"
+                          value={config?.default_size || '2K'}
+                          onChange={(event) => setConfig((current) => current && { ...current, default_size: event.target.value })}
+                        />
+                        <datalist id="image-size-options">
+                          <option value="1K" label="1K (1080p)" />
+                          <option value="2K" label="2K (1440p)" />
+                          <option value="4K" label="4K (2160p)" />
+                        </datalist>
+                      </>
+                    )}
                   </Field>
-                  <Field label={t('config_quality')}>
-                    <select className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50" value={config?.default_quality || 'auto'} onChange={(event) => setConfig((current) => current && { ...current, default_quality: event.target.value })}>
-                      <option>low</option>
-                      <option>medium</option>
-                      <option>high</option>
-                      <option>auto</option>
-                    </select>
+                  <Field label={t('config_quality')} variant="accent">
+                    {({ id }) => (
+                      <select id={id} className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50" value={config?.default_quality || 'auto'} onChange={(event) => setConfig((current) => current && { ...current, default_quality: event.target.value })}>
+                        <option>low</option>
+                        <option>medium</option>
+                        <option>high</option>
+                        <option>auto</option>
+                      </select>
+                    )}
                   </Field>
                 </div>
               </>
@@ -536,15 +550,18 @@ export default function Config() {
             </p>
 
             <div className="space-y-5">
-              <Field label={t('lang_label')}>
-                <select
-                  className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-                  value={siteDraft.default_locale}
-                  onChange={(event) => handleLocaleChange(event.target.value as LocaleValue)}
-                >
-                  <option value="zh-CN">{t('lang_zh')}</option>
-                  <option value="en-US">{t('lang_en')}</option>
-                </select>
+              <Field label={t('lang_label')} variant="accent">
+                {({ id }) => (
+                  <select
+                    id={id}
+                    className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                    value={siteDraft.default_locale}
+                    onChange={(event) => handleLocaleChange(event.target.value as LocaleValue)}
+                  >
+                    <option value="zh-CN">{t('lang_zh')}</option>
+                    <option value="en-US">{t('lang_en')}</option>
+                  </select>
+                )}
               </Field>
 
               {!isAdmin ? (
@@ -582,92 +599,110 @@ export default function Config() {
                   <p className="mb-4 text-xs leading-6 text-white/45">{t('site_upstream_hint')}</p>
 
                   <div className="space-y-4">
-                    <Field label={t('site_provider_base_url')}>
-                      <>
-                        <input
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-                          placeholder={siteSettings.upstream?.effective_provider_base_url || 'https://example.com/v1'}
-                          value={siteDraft.provider_base_url}
-                          onChange={(event) => setSiteDraft((current) => ({ ...current, provider_base_url: event.target.value }))}
-                        />
-                        <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
-                          {t('site_upstream_effective', { value: siteSettings.upstream?.effective_provider_base_url || '-' })}
-                        </div>
-                      </>
+                    <Field label={t('site_provider_base_url')} variant="accent">
+                      {({ id }) => (
+                        <>
+                          <input
+                            id={id}
+                            className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                            placeholder={siteSettings.upstream?.effective_provider_base_url || 'https://example.com/v1'}
+                            value={siteDraft.provider_base_url}
+                            onChange={(event) => setSiteDraft((current) => ({ ...current, provider_base_url: event.target.value }))}
+                          />
+                          <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
+                            {t('site_upstream_effective', { value: siteSettings.upstream?.effective_provider_base_url || '-' })}
+                          </div>
+                        </>
+                      )}
                     </Field>
 
-                    <Field label={t('site_auth_base_url')}>
-                      <>
-                        <input
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-                          placeholder={siteSettings.upstream?.effective_auth_base_url || 'https://example.com'}
-                          value={siteDraft.auth_base_url}
-                          onChange={(event) => setSiteDraft((current) => ({ ...current, auth_base_url: event.target.value }))}
-                        />
-                        <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
-                          {t('site_upstream_effective', { value: siteSettings.upstream?.effective_auth_base_url || '-' })}
-                        </div>
-                      </>
+                    <Field label={t('site_auth_base_url')} variant="accent">
+                      {({ id }) => (
+                        <>
+                          <input
+                            id={id}
+                            className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                            placeholder={siteSettings.upstream?.effective_auth_base_url || 'https://example.com'}
+                            value={siteDraft.auth_base_url}
+                            onChange={(event) => setSiteDraft((current) => ({ ...current, auth_base_url: event.target.value }))}
+                          />
+                          <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
+                            {t('site_upstream_effective', { value: siteSettings.upstream?.effective_auth_base_url || '-' })}
+                          </div>
+                        </>
+                      )}
                     </Field>
 
-                    <Field label={t('site_recharge_url')}>
-                      <>
-                        <input
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-                          placeholder={siteSettings.upstream?.effective_recharge_url || siteSettings.upstream?.effective_auth_base_url || 'https://sub2api.example.com'}
-                          value={siteDraft.recharge_url}
-                          onChange={(event) => setSiteDraft((current) => ({ ...current, recharge_url: event.target.value }))}
-                        />
-                        <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
-                          {t('site_upstream_effective', { value: siteSettings.upstream?.effective_recharge_url || '-' })}
-                        </div>
-                      </>
+                    <Field label={t('site_recharge_url')} variant="accent">
+                      {({ id }) => (
+                        <>
+                          <input
+                            id={id}
+                            className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                            placeholder={siteSettings.upstream?.effective_recharge_url || siteSettings.upstream?.effective_auth_base_url || 'https://sub2api.example.com'}
+                            value={siteDraft.recharge_url}
+                            onChange={(event) => setSiteDraft((current) => ({ ...current, recharge_url: event.target.value }))}
+                          />
+                          <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
+                            {t('site_upstream_effective', { value: siteSettings.upstream?.effective_recharge_url || '-' })}
+                          </div>
+                        </>
+                      )}
                     </Field>
 
-                    <Field label={t('site_admin_token')}>
-                      <>
-                        <input
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-                          placeholder={siteSettings.upstream?.sub2api_admin_token_hint || 'admin-...'}
-                          type="password"
-                          value={siteDraft.sub2api_admin_token}
-                          onChange={(event) => setSiteDraft((current) => ({ ...current, sub2api_admin_token: event.target.value }))}
-                        />
-                        <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
-                          {t('site_admin_token_saved', { value: siteSettings.upstream?.sub2api_admin_token_set ? siteSettings.upstream.sub2api_admin_token_hint || 'SET' : 'NONE' })}
-                        </div>
-                      </>
+                    <Field label={t('site_admin_token')} variant="accent">
+                      {({ id }) => (
+                        <>
+                          <input
+                            id={id}
+                            className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                            placeholder={siteSettings.upstream?.sub2api_admin_token_hint || 'admin-...'}
+                            type="password"
+                            value={siteDraft.sub2api_admin_token}
+                            onChange={(event) => setSiteDraft((current) => ({ ...current, sub2api_admin_token: event.target.value }))}
+                          />
+                          <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
+                            {t('site_admin_token_saved', { value: siteSettings.upstream?.sub2api_admin_token_set ? siteSettings.upstream.sub2api_admin_token_hint || 'SET' : 'NONE' })}
+                          </div>
+                        </>
+                      )}
                     </Field>
 
-                    <Field label={t('site_admin_jwt')}>
-                      <>
-                        <input
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-                          placeholder={siteSettings.upstream?.sub2api_admin_jwt_hint || 'eyJ...'}
-                          type="password"
-                          value={siteDraft.sub2api_admin_jwt}
-                          onChange={(event) => setSiteDraft((current) => ({ ...current, sub2api_admin_jwt: event.target.value }))}
-                        />
-                        <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
-                          {t('site_admin_token_saved', { value: siteSettings.upstream?.sub2api_admin_jwt_set ? siteSettings.upstream.sub2api_admin_jwt_hint || 'SET' : 'NONE' })}
-                        </div>
-                      </>
+                    <Field label={t('site_admin_jwt')} variant="accent">
+                      {({ id }) => (
+                        <>
+                          <input
+                            id={id}
+                            className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                            placeholder={siteSettings.upstream?.sub2api_admin_jwt_hint || 'eyJ...'}
+                            type="password"
+                            value={siteDraft.sub2api_admin_jwt}
+                            onChange={(event) => setSiteDraft((current) => ({ ...current, sub2api_admin_jwt: event.target.value }))}
+                          />
+                          <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
+                            {t('site_admin_token_saved', { value: siteSettings.upstream?.sub2api_admin_jwt_set ? siteSettings.upstream.sub2api_admin_jwt_hint || 'SET' : 'NONE' })}
+                          </div>
+                        </>
+                      )}
                     </Field>
 
-                    <Field label={t('site_trial_balance_usd')}>
-                      <>
-                        <input
-                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-                          min="0"
-                          step="0.01"
-                          type="number"
-                          value={siteDraft.trial_balance_usd}
-                          onChange={(event) => setSiteDraft((current) => ({ ...current, trial_balance_usd: event.target.value }))}
-                        />
-                        <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
-                          {t('site_trial_balance_effective', { value: siteSettings.upstream?.trial_balance_usd ?? 0 })}
-                        </div>
-                      </>
+                    <Field label={t('site_trial_balance_usd')} variant="accent">
+                      {({ id }) => (
+                        <>
+                          <input
+                            id={id}
+                            className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                            min="0"
+                            step="0.01"
+                            type="number"
+                            value={siteDraft.trial_balance_usd}
+                            onChange={(event) => setSiteDraft((current) => ({ ...current, trial_balance_usd: event.target.value }))}
+                          />
+                          <div className="mt-1 text-[9px] uppercase tracking-widest text-white/30">
+                            {t('site_trial_balance_effective', { value: siteSettings.upstream?.trial_balance_usd ?? 0 })}
+                          </div>
+                        </>
+                      )}
                     </Field>
 
                     <p className="text-[10px] leading-5 text-white/35">{t('site_admin_token_hint')}</p>
@@ -693,20 +728,26 @@ export default function Config() {
                   </label>
 
                   <div className="space-y-4">
-                    <Field label={t('site_announcement_title')}>
-                      <input
-                        className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
-                        value={siteDraft.announcement_title}
-                        onChange={(event) => setSiteDraft((current) => ({ ...current, announcement_title: event.target.value }))}
-                      />
+                    <Field label={t('site_announcement_title')} variant="accent">
+                      {({ id }) => (
+                        <input
+                          id={id}
+                          className="h-10 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+                          value={siteDraft.announcement_title}
+                          onChange={(event) => setSiteDraft((current) => ({ ...current, announcement_title: event.target.value }))}
+                        />
+                      )}
                     </Field>
 
-                    <Field label={t('site_announcement_body')}>
-                      <textarea
-                        className="min-h-32 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50 resize-y"
-                        value={siteDraft.announcement_body}
-                        onChange={(event) => setSiteDraft((current) => ({ ...current, announcement_body: event.target.value }))}
-                      />
+                    <Field label={t('site_announcement_body')} variant="accent">
+                      {({ id }) => (
+                        <textarea
+                          id={id}
+                          className="min-h-32 w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50 resize-y"
+                          value={siteDraft.announcement_body}
+                          onChange={(event) => setSiteDraft((current) => ({ ...current, announcement_body: event.target.value }))}
+                        />
+                      )}
                     </Field>
                   </div>
                 </div>
@@ -764,13 +805,4 @@ function isEstimatedUsageLogEntry(item: UsageLogEntry) {
 
 function isActualUsageLogEntry(item: UsageLogEntry) {
   return item.metadata?.cost_source === 'sub2api_actual_cost';
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <label className="text-secondary text-[10px] uppercase tracking-widest font-bold mb-1">{label}</label>
-      {children}
-    </div>
-  );
 }

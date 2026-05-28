@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, LockKeyhole, MailPlus, Send, ShieldCheck, X } from 'lucide-react';
 import {
@@ -13,6 +13,7 @@ import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import { useNotifier } from '../notifications';
 import { useSite } from '../site';
+import { Field } from './design-system';
 
 const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
 const FOCUSABLE_SELECTOR = [
@@ -245,40 +246,46 @@ function LoginForm({ settings: _settings, onSuccess }: { settings: PublicAuthSet
         <>
           <p className="text-sm text-on-surface-variant">{t('login_desc_2fa', { value: maskedEmail })}</p>
           <Field id="auth-login-totp" label={t('login_totp')}>
-            <input
-              id="auth-login-totp"
-              className={inputCls}
-              autoComplete="one-time-code"
-              data-auth-autofocus
-              inputMode="numeric"
-              maxLength={6}
-              value={totpCode}
-              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            />
+            {({ id }) => (
+              <input
+                id={id}
+                className={inputCls}
+                autoComplete="one-time-code"
+                data-auth-autofocus
+                inputMode="numeric"
+                maxLength={6}
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              />
+            )}
           </Field>
         </>
       ) : (
         <>
           <Field id="auth-login-email" label={t('login_email')}>
-            <input
-              id="auth-login-email"
-              className={inputCls}
-              autoComplete="email"
-              data-auth-autofocus
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            {({ id }) => (
+              <input
+                id={id}
+                className={inputCls}
+                autoComplete="email"
+                data-auth-autofocus
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            )}
           </Field>
           <Field id="auth-login-password" label={t('login_password')}>
-            <input
-              id="auth-login-password"
-              className={inputCls}
-              autoComplete="current-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            {({ id }) => (
+              <input
+                id={id}
+                className={inputCls}
+                autoComplete="current-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            )}
           </Field>
         </>
       )}
@@ -359,36 +366,42 @@ function RegisterForm({ settings, onSuccess }: { settings: PublicAuthSettings | 
         </div>
       )}
       <Field id="auth-register-email" label={t('register_email')}>
-        <input
-          id="auth-register-email"
-          className={inputCls}
-          autoComplete="email"
-          data-auth-autofocus
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        {({ id }) => (
+          <input
+            id={id}
+            className={inputCls}
+            autoComplete="email"
+            data-auth-autofocus
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        )}
       </Field>
       <Field id="auth-register-password" label={t('register_password')}>
-        <input
-          id="auth-register-password"
-          className={inputCls}
-          autoComplete="new-password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        {({ id }) => (
+          <input
+            id={id}
+            className={inputCls}
+            autoComplete="new-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        )}
       </Field>
       {settings?.email_verify_enabled && (
         <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
           <Field id="auth-register-verify-code" label={t('register_verify_code')}>
-            <input
-              id="auth-register-verify-code"
-              className={inputCls}
-              autoComplete="one-time-code"
-              value={verifyCode}
-              onChange={(e) => setVerifyCode(e.target.value)}
-            />
+            {({ id }) => (
+              <input
+                id={id}
+                className={inputCls}
+                autoComplete="one-time-code"
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value)}
+              />
+            )}
           </Field>
           <button
             className="flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-lg border border-outline-variant px-4 text-sm text-on-surface transition-colors hover:bg-surface-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35 disabled:opacity-50"
@@ -403,22 +416,26 @@ function RegisterForm({ settings, onSuccess }: { settings: PublicAuthSettings | 
       )}
       {settings?.promo_code_enabled && (
         <Field id="auth-register-promo" label={t('register_promo')}>
-          <input
-            id="auth-register-promo"
-            className={inputCls}
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value)}
-          />
+          {({ id }) => (
+            <input
+              id={id}
+              className={inputCls}
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+            />
+          )}
         </Field>
       )}
       {settings?.invitation_code_enabled && (
         <Field id="auth-register-invitation" label={t('register_invitation')}>
-          <input
-            id="auth-register-invitation"
-            className={inputCls}
-            value={invitationCode}
-            onChange={(e) => setInvitationCode(e.target.value)}
-          />
+          {({ id }) => (
+            <input
+              id={id}
+              className={inputCls}
+              value={invitationCode}
+              onChange={(e) => setInvitationCode(e.target.value)}
+            />
+          )}
         </Field>
       )}
       <button className={submitCls} disabled={loading || !canRegister} type="submit">
@@ -426,15 +443,6 @@ function RegisterForm({ settings, onSuccess }: { settings: PublicAuthSettings | 
         {t('register_submit')}
       </button>
     </form>
-  );
-}
-
-function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
-  return (
-    <div className="min-w-0 space-y-1.5">
-      <label className="text-xs font-medium text-on-surface-variant" htmlFor={id}>{label}</label>
-      {children}
-    </div>
   );
 }
 
