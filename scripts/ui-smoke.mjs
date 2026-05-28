@@ -732,6 +732,11 @@ function buildMockScript() {
       });
     }
 
+    if (url.pathname === '/api/balance') {
+      const authenticated = smokeAuthenticated();
+      return json({ ok: true, remaining: authenticated ? 12.3456 : 0, raw: null });
+    }
+
     if (url.pathname === '/api/config') {
       return json({
         owner_id: 'user:24',
@@ -1610,9 +1615,37 @@ async function runSmokeChecks(page, baseUrl) {
     await assertOrdinaryAccountSurface(page, '/billing legacy redirect');
   });
 
-  await runCheck('/recharge legacy route resolves to the ordinary account surface', async () => {
-    await page.navigate('/recharge?smoke_auth=1', { width: 390, height: 844, expectedPathname: '/account' });
-    await assertOrdinaryAccountSurface(page, '/recharge legacy redirect');
+  await runCheck('/recharge shows the dedicated external recharge handoff page', async () => {
+    await page.navigate('/recharge?smoke_auth=1', { width: 390, height: 844 });
+    await page.waitFor(
+      () => /账户充值/.test(document.body.innerText) &&
+        /当前余额/.test(document.body.innerText) &&
+        /12\.3456/.test(document.body.innerText) &&
+        /前往充值/.test(document.body.innerText),
+      '/recharge dedicated surface',
+    );
+    const result = await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const scope = document.querySelector('main') || document;
+      const controls = Array.from(scope.querySelectorAll('button'))
+        .filter((element) => isVisible(element))
+        .map((element) => ({
+          name: accessibleName(element),
+          disabled: element instanceof HTMLButtonElement ? element.disabled : element.getAttribute('aria-disabled') === 'true',
+        }));
+      return {
+        ok:
+          window.location.pathname === '/recharge' &&
+          controls.some((control) => control.name === '前往充值' && !control.disabled),
+        pathname: window.location.pathname,
+        controls,
+      };
+    }, domSnapshotHelpers().text);
+    if (!result.ok) {
+      throw new Error(`/recharge dedicated handoff mismatch: ${JSON.stringify(result)}`);
+    }
+    await assertNoUnnamedButtons(page, '/recharge dedicated handoff');
+    await assertNoHorizontalOverflow(page, '/recharge dedicated handoff mobile');
   });
 
   await runCheck('/config non-admin route resolves to the ordinary account surface', async () => {

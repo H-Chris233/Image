@@ -2,15 +2,13 @@ export type ExternalRechargeUrlInput = {
   recharge_url?: string | null;
   upstream?: {
     effective_recharge_url?: string | null;
-    recharge_url?: string | null;
   } | null;
 } | null | undefined;
 
 export function resolveExternalRechargeUrl(settings: ExternalRechargeUrlInput): string {
   return (
     normalizeExternalRechargeUrl(settings?.recharge_url) ||
-    normalizeExternalRechargeUrl(settings?.upstream?.effective_recharge_url) ||
-    normalizeExternalRechargeUrl(settings?.upstream?.recharge_url)
+    normalizeExternalRechargeUrl(settings?.upstream?.effective_recharge_url)
   );
 }
 

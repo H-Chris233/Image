@@ -69,11 +69,17 @@ test('account center desktop and mobile navigation stay consolidated', () => {
   assert.match(mobile, /path: '\/account'.*isActive: isAccountCenterPath/s);
 });
 
-test('recharge route is only a legacy redirect back to account', () => {
+test('recharge route opens partner recharge in a new window and refreshes balance', () => {
   const recharge = readProjectFile('src/pages/Recharge.tsx');
 
-  assert.match(recharge, /Navigate to="\/account" replace/);
-  assert.doesNotMatch(recharge, /AccountCenterHeader|current="recharge"|getBalance|getAccount|recharge_open_external|recharge_refresh|recharge_continue_create/);
+  assert.match(recharge, /resolveExternalRechargeUrl\(siteSettings\)/);
+  assert.match(recharge, /getBalance\(\)/);
+  assert.match(recharge, /window\.addEventListener\('focus', onFocus\)/);
+  assert.match(recharge, /window\.removeEventListener\('focus', onFocus\)/);
+  assert.match(recharge, /window\.open\(rechargeUrl, '_blank', 'noopener,noreferrer'\)/);
+  assert.match(recharge, /前往充值/);
+  assert.match(recharge, /充值入口暂未配置，请联系管理员/);
+  assert.doesNotMatch(recharge, /Navigate to="\/account" replace|<iframe|RECHARGE_URL|AccountCenterHeader|current="recharge"|recharge_open_external|recharge_continue_create/);
 });
 
 test('ordinary translation catalog does not keep in-site finance or checkout copy', () => {
