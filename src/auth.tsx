@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ViewerInfo, getSession } from './api';
 
@@ -15,7 +15,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [viewer, setViewer] = useState<ViewerInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     try {
       const session = await getSession();
       setViewer(session);
@@ -24,11 +24,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     refresh().catch(() => setLoading(false));
-  }, []);
+  }, [refresh]);
+
+  // 401 自愈（#95）：任意 API 401 时 api.ts 派 aether:session-expired，这里刷新一次
+  // viewer，让 UI 从"以为登录中"切回登录态真相。AuthModalProvider 同时会弹登录框。
+  useEffect(() => {
+    const handler = () => { refresh().catch(() => undefined); };
+    window.addEventListener('aether:session-expired', handler);
+    return () => window.removeEventListener('aether:session-expired', handler);
+  }, [refresh]);
 
   const value = useMemo<AuthContextValue>(() => ({
     viewer,

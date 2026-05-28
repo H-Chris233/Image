@@ -227,6 +227,11 @@ function LoginForm({ settings: _settings, onSuccess }: { settings: PublicAuthSet
         setMaskedEmail(result.user_email_masked || email.trim());
         return;
       }
+      // 兜底：上游声称需要 2FA 但没回 temp_token —— 之前两个分支都不命中，
+      // loading 关掉、UI 无任何变化，用户像点了死按钮（#95）。
+      if (result.requires_2fa && !result.temp_token) {
+        throw new Error('2FA 验证服务异常：未返回临时令牌，请重试或联系站主');
+      }
       if (result.viewer) { setViewer(result.viewer); onSuccess(); }
     } catch (err) {
       notifyError(err);
@@ -282,6 +287,17 @@ function LoginForm({ settings: _settings, onSuccess }: { settings: PublicAuthSet
         {loading ? <Loader2 aria-hidden="true" className="animate-spin" size={16} /> : tempToken ? <ShieldCheck aria-hidden="true" size={16} /> : <LockKeyhole aria-hidden="true" size={16} />}
         {tempToken ? t('login_submit_2fa') : t('login_submit')}
       </button>
+      {tempToken ? (
+        // 2FA 卡死出口（#95）：temp_token 过期或输错时让用户能回到第一步重新输密码，否则只能关掉弹窗从头来。
+        <button
+          className="block w-full text-center text-sm text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-none focus-visible:underline"
+          disabled={loading}
+          type="button"
+          onClick={() => { setTempToken(''); setTotpCode(''); setMaskedEmail(''); }}
+        >
+          返回登录
+        </button>
+      ) : null}
     </form>
   );
 }
