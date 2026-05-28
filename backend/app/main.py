@@ -189,7 +189,10 @@ SIZE_TIER_BY_DIMENSION = {
 }
 ALLOWED_PRESET_DIMENSIONS = set(SIZE_TIER_BY_DIMENSION)
 
-RETRYABLE_PROVIDER_STATUS_CODES = {429, 502, 503, 504}
+# 仅对"请求未被处理"的状态码重试：429(限流)/503(暂不可用)。
+# 故意排除 502/504(网关错误/超时)——图像生成是非幂等且昂贵的操作，
+# 上游很可能已经生成并计费、只是响应丢失，重试会造成重复生成与成本翻倍。
+RETRYABLE_PROVIDER_STATUS_CODES = {429, 503}
 IMAGE_PROVIDER_MAX_ATTEMPTS = 3
 PROMPT_OPTIMIZER_SYSTEM_PROMPT = f"你是 {PRODUCT_NAME} 的图像生成提示词优化器。\n" """用户会提供一段原始生图提示词，以及可选的修改要求。你的任务是输出一段可以直接用于 gpt-image-2 / OpenAI 兼容生图接口的最终提示词。
 用户会提供一段原始生图提示词，以及可选的修改要求。你的任务是输出一段可以直接用于 gpt-image-2 / OpenAI 兼容生图接口的最终提示词。
