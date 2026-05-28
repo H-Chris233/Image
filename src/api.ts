@@ -742,36 +742,6 @@ export function listImageTasks(params: { limit?: number; status?: string[] } = {
   return request<{ items: ImageTask[] }>(`/api/tasks${query ? `?${query}` : ''}`);
 }
 
-export function cancelImageTask(taskId: string): Promise<{ ok: boolean }> {
-  return request<{ ok: boolean }>(`/api/tasks/${taskId}`, { method: 'DELETE' });
-}
-
-export type ShareLinkResult = {
-  share_url: string;
-  expires_at: string | null;
-};
-
-export function createShareLink(historyId: string): Promise<ShareLinkResult> {
-  return request<ShareLinkResult>(`/api/history/${historyId}/share`, { method: 'POST' });
-}
-
-export function deleteShareLink(historyId: string): Promise<{ ok: boolean }> {
-  return request<{ ok: boolean }>(`/api/history/${historyId}/share`, { method: 'DELETE' });
-}
-
-export type RemoveBackgroundResult = {
-  url: string;
-};
-
-export function removeBackground(image: File) {
-  const form = new FormData();
-  form.set('image', image);
-  return request<RemoveBackgroundResult>('/api/images/remove-background', {
-    method: 'POST',
-    body: form,
-  });
-}
-
 export function taskDownloadUrl(taskId: string) {
   return `${API_BASE}/api/tasks/${encodeURIComponent(taskId)}/download.zip`;
 }
