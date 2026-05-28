@@ -15,3 +15,7 @@ backend/storage/
 .venv/
 output/
 benchmark/
+
+# Ralph 循环：本地权限白名单与运行日志不进库（PROMPT.md / ralph.ps1 入库以便审阅）
+.claude/settings.local.json
+.ralph/run.log
