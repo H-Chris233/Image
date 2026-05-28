@@ -109,14 +109,15 @@ export default function Create() {
     setLoading(true);
     notifyInfo('正在提交商品图生成任务');
     try {
-      // 不再把文件名当 product_name、不再把类目英文名当 scenarios——
-      // 这俩值语义错位、会污染后端 prompt（曾导致"阀门→数码产品"等失真）。
-      // 留空让后端的"未填写"兜底；用户输入的场景描述走 style 字段，是真正的视觉信号。
+      // 给后端的 prompt 只保留用户真实输入的视觉信号（style = 场景描述）。
+      // 不传 product_name（避免文件名当商品名）、不传 scenarios（避免类目英文名当使用场景）——
+      // 这俩是 #67/#105 修过的；
+      // 同样不传 platform（避免把'淘宝/抖音'硬塞，做别的平台的用户被它带偏）、
+      // 不传 extra_requirements（避免运营追踪 breadcrumb 进 AI 上下文）——#111。
+      // 后端会用'通用电商'与空字符串兜底，不写入 prompt。
       const task = await generateEcommerceImages(
         {
-          platform: '淘宝/抖音',
           style: result.sceneDescription,
-          extra_requirements: '从 /create 商品图向导提交',
           size: providerImageSize('FAST', result.aspectRatio),
           aspect_ratio: result.aspectRatio,
           quality: 'auto',
