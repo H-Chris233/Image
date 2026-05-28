@@ -562,9 +562,6 @@ function buildMockScript() {
       task_result: taskResult,
       task_request: null,
       error: null,
-      published: false,
-      published_inspiration_id: null,
-      published_at: null,
       created_at: '2026-05-18T00:00:00Z',
       updated_at: '2026-05-18T00:00:00Z'
     };
@@ -818,22 +815,6 @@ function buildMockScript() {
         sync_interval_seconds: 3600,
         last_error: null
       });
-    }
-
-    const historyPublishMatch = url.pathname.match(/^\\/api\\/history\\/(smoke-image-[12])\\/publish$/);
-    if (historyPublishMatch) {
-      const id = historyPublishMatch[1];
-      const method = ((init && init.method) || 'GET').toUpperCase();
-      recordApiCall({ type: 'history-publish', id, method });
-      const sourceItem = task.items.find((item) => item.id === id) || task.items[0];
-      const item = {
-        ...sourceItem,
-        published: method !== 'DELETE',
-        published_inspiration_id: method !== 'DELETE' ? 'smoke-published-case' : null,
-        published_at: method !== 'DELETE' ? '2026-05-18T00:00:03Z' : null
-      };
-      if (method === 'POST') return json({ ok: true, item, inspiration: { ...inspirationItem, id: 'smoke-published-case' } });
-      if (method === 'DELETE') return json({ ok: true, item });
     }
 
     const historyDeleteMatch = url.pathname.match(/^\\/api\\/history\\/(smoke-image-[12])$/);
@@ -2014,7 +1995,6 @@ async function runSmokeChecks(page, baseUrl) {
     await assertNamedControlsMinTarget(page, '/history card actions', [
       '^Download ZIP$',
       '^Re-Generate$',
-      '^Publish Case$',
       '^Delete$',
     ]);
   });
@@ -2145,14 +2125,12 @@ async function runSmokeChecks(page, baseUrl) {
       '^Preview selected$',
       '^Reuse selected prompt$',
       '^Create variant$',
-      '^Publish selected$',
       '^Preview all$',
       '^Download ZIP$',
     ]);
     await assertNoNamedControls(page, '/workspace selected lane removes duplicated task-scoped actions', [
       '^Reuse prompt$',
       '^Regenerate$',
-      '^Publish case$',
     ]);
     const albumState = await page.evaluate(() => {
       const text = document.body.innerText;
@@ -2195,8 +2173,7 @@ async function runSmokeChecks(page, baseUrl) {
           first?.element.getAttribute('aria-pressed') === 'true' &&
           second?.element.getAttribute('aria-pressed') === 'false' &&
           /Asset 1 of 2/i.test(text) &&
-          /First smoke preview image/i.test(domText) &&
-          /Not published/i.test(text),
+          /First smoke preview image/i.test(domText),
         firstPressed: first?.element.getAttribute('aria-pressed'),
         secondPressed: second?.element.getAttribute('aria-pressed'),
         hasAssetText: /Asset 1 of 2/i.test(text),
@@ -2333,29 +2310,6 @@ async function runSmokeChecks(page, baseUrl) {
     }, domSnapshotHelpers().text);
     if (!localeState.ok) {
       throw new Error(`/workspace zh-CN labels must not fall back to English: ${JSON.stringify(localeState)}`);
-    }
-  });
-
-  await runCheck('/workspace selected publish and unpublish call only the selected asset', async () => {
-    await page.navigate('/workspace/smoke-task', { width: 390, height: 844 });
-    await page.waitFor(() => /Asset 1 of 2/i.test(document.body.innerText) && /First smoke preview image/i.test(document.body.textContent || ''), '/workspace selected publish fixture');
-    await clickMainControl(page, '^Select asset 2$', '/workspace select second asset for publish');
-    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
-    await clickMainControl(page, '^Publish selected$', '/workspace publish selected');
-    await page.waitFor(() => /Unpublish selected|Published/i.test(document.body.innerText), '/workspace selected asset published');
-    const publishCalls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
-    const publishScoped = publishCalls.filter((call) => call.type === 'history-publish');
-    if (publishScoped.length !== 1 || publishScoped[0].id !== 'smoke-image-2' || publishScoped[0].method !== 'POST') {
-      throw new Error(`/workspace publish selected must call only smoke-image-2 once: ${JSON.stringify(publishCalls)}`);
-    }
-
-    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
-    await clickMainControl(page, '^Unpublish selected$', '/workspace unpublish selected');
-    await page.waitFor(() => /Publish selected|Not published/i.test(document.body.innerText), '/workspace selected asset unpublished');
-    const unpublishCalls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
-    const unpublishScoped = unpublishCalls.filter((call) => call.type === 'history-publish');
-    if (unpublishScoped.length !== 1 || unpublishScoped[0].id !== 'smoke-image-2' || unpublishScoped[0].method !== 'DELETE') {
-      throw new Error(`/workspace unpublish selected must call only smoke-image-2 once: ${JSON.stringify(unpublishCalls)}`);
     }
   });
 

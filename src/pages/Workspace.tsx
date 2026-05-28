@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Clock3,
   Download,
-  Globe2,
   ImageIcon,
   Loader2,
   RotateCcw,
@@ -22,9 +21,7 @@ import {
   type AccountInfo,
   type HistoryItem,
   type ImageTask,
-  publishHistory,
   taskDownloadUrl,
-  unpublishHistory,
 } from '../api';
 import { useAuth } from '../auth';
 import ImagePreviewModal from '../components/ImagePreviewModal';
@@ -94,10 +91,6 @@ const WORKSPACE_COPY = {
     reusePrompt: '复用提示词',
     regenerate: '重新生成',
     retryPrompt: '重试',
-    publishing: '发布中',
-    published: '已发布',
-    publishCase: '发布案例',
-    unpublishCase: '取消发布',
     albumSummary: '相册',
     albumTitleFallback: '系列集合',
     albumCurrentAsset: (index: number, total: number) => `当前 ${index} / ${total}`,
@@ -110,14 +103,9 @@ const WORKSPACE_COPY = {
     selectedAssetNumber: (index: number, total: number) => `第 ${index} / ${total} 张`,
     selectedPrompt: '提示词',
     selectedStatus: '状态',
-    selectedPublishStatus: '发布',
     previewSelected: '预览选中',
     reuseSelectedPrompt: '复用提示词',
     createVariant: '生成变体',
-    publishSelected: '发布选中',
-    unpublishSelected: '取消发布',
-    publishingSelected: '更新中',
-    unpublished: '未发布',
     selectAsset: (index: number) => `选择第 ${index} 张`,
     currentTask: '当前任务',
     resultAssets: '结果',
@@ -187,10 +175,6 @@ const WORKSPACE_COPY = {
     reusePrompt: 'Reuse prompt',
     regenerate: 'Regenerate',
     retryPrompt: 'Retry prompt',
-    publishing: 'Publishing',
-    published: 'Published',
-    publishCase: 'Publish case',
-    unpublishCase: 'Unpublish',
     albumSummary: 'Album',
     albumTitleFallback: 'Series collection',
     albumCurrentAsset: (index: number, total: number) => `Current ${index} of ${total}`,
@@ -203,14 +187,9 @@ const WORKSPACE_COPY = {
     selectedAssetNumber: (index: number, total: number) => `Asset ${index} of ${total}`,
     selectedPrompt: 'Prompt',
     selectedStatus: 'Asset status',
-    selectedPublishStatus: 'Publish status',
     previewSelected: 'Preview selected',
     reuseSelectedPrompt: 'Reuse selected prompt',
     createVariant: 'Create variant',
-    publishSelected: 'Publish selected',
-    unpublishSelected: 'Unpublish selected',
-    publishingSelected: 'Updating selected',
-    unpublished: 'Not published',
     selectAsset: (index: number) => `Select asset ${index}`,
     currentTask: 'Current task',
     resultAssets: 'Result assets',
@@ -248,7 +227,6 @@ export default function Workspace() {
   const [regenerating, setRegenerating] = useState(false);
   const [rechargeGateOpen, setRechargeGateOpen] = useState(false);
   const [rechargeGateExpectedCost, setRechargeGateExpectedCost] = useState<number | null>(null);
-  const [publishingImageId, setPublishingImageId] = useState<string | null>(null);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [previewImages, setPreviewImages] = useState<{ id: string; url: string; prompt: string; title?: string }[] | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -314,11 +292,7 @@ export default function Workspace() {
 
   const images: HistoryItem[] = task?.items ?? [];
   const previewableImages = useMemo(() => sortImagesByBatch(images.filter((img) => Boolean(img.image_url))), [images]);
-  const publishableImages = useMemo(
-    () => previewableImages.filter((img) => img.status === 'succeeded' && Boolean(img.image_url)),
-    [previewableImages],
-  );
-  const publishedCount = publishableImages.filter((img) => img.published).length;
+  const successfulImageCount = previewableImages.filter((img) => img.status === 'succeeded' && Boolean(img.image_url)).length;
   const primaryPrompt = task?.prompt || images[0]?.prompt || '';
   const selectedImage = previewableImages.find((img) => img.id === selectedImageId) ?? previewableImages[0] ?? null;
   const selectedImageIndex = selectedImage ? previewableImages.findIndex((img) => img.id === selectedImage.id) : -1;
@@ -368,7 +342,7 @@ export default function Workspace() {
     if (!task || !prompt) {
       return;
     }
-    const fallbackCount = publishableImages.length > 0 ? publishableImages.length : images.length || 1;
+    const fallbackCount = successfulImageCount > 0 ? successfulImageCount : images.length || 1;
     const imageCount = normalizeImageCount(count ?? expectedCount ?? fallbackCount);
     const expectedCost = estimateGenerationCost(imageCount, task.size);
     if (hasInsufficientCredits(account?.balance ?? null, expectedCost)) {
@@ -395,27 +369,6 @@ export default function Workspace() {
     }
   }
 
-  async function handleToggleSelectedPublish(image: HistoryItem | null) {
-    if (!image || image.status !== 'succeeded' || !image.image_url) {
-      return;
-    }
-    setPublishingImageId(image.id);
-    try {
-      const result = image.published ? await unpublishHistory(image.id) : await publishHistory(image.id);
-      setTask((current) => {
-        if (!current) return current;
-        return {
-          ...current,
-          items: current.items.map((item) => (item.id === result.item.id ? result.item : item)),
-        };
-      });
-    } catch (err) {
-      notifyError(err);
-    } finally {
-      setPublishingImageId(null);
-    }
-  }
-
   function openRechargeGate(expectedCost: number | null) {
     setRechargeGateExpectedCost(expectedCost);
     setRechargeGateOpen(true);
@@ -432,7 +385,6 @@ export default function Workspace() {
     setRechargeGateOpen(false);
     navigate('/recharge');
   }
-
   return (
     <div className="min-h-screen text-[#f0ede8]">
       <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
@@ -479,10 +431,6 @@ export default function Workspace() {
             onRegenerateSelected={() => handleRegenerate(selectedPrompt, 1).catch(() => undefined)}
             onReuseSelectedPrompt={() => handleReusePrompt(selectedPrompt)}
             onSelectImage={setSelectedImageId}
-            onToggleSelectedPublish={() => handleToggleSelectedPublish(selectedImage).catch(() => undefined)}
-            publishedCount={publishedCount}
-            publishableCount={publishableImages.length}
-            publishingImageId={publishingImageId}
             regenerating={regenerating}
             selectedImage={selectedImage}
             selectedImageIndex={selectedImageIndex}
@@ -621,10 +569,6 @@ function SucceededWorkbench({
   onRegenerateSelected,
   onReuseSelectedPrompt,
   onSelectImage,
-  onToggleSelectedPublish,
-  publishedCount,
-  publishableCount,
-  publishingImageId,
   regenerating,
   selectedImage,
   selectedImageIndex,
@@ -639,10 +583,6 @@ function SucceededWorkbench({
   onRegenerateSelected: () => void;
   onReuseSelectedPrompt: () => void;
   onSelectImage: (id: string) => void;
-  onToggleSelectedPublish: () => void;
-  publishedCount: number;
-  publishableCount: number;
-  publishingImageId: string | null;
   regenerating: boolean;
   selectedImage: HistoryItem | null;
   selectedImageIndex: number;
@@ -653,8 +593,6 @@ function SucceededWorkbench({
     selectedImage && selectedImageIndex >= 0
       ? copy.selectedAssetNumber(selectedImageIndex + 1, images.length)
       : copy.selectedAsset;
-  const selectedIsPublishable = selectedImage?.status === 'succeeded' && Boolean(selectedImage.image_url);
-  const selectedIsPublishing = selectedImage ? publishingImageId === selectedImage.id : false;
   const isAlbum = images.length > 1;
   const seriesPlan = isAlbum ? getSeriesPlan(task, images) : null;
   const selectedPlanItem = selectedImageIndex >= 0
@@ -674,7 +612,6 @@ function SucceededWorkbench({
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8a8680]">
             <span>{copy.imageCount(images.length)}</span>
-            {publishedCount > 0 ? <span className="text-tertiary">{copy.published} {publishedCount}/{publishableCount}</span> : null}
           </div>
         </div>
       </div>
@@ -821,12 +758,6 @@ function SucceededWorkbench({
                 <dt className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8680]">{copy.selectedStatus}</dt>
                 <dd className="mt-1 text-sm font-medium text-[#f0ede8]">{selectedImage ? statusText(selectedImage.status, copy) : '--'}</dd>
               </div>
-              <div className="min-w-0 rounded-lg border border-white/[0.06] bg-black/10 px-3 py-2">
-                <dt className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a8680]">{copy.selectedPublishStatus}</dt>
-                <dd className="mt-1 break-words text-sm font-medium text-[#f0ede8] [overflow-wrap:anywhere]">
-                  {selectedImage?.published ? copy.published : copy.unpublished}
-                </dd>
-              </div>
             </dl>
           </div>
 
@@ -874,21 +805,6 @@ function SucceededWorkbench({
               >
                 {regenerating ? <Loader2 className="animate-spin" size={15} /> : <RotateCcw size={15} />}
                 <span className="min-w-0 break-words [overflow-wrap:anywhere]">{copy.createVariant}</span>
-              </button>
-              <button
-                type="button"
-                onClick={onToggleSelectedPublish}
-                disabled={selectedIsPublishing || !selectedIsPublishable}
-                className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3 text-center text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
-                  selectedImage?.published
-                    ? 'border-tertiary/35 bg-tertiary/10 text-tertiary hover:bg-tertiary/20'
-                    : 'border-white/15 bg-white/[0.04] text-on-surface-variant hover:border-tertiary/35 hover:text-tertiary'
-                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tertiary/35`}
-              >
-                {selectedIsPublishing ? <Loader2 className="animate-spin" size={15} /> : <Globe2 size={15} />}
-                <span className="min-w-0 break-words [overflow-wrap:anywhere]">
-                  {selectedIsPublishing ? copy.publishingSelected : selectedImage?.published ? copy.unpublishSelected : copy.publishSelected}
-                </span>
               </button>
             </div>
           </div>

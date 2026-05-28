@@ -22,7 +22,6 @@ from app.branding import (
     MANAGED_API_KEY_NAME,
     PRODUCT_NAME,
     TRIAL_BALANCE_GRANT_NOTE,
-    USER_GALLERY_SOURCE_URL,
 )
 from app.inspirations import cache_inspiration_images, normalize_inspiration_source_url, parse_inspiration_markdown
 from app.main import create_app, _auth_client, _db, _image_size_tier, _provider, _provider_image_size, _settings
@@ -1648,36 +1647,15 @@ def test_account_includes_balance_and_stats(tmp_path: Path) -> None:
         assert data["viewer"]["authenticated"] is True
 
 
-def test_user_can_publish_and_unpublish_history_as_public_case(tmp_path: Path) -> None:
+def test_history_publish_api_is_removed(tmp_path: Path) -> None:
     with make_client(tmp_path) as client:
         login_demo_user(client)
         generated = client.post("/api/images/generate", json={"prompt": "public neon gallery"})
         task = wait_for_task(client, generated.json()["id"])
         history_id = task["items"][0]["id"]
 
-        history_before = client.get("/api/history").json()["items"][0]
-        assert history_before["published"] is False
-
-        published = client.post(f"/api/history/{history_id}/publish")
-        assert published.status_code == 200
-        published_data = published.json()
-        assert published_data["item"]["published"] is True
-        assert published_data["inspiration"]["section"] == "用户作品"
-        assert published_data["inspiration"]["prompt"] == "public neon gallery"
-
-        public_cases_payload = client.get("/api/inspirations?q=public%20neon").json()
-        public_cases = public_cases_payload["items"]
-        assert public_cases_payload["total"] == 1
-        assert len(public_cases) == 1
-        assert public_cases[0]["source_url"] == USER_GALLERY_SOURCE_URL
-
-        unpublished = client.delete(f"/api/history/{history_id}/publish")
-        assert unpublished.status_code == 200
-        assert unpublished.json()["item"]["published"] is False
-        public_cases_after_payload = client.get("/api/inspirations?q=public%20neon").json()
-        public_cases_after = public_cases_after_payload["items"]
-        assert public_cases_after_payload["total"] == 0
-        assert public_cases_after == []
+        assert client.post(f"/api/history/{history_id}/publish").status_code == 404
+        assert client.delete(f"/api/history/{history_id}/publish").status_code == 404
 
 
 def test_inspiration_favorites_api_is_removed_but_table_is_preserved(tmp_path: Path) -> None:
