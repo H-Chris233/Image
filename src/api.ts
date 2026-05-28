@@ -506,7 +506,8 @@ export function getInspirations(params: {
   offset?: number;
   q?: string;
   section?: string;
-  template_type?: 'github' | 'official' | 'community';
+  template_type?: 'github' | 'official' | 'benchmark' | 'community';
+  exclude_template_types?: ('github' | 'official' | 'benchmark' | 'community')[];
   smb_categories?: string[];
   product_categories?: string[];
   style_tags?: string[];
@@ -517,6 +518,7 @@ export function getInspirations(params: {
   if (params.q) search.set('q', params.q);
   if (params.section) search.set('section', params.section);
   if (params.template_type) search.set('template_type', params.template_type);
+  if (params.exclude_template_types?.length) search.set('exclude_template_types', params.exclude_template_types.join(','));
   if (params.smb_categories?.length) search.set('smb_categories', params.smb_categories.join(','));
   if (params.product_categories?.length) search.set('product_categories', params.product_categories.join(','));
   if (params.style_tags?.length) search.set('style_tags', params.style_tags.join(','));

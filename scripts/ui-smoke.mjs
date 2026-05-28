@@ -537,6 +537,14 @@ function buildMockScript() {
     created_at: '2026-05-18T00:00:00Z',
     updated_at: '2026-05-18T00:00:00Z'
   };
+  const benchmarkInspirationItem = {
+    ...inspirationItem,
+    id: 'smoke-benchmark-template-1',
+    source_item_id: 'smoke-benchmark-template-1',
+    title: 'Smoke benchmark template',
+    prompt: 'Benchmark template prompt should stay hidden from public Explore',
+    template_type: 'benchmark'
+  };
   const recommendedTemplates = [
     {
       id: 'smoke-template-clean',
@@ -948,11 +956,21 @@ function buildMockScript() {
       const state = smokeState() || url.searchParams.get('smoke_state');
       const limit = Number(url.searchParams.get('limit') || 48);
       const offset = Number(url.searchParams.get('offset') || 0);
+      const excludeTemplateTypes = url.searchParams.get('exclude_template_types') || '';
+      recordApiCall({
+        type: 'inspiration-list',
+        path: url.pathname,
+        exclude_template_types: excludeTemplateTypes,
+        query: url.search
+      });
       if (state === 'long-error') {
         return json({ detail: longError }, { status: 500 });
       }
       if (state === 'filled') {
-        return json({ items: [inspirationItem], total: 1, limit, offset });
+        const items = excludeTemplateTypes.split(',').includes('benchmark')
+          ? [inspirationItem]
+          : [inspirationItem, benchmarkInspirationItem];
+        return json({ items, total: items.length, limit, offset });
       }
       return json({ items: [], total: 0, limit, offset });
     }
@@ -1765,6 +1783,35 @@ async function runSmokeChecks(page, baseUrl) {
     await page.waitFor(() => document.body.innerText.includes('AetherGenix smoke long error'), '/explore long error state');
     await assertNoUnnamedButtons(page, '/explore long error');
     await assertNoHorizontalOverflow(page, '/explore long error mobile');
+  });
+
+  await runCheck('/explore public feed excludes benchmark templates', async () => {
+    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
+    await page.navigate('/explore?smoke_auth=1&smoke_state=filled', { width: 390, height: 844 });
+    await page.waitFor(
+      () => Boolean(document.querySelector('button[aria-label*="Smoke inspiration case"]')),
+      '/explore public feed fixture card',
+    );
+    const result = await page.evaluate((key) => {
+      const calls = JSON.parse(window.localStorage.getItem(key) || '[]')
+        .filter((call) => call.type === 'inspiration-list');
+      return {
+        calls,
+        text: document.body.innerText || '',
+      };
+    }, API_CALL_STORAGE_KEY);
+    if (!result.calls.length) {
+      throw new Error('Explore did not request /api/inspirations');
+    }
+    const unfilteredCall = result.calls.find((call) => call.exclude_template_types !== 'benchmark');
+    if (unfilteredCall) {
+      throw new Error(`Explore requested inspirations without excluding benchmark: ${JSON.stringify(result.calls)}`);
+    }
+    if (/Benchmark template prompt should stay hidden/i.test(result.text)) {
+      throw new Error('Explore rendered a benchmark template fixture');
+    }
+    await assertNoUnnamedButtons(page, '/explore public filtered feed');
+    await assertNoHorizontalOverflow(page, '/explore public filtered feed mobile');
   });
 
   await runCheck('/explore detail modal keeps 44px close and action targets', async () => {

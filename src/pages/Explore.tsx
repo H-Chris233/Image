@@ -103,7 +103,11 @@ export default function Explore() {
     loadErrorRef.current = false;
 
     try {
-      const res = await getInspirations({ limit: PAGE_SIZE, offset: requestedOffset });
+      const res = await getInspirations({
+        limit: PAGE_SIZE,
+        offset: requestedOffset,
+        exclude_template_types: ['benchmark'],
+      });
       const responseItems = res.items || [];
       const imageBackedItems = responseItems.filter((item) => Boolean(item.image_url));
 
