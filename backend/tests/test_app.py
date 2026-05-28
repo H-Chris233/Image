@@ -223,18 +223,19 @@ class FakeProvider:
 
 
 class FlakyProvider(FakeProvider):
-    def __init__(self, generate_failures: int) -> None:
+    def __init__(self, generate_failures: int, status_code: int = 503) -> None:
         super().__init__()
         self.generate_attempts = 0
         self.generate_failures = generate_failures
+        self.status_code = status_code
 
     async def generate_image(self, config: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
         self.generate_attempts += 1
         if self.generate_attempts <= self.generate_failures:
             raise ProviderError(
-                502,
-                "Upstream request failed",
-                {"error": {"message": "Upstream request failed", "type": "upstream_error"}},
+                self.status_code,
+                "Service temporarily unavailable",
+                {"error": {"message": "Service temporarily unavailable", "type": "server_error"}},
             )
         return await super().generate_image(config, payload)
 
@@ -927,6 +928,20 @@ def test_generation_retries_retryable_upstream_errors(tmp_path: Path) -> None:
         assert task["status"] == "succeeded"
         assert provider.generate_attempts == 3
         assert task["items"][0]["status"] == "succeeded"
+
+
+def test_generation_does_not_retry_gateway_timeout_to_avoid_double_cost(tmp_path: Path) -> None:
+    # 502/504 表示上游很可能已生成并计费、只是响应丢失；图像生成非幂等，不得重试，否则成本翻倍。
+    provider = FlakyProvider(generate_failures=1, status_code=502)
+    with make_client(tmp_path, provider=provider) as client:
+        login_demo_user(client)
+
+        generated = client.post("/api/images/generate", json={"prompt": "no retry cup"})
+
+        assert generated.status_code == 200
+        task = wait_for_task(client, generated.json()["id"], attempts=120)
+        assert task["status"] == "failed"
+        assert provider.generate_attempts == 1
 
 
 def test_generation_surfaces_billing_errors_in_task(tmp_path: Path) -> None:
