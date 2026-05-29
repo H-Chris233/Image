@@ -5,10 +5,12 @@ import {
   ArrowLeft,
   Archive,
   CheckCircle2,
+  Clipboard,
   Clock3,
   Download,
   ImageIcon,
   Loader2,
+  PenLine,
   RotateCcw,
   Sparkles,
   Shuffle,
@@ -19,15 +21,19 @@ import {
   analyzeEcommerceProduct,
   formatDate,
   editHistoryImage,
+  generatePublishCopy,
   generateImage,
   getAccount,
   getImageTask,
   type AccountInfo,
+  type EcommercePublishCopyPayload,
+  type EcommercePublishCopyResponse,
   type HistoryItem,
   type ImageTask,
   taskDownloadUrl,
 } from '../api';
 import { useAuth } from '../auth';
+import { copyTextToClipboard } from '../clipboard';
 import ImagePreviewModal from '../components/ImagePreviewModal';
 import RechargeGate from '../components/RechargeGate';
 import RetryImage from '../components/RetryImage';
@@ -58,6 +64,10 @@ const TEMPLATE_SWAP_CANCEL = '取消';
 const TEMPLATE_SWAP_IMAGE_MISSING = '无法获取原商品图，请回到创作页';
 const TEMPLATE_SWAP_CREATE_LINK = '/create';
 const TEMPLATE_SWAP_TOAST = '已切换模板生成';
+const PUBLISH_COPY_ACTION = '生成发布文案';
+const PUBLISH_COPY_LOADING = 'AI 写文案中...';
+const PUBLISH_COPY_TITLE = '发布文案';
+const PUBLISH_COPY_COPIED = '已复制';
 
 type WorkspaceAspectRatio = (typeof WORKSPACE_ASPECT_RATIO_OPTIONS)[number];
 type WorkspaceImageCount = (typeof WORKSPACE_IMAGE_COUNT_OPTIONS)[number];
@@ -187,6 +197,16 @@ const WORKSPACE_COPY = {
     templateSwapToast: TEMPLATE_SWAP_TOAST,
     templateSwapLoading: '正在推荐模板',
     templateSwapGenerating: '正在切换模板',
+    publishCopyAction: PUBLISH_COPY_ACTION,
+    publishCopyLoading: PUBLISH_COPY_LOADING,
+    publishCopyTitle: PUBLISH_COPY_TITLE,
+    publishCopyTitleLabel: '标题',
+    publishCopyBodyLabel: '正文',
+    publishCopyCopyAction: '一键复制',
+    publishCopyRegenerate: '再生成一次',
+    publishCopyClose: '关闭',
+    publishCopyCopied: PUBLISH_COPY_COPIED,
+    publishCopyCopyFailed: '复制失败',
   },
   'en-US': {
     back: 'Back',
@@ -302,6 +322,16 @@ const WORKSPACE_COPY = {
     templateSwapToast: TEMPLATE_SWAP_TOAST,
     templateSwapLoading: '正在推荐模板',
     templateSwapGenerating: '正在切换模板',
+    publishCopyAction: PUBLISH_COPY_ACTION,
+    publishCopyLoading: PUBLISH_COPY_LOADING,
+    publishCopyTitle: PUBLISH_COPY_TITLE,
+    publishCopyTitleLabel: '标题',
+    publishCopyBodyLabel: '正文',
+    publishCopyCopyAction: '一键复制',
+    publishCopyRegenerate: '再生成一次',
+    publishCopyClose: '关闭',
+    publishCopyCopied: PUBLISH_COPY_COPIED,
+    publishCopyCopyFailed: '复制失败',
   },
 } as const;
 
@@ -329,6 +359,9 @@ export default function Workspace() {
   const [templateError, setTemplateError] = useState<string | null>(null);
   const [analyzingTemplates, setAnalyzingTemplates] = useState(false);
   const [swappingTemplate, setSwappingTemplate] = useState(false);
+  const [generatingPublishCopy, setGeneratingPublishCopy] = useState(false);
+  const [publishCopyModalOpen, setPublishCopyModalOpen] = useState(false);
+  const [publishCopy, setPublishCopy] = useState<EcommercePublishCopyResponse | null>(null);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [previewImages, setPreviewImages] = useState<{ id: string; url: string; prompt: string; title?: string }[] | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -414,6 +447,11 @@ export default function Workspace() {
   const isFailed = task?.status === 'failed';
   const hasResults = !isMissingTask && task?.status === 'succeeded' && previewableImages.length > 0;
   const downloadHref = taskId ? taskDownloadUrl(taskId) : '';
+
+  useEffect(() => {
+    setPublishCopy(null);
+    setPublishCopyModalOpen(false);
+  }, [taskId]);
 
   useEffect(() => {
     if (previewableImages.length === 0) {
@@ -553,6 +591,32 @@ export default function Workspace() {
     }
   }
 
+  async function handleGeneratePublishCopy() {
+    if (!task || task.status !== 'succeeded') {
+      return;
+    }
+
+    setGeneratingPublishCopy(true);
+    try {
+      const result = await generatePublishCopy(buildPublishCopyPayload(task, selectedImage, expectedCount));
+      setPublishCopy(result);
+      setPublishCopyModalOpen(true);
+    } catch (err) {
+      notifyError(err);
+    } finally {
+      setGeneratingPublishCopy(false);
+    }
+  }
+
+  async function handleCopyPublishText(text: string) {
+    const copied = await copyTextToClipboard(text);
+    if (copied) {
+      notifySuccess(copy.publishCopyCopied);
+    } else {
+      notifyError(copy.publishCopyCopyFailed);
+    }
+  }
+
   async function handleConfigRegenerate(config: WorkspaceRegenerateConfig) {
     if (!task) {
       return;
@@ -682,7 +746,9 @@ export default function Workspace() {
             onRegenerateSelected={() => handleRegenerate(selectedPrompt, 1).catch(() => undefined)}
             onReuseSelectedPrompt={() => handleReusePrompt(selectedPrompt)}
             onSelectImage={setSelectedImageId}
+            onGeneratePublishCopy={() => handleGeneratePublishCopy().catch(notifyError)}
             onSwapTemplate={() => openTemplateSwapModal().catch(notifyError)}
+            publishCopyLoading={generatingPublishCopy}
             regenerating={regenerating}
             submittingInstructionEdit={submittingInstructionEdit}
             selectedImage={selectedImage}
@@ -734,6 +800,15 @@ export default function Workspace() {
         onPick={(template) => handleTemplatePicked(template).catch(notifyError)}
         onRetry={() => loadTemplateRecommendations().catch(notifyError)}
         onCreate={() => navigate(TEMPLATE_SWAP_CREATE_LINK)}
+      />
+      <PublishCopyModal
+        copy={copy}
+        loading={generatingPublishCopy}
+        open={publishCopyModalOpen}
+        result={publishCopy}
+        onClose={() => setPublishCopyModalOpen(false)}
+        onCopy={(text) => handleCopyPublishText(text).catch(notifyError)}
+        onRegenerate={() => handleGeneratePublishCopy().catch(notifyError)}
       />
     </div>
   );
@@ -878,6 +953,149 @@ function TemplateSwapModal({
   );
 }
 
+function PublishCopyModal({
+  copy,
+  loading,
+  open,
+  result,
+  onClose,
+  onCopy,
+  onRegenerate,
+}: {
+  copy: WorkspaceCopy;
+  loading: boolean;
+  open: boolean;
+  result: EcommercePublishCopyResponse | null;
+  onClose: () => void;
+  onCopy: (text: string) => void;
+  onRegenerate: () => void;
+}) {
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const titleId = 'publish-copy-modal-title';
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const timer = window.setTimeout(() => {
+      const focusTarget = dialogRef.current?.querySelector<HTMLElement>('button:not([disabled])') || dialogRef.current;
+      focusTarget?.focus();
+    }, 0);
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !loading) {
+        event.preventDefault();
+        onClose();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previousFocus && document.contains(previousFocus)) previousFocus.focus();
+    };
+  }, [loading, onClose, open]);
+
+  if (!open || !result) return null;
+
+  return (
+    <div className="fixed inset-0 z-[190] flex items-center justify-center p-4">
+      <div aria-hidden="true" className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={loading ? undefined : onClose} />
+      <Surface
+        ref={dialogRef}
+        aria-labelledby={titleId}
+        aria-modal="true"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.7)]"
+        padding="none"
+        role="dialog"
+        tabIndex={-1}
+      >
+        <IconButton
+          className="absolute right-3 top-3 z-10"
+          label={copy.publishCopyClose}
+          icon={<X aria-hidden="true" size={15} />}
+          onClick={onClose}
+          disabled={loading}
+        />
+        <div className="border-b border-white/[0.07] px-5 pb-4 pt-6 sm:px-6">
+          <h2 id={titleId} className="font-display text-xl font-semibold text-[#f0ede8]">{copy.publishCopyTitle}</h2>
+        </div>
+
+        <div className="max-h-[calc(100dvh-12rem)] overflow-y-auto px-5 py-5 sm:px-6">
+          <PublishCopySection
+            label={copy.publishCopyTitleLabel}
+            text={result.title}
+            copyLabel={copy.publishCopyCopyAction}
+            onCopy={onCopy}
+          />
+          <PublishCopySection
+            label={copy.publishCopyBodyLabel}
+            text={result.body}
+            copyLabel={copy.publishCopyCopyAction}
+            multiline
+            onCopy={onCopy}
+          />
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-white/[0.07] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+          <Button variant="ghost" type="button" onClick={onClose} disabled={loading}>
+            {copy.publishCopyClose}
+          </Button>
+          <Button
+            variant="primary"
+            type="button"
+            iconStart={<Sparkles size={15} aria-hidden="true" />}
+            onClick={onRegenerate}
+            disabled={loading}
+            loading={loading}
+          >
+            {loading ? copy.publishCopyLoading : copy.publishCopyRegenerate}
+          </Button>
+        </div>
+      </Surface>
+    </div>
+  );
+}
+
+function PublishCopySection({
+  copyLabel,
+  label,
+  multiline = false,
+  text,
+  onCopy,
+}: {
+  copyLabel: string;
+  label: string;
+  multiline?: boolean;
+  text: string;
+  onCopy: (text: string) => void;
+}) {
+  return (
+    <section className="mb-4 last:mb-0">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-[#f0ede8]">{label}</h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          type="button"
+          iconStart={<Clipboard size={14} aria-hidden="true" />}
+          className="h-9 rounded-lg px-3"
+          onClick={() => onCopy(text)}
+        >
+          {copyLabel}
+        </Button>
+      </div>
+      <div
+        className={`break-words rounded-xl border border-white/[0.07] bg-white/[0.035] px-4 py-3 text-sm leading-6 text-[#f0ede8] [overflow-wrap:anywhere] ${
+          multiline ? 'min-h-36 whitespace-pre-wrap' : ''
+        }`}
+      >
+        {text}
+      </div>
+    </section>
+  );
+}
+
 async function resolveProductImageFile(task: ImageTask) {
   const inputUrl = task.input_image_url || task.items.find((item) => item.input_image_url)?.input_image_url || '';
   if (inputUrl) {
@@ -1002,6 +1220,7 @@ function SucceededWorkbench({
   expectedCount,
   images,
   onConfigRegenerate,
+  onGeneratePublishCopy,
   onInstructionEdit,
   onPreview,
   onPreviewAll,
@@ -1009,6 +1228,7 @@ function SucceededWorkbench({
   onReuseSelectedPrompt,
   onSelectImage,
   onSwapTemplate,
+  publishCopyLoading,
   regenerating,
   selectedImage,
   selectedImageIndex,
@@ -1021,6 +1241,7 @@ function SucceededWorkbench({
   expectedCount: number | null;
   images: HistoryItem[];
   onConfigRegenerate: (config: WorkspaceRegenerateConfig) => void;
+  onGeneratePublishCopy: () => void;
   onInstructionEdit: (config: WorkspaceInstructionEditConfig) => void;
   onPreview: (images: HistoryItem[], index: number) => void;
   onPreviewAll: () => void;
@@ -1028,6 +1249,7 @@ function SucceededWorkbench({
   onReuseSelectedPrompt: () => void;
   onSelectImage: (id: string) => void;
   onSwapTemplate: () => void;
+  publishCopyLoading: boolean;
   regenerating: boolean;
   selectedImage: HistoryItem | null;
   selectedImageIndex: number;
@@ -1279,6 +1501,20 @@ function SucceededWorkbench({
             selectedImage={selectedImage}
             submitting={submittingInstructionEdit}
           />
+          <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
+            <Button
+              variant="ghost"
+              iconStart={<PenLine size={15} aria-hidden="true" />}
+              type="button"
+              fullWidth
+              onClick={onGeneratePublishCopy}
+              disabled={publishCopyLoading || !selectedImage}
+              loading={publishCopyLoading}
+              className="rounded-lg border-white/15 bg-white/[0.04] text-on-surface-variant hover:border-[#E3FF74]/35 hover:text-[#E3FF74]"
+            >
+              {publishCopyLoading ? copy.publishCopyLoading : copy.publishCopyAction}
+            </Button>
+          </div>
           <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
             <Button
               variant="ghost"
@@ -1924,6 +2160,30 @@ function normalizeWorkspaceImageCount(value: number | null | undefined): Workspa
 
 function getEditablePrompt(task: ImageTask) {
   return task.prompt || task.items.find((item) => item.task_prompt || item.prompt)?.task_prompt || task.items[0]?.prompt || '';
+}
+
+function buildPublishCopyPayload(
+  task: ImageTask,
+  selectedImage: HistoryItem | null,
+  expectedCount: number | null,
+): EcommercePublishCopyPayload {
+  const ecommerce = task.items.find((item) => item.task_request?.ecommerce)?.task_request?.ecommerce;
+  const selectedPlan = recordFromUnknown(task.result?.selected_plan);
+  const prompt = selectedImage?.task_prompt || selectedImage?.prompt || task.prompt || '';
+
+  return {
+    product_name: ecommerce?.product_name || stringFromUnknown(selectedPlan?.name) || '',
+    materials: ecommerce?.materials || stringFromUnknown(selectedPlan?.materials) || '',
+    selling_points: ecommerce?.selling_points || stringFromUnknown(selectedPlan?.selling_points) || '',
+    scenarios: ecommerce?.scenarios || stringFromUnknown(selectedPlan?.scenarios) || '',
+    platform: ecommerce?.platform || stringFromUnknown(selectedPlan?.platform) || '',
+    style: ecommerce?.style || stringFromUnknown(selectedPlan?.style) || '',
+    extra_requirements: ecommerce?.extra_requirements || prompt,
+    image_count: normalizeImageCount(expectedCount ?? (task.items.length || 1)),
+    size: task.size,
+    aspect_ratio: task.aspect_ratio,
+    model: task.model,
+  };
 }
 
 function quickEditPromptFor(copy: WorkspaceCopy, kind: QuickEditKind) {

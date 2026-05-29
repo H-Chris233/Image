@@ -17,6 +17,7 @@ const CDP_COMMAND_TIMEOUT_MS = 60_000;
 const SMOKE_TIMEOUT_MS = Number(process.env.UI_SMOKE_TIMEOUT_MS || 240_000);
 const UNHANDLED_API_STORAGE_KEY = 'aethergenix_smoke_unhandled_api';
 const API_CALL_STORAGE_KEY = 'aethergenix_smoke_api_calls';
+const CLIPBOARD_STORAGE_KEY = 'aethergenix_smoke_clipboard_writes';
 const LONG_ERROR =
   'AetherGenix smoke long error: ' +
   'this deliberately verbose upstream failure message should wrap inside the mobile viewport instead of creating horizontal overflow. '.repeat(8);
@@ -419,6 +420,15 @@ function buildMockScript() {
   const imageTwo = ${JSON.stringify(imageTwo)};
   const brokenImage = '/smoke-broken-image.png';
   const longError = ${JSON.stringify(LONG_ERROR)};
+  const publishCopyBody = '烟测正文第一行\\n烟测正文第二行，适合小红书和朋友圈发布。\\n#烟测商品 #AI图片';
+  const selectedPlan = {
+    name: 'Smoke publish product',
+    materials: 'matte ceramic and warm metal',
+    selling_points: 'clean commercial visual, reusable social post',
+    scenarios: '小红书 / 朋友圈 / 社媒',
+    platform: '小红书',
+    style: 'warm charcoal ecommerce'
+  };
   const initialSmokeParams = new URL(window.location.href).searchParams;
   const initialLocale = initialSmokeParams.get('smoke_locale') === 'zh-CN' ? 'zh-CN' : 'en-US';
   const seriesPlan = initialLocale === 'zh-CN'
@@ -479,7 +489,7 @@ function buildMockScript() {
     error: null,
     input_image_url: imageOne,
     input_image_path: null,
-    result: { series_plan: seriesPlan },
+    result: { series_plan: seriesPlan, selected_plan: selectedPlan },
     created_at: '2026-05-18T00:00:00Z',
     updated_at: '2026-05-18T00:00:00Z',
     started_at: '2026-05-18T00:00:01Z',
@@ -642,6 +652,20 @@ function buildMockScript() {
       window.localStorage.setItem(key, JSON.stringify(existing));
     } catch {}
   }
+
+  try {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText(text) {
+          const existing = JSON.parse(window.localStorage.getItem(${JSON.stringify(CLIPBOARD_STORAGE_KEY)}) || '[]');
+          existing.push(String(text));
+          window.localStorage.setItem(${JSON.stringify(CLIPBOARD_STORAGE_KEY)}, JSON.stringify(existing));
+          return Promise.resolve();
+        }
+      }
+    });
+  } catch {}
 
   function formDataBody(body) {
     if (!(body instanceof FormData)) return null;
@@ -944,6 +968,20 @@ function buildMockScript() {
         },
         recommended_templates: recommendedTemplates,
         plans: []
+      });
+    }
+
+    if (url.pathname === '/api/ecommerce/publish-copy' && ((init && init.method) || '').toUpperCase() === 'POST') {
+      let body = null;
+      try {
+        body = init && typeof init.body === 'string' ? JSON.parse(init.body) : null;
+      } catch {}
+      recordApiCall({ type: 'publish-copy', path: url.pathname, body });
+      return json({
+        title: '烟测商品发布标题',
+        body: publishCopyBody,
+        model: 'smoke-model',
+        usage: null
       });
     }
 
@@ -2501,6 +2539,62 @@ async function runSmokeChecks(page, baseUrl) {
     if (!mobileOrder.ok) {
       throw new Error(`/workspace selected and collection actions must appear before task metadata: ${JSON.stringify(mobileOrder)}`);
     }
+  });
+
+  await runCheck('/workspace publish copy generation opens modal and copies body', async () => {
+    await page.navigate('/workspace/smoke-task', { width: 1280, height: 900 });
+    await page.waitFor(() => /Generated assets are ready|生成发布文案/.test(document.body.innerText), '/workspace publish copy fixture');
+    await page.evaluate((apiKey, clipboardKey) => {
+      window.localStorage.setItem(apiKey, '[]');
+      window.localStorage.setItem(clipboardKey, '[]');
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {
+          writeText(text) {
+            const existing = JSON.parse(window.localStorage.getItem(clipboardKey) || '[]');
+            existing.push(String(text));
+            window.localStorage.setItem(clipboardKey, JSON.stringify(existing));
+            return Promise.resolve();
+          }
+        }
+      });
+    }, API_CALL_STORAGE_KEY, CLIPBOARD_STORAGE_KEY);
+    await clickMainControl(page, '^生成发布文案$', '/workspace generate publish copy');
+    await page.waitFor(() => /发布文案/.test(document.body.innerText) && /烟测商品发布标题/.test(document.body.innerText) && /烟测正文第一行/.test(document.body.innerText), '/workspace publish copy modal');
+
+    const publishCalls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
+    const call = publishCalls.find((item) => item.type === 'publish-copy');
+    if (
+      !call ||
+      call.body?.product_name !== 'Smoke publish product' ||
+      call.body?.platform !== '小红书' ||
+      call.body?.image_count !== 2 ||
+      call.body?.size !== '1024x1024' ||
+      call.body?.aspect_ratio !== '1:1'
+    ) {
+      throw new Error(`/workspace publish copy payload mismatch: ${JSON.stringify(publishCalls)}`);
+    }
+
+    const clickedBodyCopy = await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const copyButtons = Array.from(document.querySelectorAll('[role="dialog"] button'))
+        .filter((element) => isVisible(element) && /一键复制/.test(accessibleName(element)));
+      const copyButton = copyButtons[copyButtons.length - 1];
+      if (!(copyButton instanceof HTMLButtonElement)) return false;
+      copyButton.click();
+      return true;
+    }, domSnapshotHelpers().text);
+    if (!clickedBodyCopy) throw new Error('/workspace publish copy body copy button was not found');
+
+    const clipboardWrites = await page.waitFor((key) => {
+      const writes = JSON.parse(window.localStorage.getItem(key) || '[]');
+      return writes.some((text) => /烟测正文第一行/.test(text) && /#AI图片/.test(text));
+    }, '/workspace publish copy clipboard write', 2_000, CLIPBOARD_STORAGE_KEY)
+      .then(() => page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), CLIPBOARD_STORAGE_KEY));
+    if (!clipboardWrites.some((text) => /烟测正文第一行/.test(text) && /#AI图片/.test(text))) {
+      throw new Error(`/workspace publish copy clipboard mismatch: ${JSON.stringify(clipboardWrites)}`);
+    }
+    await page.waitFor(() => /已复制/.test(document.body.innerText), '/workspace publish copy copied toast');
   });
 
   await runCheck('/workspace single image result does not show album chrome', async () => {
