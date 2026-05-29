@@ -217,6 +217,7 @@ export type PromptOptimizeResult = {
   instruction: string;
   model: string;
   usage: Record<string, unknown> | null;
+  fallback?: boolean;
 };
 
 export type RecommendedTemplate = {

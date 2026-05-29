@@ -131,11 +131,21 @@ export default function Create() {
     notifyInfo('正在提交商品图生成任务');
     try {
       await storeLastProductImage(result.productImage);
-      const optimizeResult = await optimizePrompt({
-        prompt: result.brief || '基于商品图生成电商商品主图',
-        instruction: `请按以下模板风格改写：${result.selectedTemplate.prompt}`,
-      });
-      const optimizedPrompt = optimizeResult.optimized_prompt || optimizeResult.prompt;
+      // prompt 优化是软增强步骤：上游 chat(sub2api) 偶发 503/超时，不应阻断生图。
+      // 失败时回退到模板自带 prompt（+ 用户补充需求），保证任务照常创建，用户不被弹回首页。
+      const templatePrompt = result.selectedTemplate.prompt;
+      let optimizedPrompt = result.brief
+        ? `${templatePrompt}\n\n补充需求：${result.brief}`
+        : templatePrompt;
+      try {
+        const optimizeResult = await optimizePrompt({
+          prompt: result.brief || '基于商品图生成电商商品主图',
+          instruction: `请按以下模板风格改写：${result.selectedTemplate.prompt}`,
+        });
+        optimizedPrompt = optimizeResult.optimized_prompt || optimizeResult.prompt || optimizedPrompt;
+      } catch {
+        // 上游 prompt 优化不可用，降级用模板原 prompt 直接生图
+      }
       const task = await generateEcommerceImages(
         {
           style: optimizedPrompt,

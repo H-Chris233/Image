@@ -10,6 +10,7 @@ __pycache__/
 .env*
 !.env.example
 .tmp/
+.issues-tmp/
 backend/data/
 backend/storage/
 .venv/

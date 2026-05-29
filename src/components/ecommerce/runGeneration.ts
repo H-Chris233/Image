@@ -21,14 +21,21 @@ export async function runGenerationFromTemplate({
 
   const aspectRatio = templateAspectRatio(selectedTemplate);
   const size = providerImageSize('FAST', aspectRatio);
-  const optimized = await optimizePrompt({
-    prompt: brief || '',
-    instruction: `请按以下模板风格改写：${templatePrompt(selectedTemplate)}`,
-    size,
-    aspect_ratio: aspectRatio,
-    quality: 'auto',
-  });
-  const optimizedPrompt = optimized.optimized_prompt || optimized.prompt;
+  // prompt 优化是软增强：上游 chat 偶发 503/超时不应阻断换模板生图，失败时回退模板原 prompt。
+  const templateBasePrompt = templatePrompt(selectedTemplate);
+  let optimizedPrompt = brief ? `${templateBasePrompt}\n\n补充需求：${brief}` : templateBasePrompt;
+  try {
+    const optimized = await optimizePrompt({
+      prompt: brief || '',
+      instruction: `请按以下模板风格改写：${templatePrompt(selectedTemplate)}`,
+      size,
+      aspect_ratio: aspectRatio,
+      quality: 'auto',
+    });
+    optimizedPrompt = optimized.optimized_prompt || optimized.prompt || optimizedPrompt;
+  } catch {
+    // 上游 prompt 优化不可用，降级用模板原 prompt 生图
+  }
 
   return generateEcommerceImages(
     {
