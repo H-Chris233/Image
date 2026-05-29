@@ -310,6 +310,17 @@ export type EcommerceAnalyzePayload = Omit<EcommerceGeneratePayload, 'quality' |
   image_count?: number;
 };
 
+export type EcommercePublishCopyPayload = Omit<EcommerceAnalyzePayload, 'image_count'> & {
+  image_count?: number;
+};
+
+export type EcommercePublishCopyResponse = {
+  title: string;
+  body: string;
+  model: string;
+  usage: Record<string, unknown> | null;
+};
+
 export type PublicAuthSettings = {
   registration_enabled: boolean;
   email_verify_enabled: boolean;
@@ -670,6 +681,13 @@ export function generateEcommerceImages(payload: EcommerceGeneratePayload, image
   return request<ImageTask>('/api/ecommerce/generate', {
     method: 'POST',
     body: form,
+  });
+}
+
+export function generatePublishCopy(payload: EcommercePublishCopyPayload) {
+  return request<EcommercePublishCopyResponse>('/api/ecommerce/publish-copy', {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, image_count: payload.image_count || 1 }),
   });
 }
 
