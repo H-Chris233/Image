@@ -1398,7 +1398,8 @@ def create_app(
         selling_points: Annotated[str, Form(max_length=1600)] = "",
         scenarios: Annotated[str, Form(max_length=1200)] = "",
         platform: Annotated[str, Form(max_length=120)] = "",
-        style: Annotated[str, Form(max_length=800)] = "",
+        # 模板优先流程把整段模板 prompt 当视觉风格传入，长度可达数千字，放宽上限。
+        style: Annotated[str, Form(max_length=6000)] = "",
         extra_requirements: Annotated[str, Form(max_length=1600)] = "",
         model: Annotated[str | None, Form()] = None,
         size: Annotated[str | None, Form()] = None,

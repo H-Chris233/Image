@@ -1904,12 +1904,15 @@ async function runSmokeChecks(page, baseUrl) {
     ]);
   });
 
-  await runCheck('/create formato 2.5 wizard recommends templates and reaches tune step', async () => {
+  await runCheck('/create wizard selects a scene and reaches tune step', async () => {
     await page.navigate('/create?smoke_auth=1', { width: 1100, height: 900 });
-    await assertNoHorizontalOverflow(page, '/create formato 2.5 entry');
+    await assertNoHorizontalOverflow(page, '/create scene entry');
     const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
     if (!routedToCreate) throw new Error('/create tablet entry did not stay on /create');
-    await clickMainControl(page, '\u5f00\u59cb\u521b\u4f5c', '/create formato 2.5 entry');
+    await clickMainControl(page, '开始创作', '/create scene entry');
+    await page.waitFor(() => /想做哪种图|选择场景|先选你的生意类型/.test(document.body.innerText || ''), '/create scene browser step');
+    await assertNoHorizontalOverflow(page, '/create scene browser step');
+    await clickMainControl(page, '白底主图', '/create select scene card');
     await page.waitFor(() => /上传商品图|PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create upload brief step');
     await assertNoHorizontalOverflow(page, '/create upload brief step');
     await assertNoUnnamedButtons(page, '/create upload brief step');
@@ -1930,33 +1933,19 @@ async function runSmokeChecks(page, baseUrl) {
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await page.waitFor(() => /smoke-product\.webp/i.test(document.body.innerText || ''), '/create uploaded product preview');
-    await clickMainControl(page, '^下一步$', '/create analyze product image');
-    await page.waitFor(() => /Clean Hero Shot|Lifestyle Scene|Detail Closeup/.test(document.body.innerText || ''), '/create recommended templates');
-    const recommendState = await page.evaluate(() => {
-      const text = document.body.innerText || '';
-      return {
-        ok:
-          /2\/3/.test(text) &&
-          /Clean Hero Shot/.test(text) &&
-          /Lifestyle Scene/.test(text) &&
-          /Detail Closeup/.test(text) &&
-          /都不满意/.test(text),
-        text: text.slice(0, 800),
-      };
-    });
-    if (!recommendState.ok) throw new Error(`/create recommend step missing formato 2.5 content: ${JSON.stringify(recommendState)}`);
-    await assertNoHorizontalOverflow(page, '/create recommend templates');
-    await clickMainControl(page, 'Clean Hero Shot', '/create select recommended template');
     await clickMainControl(page, '^下一步$', '/create advance to tune');
-    await page.waitFor(() => /AI 会用「Clean Hero Shot」风格生成 1 张/.test(document.body.innerText || ''), '/create tune step');
+    await page.waitFor(() => /用「白底主图」风格生成 1 张/.test(document.body.innerText || ''), '/create tune step');
     await assertNamedControlsMinTarget(page, '/create tune controls', ['^返回上一步$', '^生成$']);
     await assertNoHorizontalOverflow(page, '/create tune step');
   });
 
-  await runCheck('/create formato 2.5 generate optimizes selected template prompt', async () => {
+  await runCheck('/create generates with the selected scene prompt directly', async () => {
     await page.navigate('/create?smoke_auth=1', { width: 390, height: 844 });
     await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
-    await clickMainControl(page, '\u5f00\u59cb\u521b\u4f5c', '/create formato 2.5 generate entry');
+    await clickMainControl(page, '开始创作', '/create scene generate entry');
+    await page.waitFor(() => /想做哪种图|选择场景/.test(document.body.innerText || ''), '/create mobile scene browser');
+    await clickMainControl(page, '白底主图', '/create mobile select scene');
+    await page.waitFor(() => /上传商品图|PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create mobile upload step');
     await page.evaluate(() => {
       const file = new File(['smoke image'], 'mobile-product.png', { type: 'image/png' });
       const dataTransfer = new DataTransfer();
@@ -1972,9 +1961,6 @@ async function runSmokeChecks(page, baseUrl) {
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await page.waitFor(() => /mobile-product\.png/i.test(document.body.innerText || ''), '/create mobile uploaded preview');
-    await clickMainControl(page, '^下一步$', '/create mobile analyze product');
-    await page.waitFor(() => /Clean Hero Shot/.test(document.body.innerText || ''), '/create mobile templates');
-    await clickMainControl(page, 'Clean Hero Shot', '/create mobile select template');
     await clickMainControl(page, '^下一步$', '/create mobile tune step');
     await page.waitFor(() => /生成 1 张/.test(document.body.innerText || ''), '/create mobile tune ready');
     await clickMainControl(page, '^生成$', '/create mobile generate');
@@ -1983,16 +1969,14 @@ async function runSmokeChecks(page, baseUrl) {
     const optimizeCall = calls.find((call) => call.type === 'prompt-optimize');
     const generateCall = calls.find((call) => call.type === 'ecommerce-generate');
     if (
-      !optimizeCall ||
-      !/Premium marketplace main image/.test(optimizeCall.body?.prompt || '') ||
-      !/Clean white-background product hero/.test(optimizeCall.body?.instruction || '') ||
+      optimizeCall ||
       !generateCall ||
       generateCall.path !== '/api/ecommerce/generate' ||
-      generateCall.body?.style !== 'Optimized smoke ecommerce prompt' ||
+      !/^Amazon-compliant e-commerce main image/.test(generateCall.body?.style || '') ||
       generateCall.body?.n !== '1' ||
       generateCall.body?.image?.name !== 'mobile-product.png'
     ) {
-      throw new Error(`/create formato 2.5 generate calls mismatch: ${JSON.stringify(calls)}`);
+      throw new Error(`/create scene generate calls mismatch: ${JSON.stringify(calls)}`);
     }
   });
 
