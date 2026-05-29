@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, CloudUpload, Download, ImageIcon, Loader2, PackagePlus, RefreshCw, Sparkles, Wand2 } from 'lucide-react';
-import { generateEcommerceImages, getAccount, optimizePrompt, type AccountInfo, type ImageTask } from '../api';
+import { generateEcommerceImages, getAccount, type AccountInfo, type ImageTask } from '../api';
 import { useAuth } from '../auth';
 import { useAuthModal } from '../authModal';
 import RechargeGate from '../components/RechargeGate';
@@ -131,14 +131,11 @@ export default function Create() {
     notifyInfo('正在提交商品图生成任务');
     try {
       await storeLastProductImage(result.productImage);
-      const optimizeResult = await optimizePrompt({
-        prompt: result.brief || '基于商品图生成电商商品主图',
-        instruction: `请按以下模板风格改写：${result.selectedTemplate.prompt}`,
-      });
-      const optimizedPrompt = optimizeResult.optimized_prompt || optimizeResult.prompt;
+      // 模板优先：模板 prompt 作视觉风格、用户补充需求作额外要求，走单图直出，不再调 AI 改写。
       const task = await generateEcommerceImages(
         {
-          style: optimizedPrompt,
+          style: result.selectedTemplate.prompt,
+          extra_requirements: result.brief || undefined,
           size: providerImageSize('FAST', result.aspectRatio),
           aspect_ratio: result.aspectRatio,
           quality: 'auto',
@@ -148,7 +145,7 @@ export default function Create() {
       );
       addTask(task);
       setSubmitted((current) => [
-        { id: task.id, sceneName: result.selectedTemplate.title, count },
+        { id: task.id, sceneName: result.selectedTemplate.label, count },
         ...current,
       ]);
       notifyInfo('已提交，结果会实时显示在下方');
@@ -263,9 +260,9 @@ export default function Create() {
 
 function CreateHero({ loading, hasPrompt, onStart }: { loading: boolean; hasPrompt: boolean; onStart: () => void }) {
   const steps = [
+    { icon: PackagePlus, title: '选择模板', desc: '按客户类型与场景挑专家模板' },
     { icon: CloudUpload, title: '上传商品图', desc: 'PNG / JPEG / WEBP，白底图更稳' },
-    { icon: PackagePlus, title: '选择推荐模板', desc: 'AI 分析商品后推荐 3 个 benchmark 风格' },
-    { icon: Wand2, title: '微调并生成', desc: '调比例与数量，按模板改写后一键出图' },
+    { icon: Wand2, title: '微调并生成', desc: '调比例与数量，按模板风格一键出图' },
   ];
 
   return (
@@ -277,7 +274,7 @@ function CreateHero({ loading, hasPrompt, onStart }: { loading: boolean; hasProm
           </div>
           <h2 className="mt-6 text-2xl font-bold tracking-tight text-[#f0ede8] sm:text-3xl">用模板风格生成商品图</h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-on-surface-variant">
-            上传一张商品图，AI 推荐 3 个匹配模板；选中模板后自动改写需求并生成可继续编辑的结果。
+            先按客户类型和场景挑一个专家模板，再上传商品图，按模板风格直接生成可继续编辑的结果。
           </p>
           {hasPrompt ? (
             <div className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#E3FF74]/25 bg-[#E3FF74]/[0.06] px-3 py-2 text-xs font-semibold text-[#E3FF74]">

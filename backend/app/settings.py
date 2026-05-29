@@ -88,6 +88,10 @@ class Settings:
     max_upload_bytes: int
     dev_allow_mock_sub2api: bool = False
     dev_mock_sub2api_base_url: str = "mock://sub2api"
+    llm_base_url: str = ""
+    llm_api_key: str = ""
+    image_task_concurrency: int = 2
+    image_task_timeout_seconds: float = 600.0
     inspiration_source_urls: list[str] | None = None
 
     @classmethod
@@ -156,6 +160,10 @@ class Settings:
             dev_allow_mock_sub2api=_env_bool("DEV_ALLOW_MOCK_SUB2API", False),
             dev_mock_sub2api_base_url=os.getenv("DEV_MOCK_SUB2API_BASE_URL", "mock://sub2api").strip()
             or "mock://sub2api",
+            llm_base_url=os.getenv("LLM_BASE_URL", "").strip().rstrip("/"),
+            llm_api_key=os.getenv("LLM_API_KEY", "").strip(),
+            image_task_concurrency=max(1, int(os.getenv("IMAGE_TASK_CONCURRENCY", "2"))),
+            image_task_timeout_seconds=max(30.0, float(os.getenv("IMAGE_TASK_TIMEOUT_SECONDS", "600"))),
             inspiration_source_urls=source_urls,
         )
 

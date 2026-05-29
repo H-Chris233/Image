@@ -114,6 +114,10 @@ export type InspirationItem = {
   prompt: string;
   image_url: string | null;
   source_link: string | null;
+  smb_categories: string[];
+  product_categories: string[];
+  style_tags: string[];
+  relevance: number | null;
   synced_at: string;
   created_at: string;
   updated_at: string;
@@ -217,6 +221,7 @@ export type PromptOptimizeResult = {
   instruction: string;
   model: string;
   usage: Record<string, unknown> | null;
+  fallback?: boolean;
 };
 
 export type RecommendedTemplate = {
@@ -524,6 +529,7 @@ export function getInspirations(params: {
   smb_categories?: string[];
   product_categories?: string[];
   style_tags?: string[];
+  min_relevance?: number;
 } = {}) {
   const search = new URLSearchParams();
   if (params.limit) search.set('limit', String(params.limit));
@@ -535,6 +541,7 @@ export function getInspirations(params: {
   if (params.smb_categories?.length) search.set('smb_categories', params.smb_categories.join(','));
   if (params.product_categories?.length) search.set('product_categories', params.product_categories.join(','));
   if (params.style_tags?.length) search.set('style_tags', params.style_tags.join(','));
+  if (typeof params.min_relevance === 'number') search.set('min_relevance', String(params.min_relevance));
   const query = search.toString();
   return request<InspirationListResponse>(`/api/inspirations${query ? `?${query}` : ''}`);
 }

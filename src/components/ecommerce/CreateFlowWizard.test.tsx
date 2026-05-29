@@ -1,88 +1,76 @@
 import assert from 'node:assert/strict';
 import {
+  canContinueFromUpload,
   createInitialWizardState,
-  selectedTemplate,
-  canContinueFromRecommend,
   wizardReducer,
 } from './createWizardState';
-import type { EcommerceAnalyzeResponse, RecommendedTemplate } from '../../api';
+import type { SceneTemplate } from './sceneCatalog';
 
 function test(name: string, run: () => void) {
   run();
   console.log(`ok - ${name}`);
 }
 
-const template: RecommendedTemplate = {
-  id: 'template-clean-hero',
-  title: 'Clean Hero Shot',
+const template: SceneTemplate = {
+  customerKey: 'domestic_ecommerce',
+  sceneKey: 'white_bg',
+  label: '白底主图',
   prompt: 'Clean white product hero prompt',
-  image_url: 'https://example.com/template-clean.jpg',
-  section: 'ecommerce',
-  smb_categories: ['cross-border'],
-  product_categories: ['skincare'],
-  style_tags: ['clean', 'premium'],
-  default_aspect_ratio: '4:3',
-  default_size: '1536x1024',
-  curator_note: '白底高质感主图',
+  sampleImage: '/storage/inspirations/example.jpg',
 };
 
-const analyzeResponse: EcommerceAnalyzeResponse = {
-  analysis: { product_type: 'skincare bottle' },
-  reference_notes: [],
-  model: 'smoke-model',
-  form: {
-    product_name: '',
-    materials: '',
-    selling_points: '',
-    scenarios: '',
-    platform: '',
-    style: '',
-    extra_requirements: '',
-    image_count: 1,
-  },
-  plans: [],
-  recommended_templates: [template],
-};
-
-test('initial state starts on upload_brief', () => {
+test('initial state starts on browse', () => {
   const state = createInitialWizardState();
 
-  assert.equal(state.step, 'upload_brief');
+  assert.equal(state.step, 'browse');
+  assert.equal(state.selectedTemplate, null);
   assert.equal(state.productImage, null);
   assert.equal(state.brief, '');
-  assert.equal(state.analyzeResponse, null);
-  assert.equal(state.selectedTemplateId, null);
   assert.equal(state.aspectRatio, '1:1');
   assert.equal(state.imageCount, 1);
 });
 
-test('successful analyze moves from upload_brief to recommend with response populated', () => {
+test('selecting a template advances from browse to upload', () => {
+  const state = wizardReducer(createInitialWizardState(), { type: 'select_template', template });
+
+  assert.equal(state.step, 'upload');
+  assert.deepEqual(state.selectedTemplate, template);
+});
+
+test('upload step requires a product image before continuing', () => {
+  const selected = wizardReducer(createInitialWizardState(), { type: 'select_template', template });
+  assert.equal(canContinueFromUpload(selected), false);
+
   const file = new File(['image'], 'product.webp', { type: 'image/webp' });
-  const state = wizardReducer(createInitialWizardState(), { type: 'set_product_image', file });
-  const withBrief = wizardReducer(state, { type: 'set_brief', brief: '更突出保湿卖点' });
-  const analyzed = wizardReducer(withBrief, { type: 'analyze_success', response: analyzeResponse });
+  const withImage = wizardReducer(selected, { type: 'set_product_image', file });
+  assert.equal(canContinueFromUpload(withImage), true);
 
-  assert.equal(analyzed.step, 'recommend');
-  assert.equal(analyzed.productImage, file);
-  assert.equal(analyzed.brief, '更突出保湿卖点');
-  assert.deepEqual(analyzed.analyzeResponse, analyzeResponse);
+  // 无图时不应进入 tune
+  assert.equal(wizardReducer(selected, { type: 'next_from_upload' }).step, 'upload');
 });
 
-test('selecting a card enables recommend next action', () => {
-  const analyzed = wizardReducer(createInitialWizardState(), { type: 'analyze_success', response: analyzeResponse });
-  const selected = wizardReducer(analyzed, { type: 'select_template', templateId: template.id });
-
-  assert.equal(selected.selectedTemplateId, template.id);
-  assert.equal(canContinueFromRecommend(selected), true);
-  assert.deepEqual(selectedTemplate(selected), template);
-});
-
-test('next from recommend enters tune and adopts selected template default aspect ratio', () => {
-  const analyzed = wizardReducer(createInitialWizardState(), { type: 'analyze_success', response: analyzeResponse });
-  const selected = wizardReducer(analyzed, { type: 'select_template', templateId: template.id });
-  const tuned = wizardReducer(selected, { type: 'next_from_recommend' });
+test('next from upload enters tune once an image is present', () => {
+  const file = new File(['image'], 'product.webp', { type: 'image/webp' });
+  const selected = wizardReducer(createInitialWizardState(), { type: 'select_template', template });
+  const withImage = wizardReducer(selected, { type: 'set_product_image', file });
+  const tuned = wizardReducer(withImage, { type: 'next_from_upload' });
 
   assert.equal(tuned.step, 'tune');
-  assert.equal(tuned.aspectRatio, '4:3');
-  assert.equal(tuned.imageCount, 1);
+  assert.equal(tuned.productImage, file);
+});
+
+test('back navigates tune -> upload -> browse', () => {
+  const file = new File(['image'], 'product.webp', { type: 'image/webp' });
+  let state = wizardReducer(createInitialWizardState(), { type: 'select_template', template });
+  state = wizardReducer(state, { type: 'set_product_image', file });
+  state = wizardReducer(state, { type: 'next_from_upload' });
+  assert.equal(state.step, 'tune');
+
+  state = wizardReducer(state, { type: 'back' });
+  assert.equal(state.step, 'upload');
+
+  state = wizardReducer(state, { type: 'back' });
+  assert.equal(state.step, 'browse');
+  // 返回浏览仍保留已选模板，可重选
+  assert.deepEqual(state.selectedTemplate, template);
 });

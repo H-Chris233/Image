@@ -1727,6 +1727,65 @@ def test_ecommerce_generate_analyzes_product_and_creates_series_edit_task(tmp_pa
         assert planner_messages and "商品图识别结果" in planner_messages[-1]
 
 
+def test_ecommerce_generate_single_image_uses_direct_edit_not_series(tmp_path: Path) -> None:
+    # #66 回归：单图电商创建必须走单图直出 edit，而不是 9 模块详情页系列流水线，
+    # 以免商品主体被多层 prompt 改写重塑成无关品类。
+    provider = FakeProvider()
+    with make_client(tmp_path, provider=provider) as client:
+        login_demo_user(client)
+
+        response = client.post(
+            "/api/ecommerce/generate",
+            data={
+                "product_name": "黄铜水阀",
+                "materials": "黄铜",
+                "selling_points": "耐用防腐",
+                "scenarios": "厨房水槽场景",
+                "platform": "淘宝",
+                "style": "干净白底主图",
+                "n": "1",
+                "size": "1K",
+                "aspect_ratio": "1:1",
+            },
+            files={"image": ("product.png", FAKE_PNG_BYTES, "image/png")},
+        )
+
+        assert response.status_code == 200
+        task = wait_for_task(client, response.json()["id"], attempts=120)
+        assert task["status"] == "succeeded"
+        assert task["mode"] == "edit"
+        # 单图直出：不进系列流水线，也不打任何规划/分析 chat
+        assert "series_plan" not in task["result"]
+        assert not provider.chat_payloads
+        assert len(task["items"]) == 1
+        assert len(provider.edited_fields) == 1
+        single_prompt = provider.edited_fields[0]["prompt"]
+        # 单图 prompt 不含详情页系列语义
+        assert "详情页系列图" not in single_prompt
+        assert "每张作为详情页中的一个连续模块" not in single_prompt
+        # 保留商品主体的单图语义 + 商品一致性锁（即使未传 analysis 也必须加）
+        assert "严格保留商品" in single_prompt
+        assert "商品一致性强约束" in single_prompt
+
+
+def test_prompt_optimize_degrades_when_chat_provider_unavailable(tmp_path: Path) -> None:
+    # demo-blocker 回归：上游 chat 5xx 时 /api/prompts/optimize 不再抛错（曾导致前端弹回首页、
+    # 任务未创建），而是降级返回原始 prompt，让生图链路继续。
+    provider = ChatErrorProvider()
+    with make_client(tmp_path, provider=provider) as client:
+        login_demo_user(client)
+
+        response = client.post(
+            "/api/prompts/optimize",
+            json={"prompt": "黄铜水阀干净白底主图", "instruction": "请按模板风格改写"},
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["fallback"] is True
+        assert body["prompt"] == "黄铜水阀干净白底主图"
+
+
 def test_ecommerce_analyze_surfaces_billing_errors(tmp_path: Path) -> None:
     provider = BillingErrorProvider()
     with make_client(tmp_path, provider=provider) as client:

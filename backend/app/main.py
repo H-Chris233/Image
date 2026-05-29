@@ -35,6 +35,8 @@ from .settings import Settings, is_deprecated_recharge_url
 from .storage import load_stored_image_as_upload, save_provider_image, save_upload
 
 logger = logging.getLogger(__name__)
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 
 class ConfigUpdate(BaseModel):
@@ -444,6 +446,7 @@ def create_app(
     )
     app.state.inspiration_task = None
     app.state.image_tasks = {}
+    app.state.image_task_gate = asyncio.Semaphore(settings.image_task_concurrency)
     app.state.last_inspiration_sync = None
     app.state.last_inspiration_sync_error = None
     app.dependency_overrides[_db] = lambda: app.state.db
@@ -874,6 +877,7 @@ def create_app(
         smb_categories: str | None = Query(default=None, max_length=200),
         product_categories: str | None = Query(default=None, max_length=400),
         style_tags: str | None = Query(default=None, max_length=400),
+        min_relevance: int | None = Query(default=None, ge=0, le=5),
         viewer: ViewerContext = Depends(_viewer),
         db: Database = Depends(_db),
     ) -> dict[str, Any]:
@@ -888,6 +892,7 @@ def create_app(
                 smb_categories=_csv_query_values(smb_categories),
                 product_categories=_csv_query_values(product_categories),
                 style_tags=_csv_query_values(style_tags),
+                min_relevance=min_relevance,
             )
             total = db.count_inspirations(
                 q=q,
@@ -897,6 +902,7 @@ def create_app(
                 smb_categories=_csv_query_values(smb_categories),
                 product_categories=_csv_query_values(product_categories),
                 style_tags=_csv_query_values(style_tags),
+                min_relevance=min_relevance,
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -947,7 +953,7 @@ def create_app(
         payload = _inspiration_ai_search_payload(request, settings)
         fallback_query = _fallback_inspiration_search_query(request.query)
         try:
-            provider_response = await provider.chat_completion(config, payload)
+            provider_response = await provider.chat_completion(_llm_config(config, settings), payload)
             search_query = _extract_inspiration_search_query(_extract_chat_completion_text(provider_response), fallback_query)
         except ProviderError as exc:
             raise HTTPException(status_code=exc.status_code, detail=_provider_error_message(exc)) from exc
@@ -1159,13 +1165,26 @@ def create_app(
     ) -> dict[str, Any]:
         config = db.get_config(viewer.owner_id, settings, user_name=_viewer_name(viewer, settings))
         payload = _prompt_optimizer_payload(request, settings)
+        provider_response: dict[str, Any] | None = None
         try:
-            provider_response = await provider.chat_completion(config, payload)
+            provider_response = await provider.chat_completion(_llm_config(config, settings), payload)
+            optimized_prompt = _extract_chat_completion_text(provider_response)
         except ProviderError as exc:
-            raise HTTPException(status_code=exc.status_code, detail=_provider_error_message(exc)) from exc
-        optimized_prompt = _extract_chat_completion_text(provider_response)
+            if _should_surface_provider_error(exc):
+                raise HTTPException(status_code=exc.status_code, detail=_provider_error_message(exc)) from exc
+            # 上游 chat 临时不可用（5xx/超时/限流）：降级返回原 prompt，不阻断调用方生图
+            logger.warning("optimize_prompt degraded to original prompt: %s", _provider_error_message(exc))
+            optimized_prompt = ""
         if not optimized_prompt:
-            raise HTTPException(status_code=502, detail="Prompt optimizer returned an empty response")
+            # 空回复或上游降级：回退用原始 prompt，保证生图链路不中断
+            return {
+                "prompt": request.prompt,
+                "original_prompt": request.prompt,
+                "instruction": request.instruction or "",
+                "model": payload["model"],
+                "usage": None,
+                "fallback": True,
+            }
         return {
             "prompt": optimized_prompt,
             "original_prompt": request.prompt,
@@ -1185,7 +1204,7 @@ def create_app(
         config = db.get_config(viewer.owner_id, settings, user_name=_viewer_name(viewer, settings))
         payload = _ecommerce_publish_copy_payload(request, settings)
         try:
-            provider_response = await provider.chat_completion(config, payload)
+            provider_response = await provider.chat_completion(_llm_config(config, settings), payload)
         except ProviderError as exc:
             raise HTTPException(status_code=exc.status_code, detail=_provider_error_message(exc)) from exc
         parsed = _extract_json_object(_extract_chat_completion_text(provider_response))
@@ -1379,7 +1398,8 @@ def create_app(
         selling_points: Annotated[str, Form(max_length=1600)] = "",
         scenarios: Annotated[str, Form(max_length=1200)] = "",
         platform: Annotated[str, Form(max_length=120)] = "",
-        style: Annotated[str, Form(max_length=800)] = "",
+        # 模板优先流程把整段模板 prompt 当视觉风格传入，长度可达数千字，放宽上限。
+        style: Annotated[str, Form(max_length=6000)] = "",
         extra_requirements: Annotated[str, Form(max_length=1600)] = "",
         model: Annotated[str | None, Form()] = None,
         size: Annotated[str | None, Form()] = None,
@@ -1416,9 +1436,10 @@ def create_app(
         )
         parsed_analysis = _parse_ecommerce_analysis(analysis)
         normalized_selected_plan = _normalize_selected_ecommerce_plan(_parse_selected_ecommerce_plan(selected_plan), n)
+        # 单图直出不经系列流水线的逐屏加锁，必须在此拼上商品一致性锁，防止商品被重塑(#66)
         provider_prompt = (
             _append_ecommerce_consistency_lock(prompt, parsed_analysis)
-            if isinstance(parsed_analysis, dict)
+            if n <= 1 or isinstance(parsed_analysis, dict)
             else prompt
         )
         provider_prompt = _append_reference_notes_to_prompt(provider_prompt, ecommerce_uploads)
@@ -1568,6 +1589,19 @@ def _normalize_upstream_url(value: Any, label: str = "Upstream URL") -> str:
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise HTTPException(status_code=400, detail=f"{label} must be a valid http:// or https:// URL")
     return text
+
+
+def _llm_config(config: dict[str, Any], settings: Settings) -> dict[str, Any]:
+    """Route LLM (chat_completion) calls to a dedicated endpoint when configured.
+
+    When LLM_BASE_URL and LLM_API_KEY are set, chat steps (optimize, analyze,
+    template rerank, publish-copy, inspiration search) use that endpoint instead
+    of the sub2api managed config. Image generation keeps using sub2api. Both
+    empty -> falls back to the original config (no behavior change).
+    """
+    if settings.llm_base_url and settings.llm_api_key:
+        return {**config, "base_url": settings.llm_base_url, "api_key": settings.llm_api_key}
+    return config
 
 
 def _effective_provider_base_url(settings_data: dict[str, Any], settings: Settings) -> str:
@@ -2209,6 +2243,21 @@ def _ecommerce_prompt_from_fields(
     extra_requirements: str,
     image_count: int,
 ) -> str:
+    if image_count <= 1:
+        # 单图电商主图/场景图：以"保留商品主体、只换背景/场景"为核心，不套详情页系列模块语义(#66)
+        single_parts = [
+            "在保持上传商品本身不变的前提下，为这件商品生成一张专业电商商品图（主图/场景图）。",
+            f"商品名称：{product_name.strip() or '未填写'}",
+            f"材质/用料：{materials.strip() or '未填写'}",
+            f"核心卖点：{selling_points.strip() or '未填写'}",
+            f"使用场景：{scenarios.strip() or '未填写'}",
+            f"目标平台：{platform.strip() or '通用电商'}",
+            f"视觉风格：{style.strip() or '高级、干净、统一'}",
+            "只改变背景、场景、光线、构图和排版；严格保留商品的品类、外形、结构、材质、颜色、比例和文字标识，绝不替换成其它商品。",
+        ]
+        if extra_requirements.strip():
+            single_parts.append(f"额外要求：{extra_requirements.strip()}")
+        return "\n".join(single_parts)
     parts = [
         "根据上传的商品图片生成电商产品详情页系列图。",
         f"商品名称：{product_name.strip() or '未填写'}",
@@ -2353,7 +2402,7 @@ async def _plan_series_prompts(
 ) -> dict[str, Any]:
     try:
         provider_response = await provider.chat_completion(
-            config,
+            _llm_config(config, settings),
             _series_prompt_planner_payload(
                 prompt=prompt,
                 mode=mode,
@@ -2442,7 +2491,7 @@ async def _analyze_ecommerce_product(
 ) -> dict[str, Any]:
     try:
         provider_response = await provider.chat_completion(
-            config,
+            _llm_config(config, settings),
             _ecommerce_product_analyzer_payload(upload=upload, uploads=uploads, prompt=prompt, settings=settings, request=request),
         )
         parsed = _extract_json_object(_extract_chat_completion_text(provider_response))
@@ -2542,7 +2591,7 @@ async def _rerank_benchmark_template_ids(
 ) -> list[str]:
     try:
         provider_response = await provider.chat_completion(
-            config,
+            _llm_config(config, settings),
             _benchmark_template_rerank_payload(
                 candidates=candidates,
                 analysis=analysis,
@@ -3861,6 +3910,21 @@ def _normalize_error_message(message: Any, payload: Any | None = None) -> str:
         return "余额不足，请充值或更换 API Key 后重试"
     if "quota" in combined and ("exceeded" in combined or "insufficient" in combined):
         return "额度不足，请充值或更换 API Key 后重试"
+    moderation_phrases = (
+        "content policy",
+        "content_policy",
+        "content moderation",
+        "safety system",
+        "rejected as a result",
+        "your request was rejected",
+        "responsible ai",
+    )
+    moderation_hit = any(phrase in combined for phrase in moderation_phrases) or (
+        ("moderation" in combined or "flagged" in combined)
+        and ("reject" in combined or "violat" in combined or "policy" in combined)
+    )
+    if moderation_hit:
+        return "这张图被内容审核拦截（常见于含人物、品牌 logo、医美/敏感类商品）。请更换商品图或调整描述后重试。"
     if text:
         return text
     if payload_message:
@@ -3886,11 +3950,42 @@ def _batch_partial_error_message(partial_errors: list[dict[str, Any]]) -> str:
     return f"{count} 张图片生成失败：{first_message}"
 
 
+async def _run_image_task_guarded(app: FastAPI, task_id: str) -> None:
+    """Cap concurrent generations and enforce a task-level timeout.
+
+    The semaphore limits how many tasks hit the upstream/disk at once (protects the
+    small 1C/1G box from concurrent users); the timeout stops a hung upstream from
+    leaving a task stuck in 'running' forever with the frontend polling indefinitely.
+    """
+    gate: asyncio.Semaphore = app.state.image_task_gate
+    budget = app.state.settings.image_task_timeout_seconds
+    try:
+        async with gate:
+            try:
+                await asyncio.wait_for(_run_image_task(app, task_id), timeout=budget)
+            except asyncio.TimeoutError:
+                logger.error("image task %s timed out after %ss", task_id, budget)
+                app.state.db.update_image_task(
+                    task_id,
+                    {"status": "failed", "completed_at": utc_now(), "error": "生成超时，请稍后重试"},
+                )
+    except asyncio.CancelledError:
+        # 在等待并发闸期间被取消（如进程关闭）：避免任务永远停留在 queued
+        try:
+            app.state.db.update_image_task(
+                task_id,
+                {"status": "failed", "completed_at": utc_now(), "error": "服务重启，任务已取消"},
+            )
+        except Exception:
+            pass
+        raise
+
+
 def _schedule_image_task(app: FastAPI, task_id: str) -> None:
     existing = app.state.image_tasks.get(task_id)
     if existing is not None and not existing.done():
         return
-    task = asyncio.create_task(_run_image_task(app, task_id))
+    task = asyncio.create_task(_run_image_task_guarded(app, task_id))
     app.state.image_tasks[task_id] = task
 
     def _cleanup(done_task: asyncio.Task[Any]) -> None:
@@ -3973,8 +4068,8 @@ async def _run_image_task(app: FastAPI, task_id: str) -> None:
             saved_mask = request_payload.get("mask")
             mask_file = _load_saved_upload(saved_mask) if isinstance(saved_mask, dict) else None
             requested_count = _request_image_count(fields)
-            is_ecommerce_create = isinstance(request_payload.get("ecommerce"), dict) and not request_payload.get("source_history_id")
-            if requested_count > 1 or is_ecommerce_create:
+            # 单图电商创建走单图直出 edit（保留商品主体）；只有多图才进 9 模块详情页系列流水线(#66)
+            if requested_count > 1:
                 await _run_series_image_task(
                     db,
                     settings,
@@ -4050,6 +4145,7 @@ async def _run_image_task(app: FastAPI, task_id: str) -> None:
         raise
     except ProviderError as exc:
         message = _provider_error_message(exc)
+        logger.warning("image task %s failed (provider): %s", task_id, message)
         latest_task = db.get_image_task_by_id(task_id) or task
         failed = _record_failed_history(
             db,
@@ -4078,6 +4174,7 @@ async def _run_image_task(app: FastAPI, task_id: str) -> None:
         )
     except Exception as exc:
         message = _exception_message(exc)
+        logger.exception("image task %s failed", task_id)
         latest_task = db.get_image_task_by_id(task_id) or task
         failed = _record_failed_history(
             db,

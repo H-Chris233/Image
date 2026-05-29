@@ -4,29 +4,25 @@ import {
   ArrowLeft,
   CheckCircle2,
   ImagePlus,
-  Loader2,
-  RefreshCw,
   Sparkles,
   UploadCloud,
   X,
 } from 'lucide-react';
-import { analyzeEcommerceProduct, type BalanceInfo, type RecommendedTemplate, type EcommerceAnalyzeResponse } from '../../api';
+import type { BalanceInfo } from '../../api';
 import {
   Button,
   FileInput,
   IconButton,
   SegmentedControl,
-  SkeletonBlock,
   Surface,
   TextareaField,
 } from '../design-system';
 import { CreditEstimate } from './CreditEstimate';
-import { TemplateCard } from './TemplateCard';
+import { SceneBrowser } from './SceneBrowser';
+import type { SceneTemplate } from './sceneCatalog';
 import {
-  canAnalyze,
-  canContinueFromRecommend,
+  canContinueFromUpload,
   createInitialWizardState,
-  selectedTemplate,
   wizardReducer,
   type WizardStep,
 } from './createWizardState';
@@ -37,8 +33,8 @@ const ASPECT_RATIOS = ['1:1', '4:3', '3:4', '16:9', '9:16'] as const;
 const IMAGE_COUNTS = ['1', '2', '3', '4'] as const;
 
 const STEP_META: Record<WizardStep, { index: number; label: string; progress: number }> = {
-  upload_brief: { index: 1, label: '上传商品', progress: 33 },
-  recommend: { index: 2, label: '选择模板', progress: 67 },
+  browse: { index: 1, label: '选择场景', progress: 33 },
+  upload: { index: 2, label: '上传商品', progress: 67 },
   tune: { index: 3, label: '微调输出', progress: 100 },
 };
 
@@ -54,8 +50,7 @@ const EXAMPLE_IMAGES = [
 export interface WizardResult {
   productImage: File;
   brief: string;
-  selectedTemplate: RecommendedTemplate;
-  analyzeResponse: EcommerceAnalyzeResponse;
+  selectedTemplate: SceneTemplate;
   aspectRatio: string;
   imageCount: number;
 }
@@ -76,7 +71,6 @@ export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription,
   const [dragging, setDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const activeStep = STEP_META[state.step];
-  const selected = selectedTemplate(state);
 
   useEffect(() => {
     if (!state.productImage) {
@@ -120,33 +114,14 @@ export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription,
     if (file) applyFile(file);
   }, [applyFile]);
 
-  const runAnalyze = useCallback(async () => {
-    if (!state.productImage || state.analyzing) return;
-    dispatch({ type: 'analyze_start' });
-    try {
-      const response = await analyzeEcommerceProduct(
-        {
-          extra_requirements: state.brief.trim(),
-          image_count: 3,
-        },
-        [{ file: state.productImage, primary: true }],
-      );
-      dispatch({ type: 'analyze_success', response });
-    } catch (error) {
-      dispatch({ type: 'analyze_failure', error: errorMessage(error) });
-    }
-  }, [state.productImage, state.brief, state.analyzing]);
-
   const handleGenerate = useCallback(async () => {
-    const template = selectedTemplate(state);
-    if (!state.productImage || !state.analyzeResponse || !template || state.generating) return;
+    if (!state.productImage || !state.selectedTemplate || state.generating) return;
     dispatch({ type: 'generate_start' });
     try {
       await onComplete({
         productImage: state.productImage,
         brief: state.brief.trim(),
-        selectedTemplate: template,
-        analyzeResponse: state.analyzeResponse,
+        selectedTemplate: state.selectedTemplate,
         aspectRatio: state.aspectRatio,
         imageCount: state.imageCount,
       });
@@ -197,38 +172,30 @@ export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription,
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
-        {state.analyzing ? <AnalyzeLoading /> : null}
-        {!state.analyzing && state.step === 'upload_brief' ? (
-          <UploadBriefStep
+        {state.step === 'browse' ? (
+          <SceneBrowser onPick={(template) => dispatch({ type: 'select_template', template })} />
+        ) : null}
+        {state.step === 'upload' ? (
+          <UploadStep
+            templateTitle={state.selectedTemplate?.label ?? ''}
             brief={state.brief}
             error={state.error}
             dragging={dragging}
             productImage={state.productImage}
             previewUrl={previewUrl}
-            canSubmit={canAnalyze(state)}
+            canSubmit={canContinueFromUpload(state)}
             onBriefChange={(brief) => dispatch({ type: 'set_brief', brief })}
             onFileChange={handleFileChange}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            onAnalyze={runAnalyze}
-          />
-        ) : null}
-        {!state.analyzing && state.step === 'recommend' ? (
-          <RecommendStep
-            templates={state.analyzeResponse?.recommended_templates ?? []}
-            selectedTemplateId={state.selectedTemplateId}
-            error={state.error}
-            onSelect={(templateId) => dispatch({ type: 'select_template', templateId })}
             onBack={() => dispatch({ type: 'back' })}
-            onRefresh={runAnalyze}
-            onNext={() => dispatch({ type: 'next_from_recommend' })}
-            nextEnabled={canContinueFromRecommend(state)}
+            onNext={() => dispatch({ type: 'next_from_upload' })}
           />
         ) : null}
-        {!state.analyzing && state.step === 'tune' && selected ? (
+        {state.step === 'tune' && state.selectedTemplate ? (
           <TuneStep
-            template={selected}
+            template={state.selectedTemplate}
             aspectRatio={state.aspectRatio}
             imageCount={state.imageCount}
             generating={state.generating}
@@ -247,30 +214,8 @@ export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription,
   );
 }
 
-function AnalyzeLoading() {
-  return (
-    <div className="mx-auto flex min-h-[calc(100vh-180px)] max-w-5xl items-center justify-center">
-      <Surface tone="subtle" padding="lg" className="w-full max-w-2xl">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-lime/25 bg-lime/10 text-lime">
-            <Loader2 aria-hidden="true" size={20} className="animate-spin" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="font-display text-lg font-semibold text-on-surface">AI 正在分析商品...</h2>
-            <p className="mt-1 text-sm leading-6 text-on-surface-variant">正在识别商品特征，并匹配 3 个 benchmark 模板。</p>
-          </div>
-        </div>
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <SkeletonBlock className="h-44" />
-          <SkeletonBlock className="h-44" />
-          <SkeletonBlock className="h-44" />
-        </div>
-      </Surface>
-    </div>
-  );
-}
-
-function UploadBriefStep({
+function UploadStep({
+  templateTitle,
   brief,
   error,
   dragging,
@@ -282,8 +227,10 @@ function UploadBriefStep({
   onDragOver,
   onDragLeave,
   onDrop,
-  onAnalyze,
+  onBack,
+  onNext,
 }: {
+  templateTitle: string;
   brief: string;
   error: string | null;
   dragging: boolean;
@@ -295,7 +242,8 @@ function UploadBriefStep({
   onDragOver: (event: DragEvent<HTMLLabelElement>) => void;
   onDragLeave: (event: DragEvent<HTMLLabelElement>) => void;
   onDrop: (event: DragEvent<HTMLLabelElement>) => void;
-  onAnalyze: () => void;
+  onBack: () => void;
+  onNext: () => void;
 }) {
   const inputId = 'wizard-product-image-input';
 
@@ -304,7 +252,9 @@ function UploadBriefStep({
       <Surface tone="default" padding="lg" className="min-w-0">
         <div className="mb-5">
           <h2 className="font-display text-xl font-semibold text-on-surface">上传商品图</h2>
-          <p className="mt-1 text-sm leading-6 text-on-surface-variant">建议上传白底图，多角度更准（v1 暂只支持单图）</p>
+          <p className="mt-1 text-sm leading-6 text-on-surface-variant">
+            {templateTitle ? `已选模板「${templateTitle}」，` : ''}建议上传白底图，主体清晰（v1 暂只支持单图）
+          </p>
         </div>
 
         <FileInput id={inputId} accept={ACCEPTED} onChange={onFileChange} />
@@ -342,7 +292,7 @@ function UploadBriefStep({
 
         <TextareaField
           fieldClassName="mt-5"
-          label="创作需求（可选，最多 300 字）"
+          label="补充需求（可选，最多 300 字）"
           helpText={`${brief.length}/300`}
           maxLength={300}
           rows={4}
@@ -353,13 +303,16 @@ function UploadBriefStep({
 
         {error ? <p className="mt-3 text-sm leading-6 text-error">{error}</p> : null}
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+          <Button type="button" variant="ghost" iconStart={<ArrowLeft aria-hidden="true" size={14} />} onClick={onBack}>
+            返回选模板
+          </Button>
           <Button
             type="button"
             variant="primary"
             disabled={!canSubmit}
             iconEnd={<Sparkles aria-hidden="true" size={15} />}
-            onClick={onAnalyze}
+            onClick={onNext}
           >
             下一步
           </Button>
@@ -368,7 +321,7 @@ function UploadBriefStep({
 
       <Surface tone="subtle" padding="lg" className="min-w-0">
         <h3 className="text-sm font-semibold text-on-surface">示例商品图</h3>
-        <p className="mt-1 text-xs leading-5 text-on-surface-variant">主体清晰、边缘干净、无遮挡的图片匹配更稳定。</p>
+        <p className="mt-1 text-xs leading-5 text-on-surface-variant">主体清晰、边缘干净、无遮挡的图片效果更稳定。</p>
         <div className="mt-4 grid grid-cols-3 gap-2 lg:grid-cols-2">
           {EXAMPLE_IMAGES.map((imageUrl) => (
             <div key={imageUrl} className="aspect-square overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.03]">
@@ -377,73 +330,6 @@ function UploadBriefStep({
           ))}
         </div>
       </Surface>
-    </div>
-  );
-}
-
-function RecommendStep({
-  templates,
-  selectedTemplateId,
-  error,
-  onSelect,
-  onBack,
-  onRefresh,
-  onNext,
-  nextEnabled,
-}: {
-  templates: RecommendedTemplate[];
-  selectedTemplateId: string | null;
-  error: string | null;
-  onSelect: (templateId: string) => void;
-  onBack: () => void;
-  onRefresh: () => void;
-  onNext: () => void;
-  nextEnabled: boolean;
-}) {
-  return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="font-display text-xl font-semibold text-on-surface">选择一个推荐模板</h2>
-          <p className="mt-1 text-sm leading-6 text-on-surface-variant">AI 根据商品图推荐 3 个 benchmark 模板。选择后会按模板风格改写你的需求。</p>
-        </div>
-        <Button type="button" variant="ghost" iconStart={<RefreshCw aria-hidden="true" size={14} />} onClick={onRefresh}>
-          都不满意？再来 3 个
-        </Button>
-      </div>
-
-      {templates.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          {templates.map((template) => {
-            const selected = selectedTemplateId === template.id;
-            return (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                selected={selected}
-                onClick={() => onSelect(template.id)}
-                actionLabel={selected ? '已选择' : '选择模板'}
-              />
-            );
-          })}
-        </div>
-      ) : (
-        <Surface tone="dashed" padding="lg" className="text-center">
-          <h3 className="font-display text-lg font-semibold text-on-surface">暂时没有匹配模板</h3>
-          <p className="mt-2 text-sm leading-6 text-on-surface-variant">模板库可能还没有可用 benchmark 行。可以返回换一张商品图，或再次分析。</p>
-        </Surface>
-      )}
-
-      {error ? <p className="text-sm leading-6 text-error">{error}</p> : null}
-
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-        <Button type="button" variant="ghost" iconStart={<ArrowLeft aria-hidden="true" size={14} />} onClick={onBack}>
-          返回上一步
-        </Button>
-        <Button type="button" variant="primary" disabled={!nextEnabled} onClick={onNext}>
-          下一步
-        </Button>
-      </div>
     </div>
   );
 }
@@ -462,7 +348,7 @@ function TuneStep({
   onBack,
   onGenerate,
 }: {
-  template: RecommendedTemplate;
+  template: SceneTemplate;
   aspectRatio: string;
   imageCount: number;
   generating: boolean;
@@ -485,7 +371,7 @@ function TuneStep({
           <div className="min-w-0">
             <h2 className="font-display text-xl font-semibold text-on-surface">输出设置</h2>
             <p className="mt-1 text-sm leading-6 text-on-surface-variant">
-              AI 会用「{template.title}」风格生成 {imageCount} 张
+              用「{template.label}」风格生成 {imageCount} 张
             </p>
           </div>
         </div>
@@ -529,8 +415,8 @@ function TuneStep({
 
       <Surface tone="subtle" padding="none" className="min-w-0 overflow-hidden">
         <div className="aspect-[4/3] bg-white/[0.04]">
-          {template.image_url ? (
-            <img src={template.image_url} alt={template.title} loading="lazy" className="h-full w-full object-cover" />
+          {template.sampleImage ? (
+            <img src={template.sampleImage} alt={template.label} loading="lazy" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-on-surface-variant">
               <ImagePlus aria-hidden="true" size={24} />
@@ -538,15 +424,8 @@ function TuneStep({
           )}
         </div>
         <div className="p-4">
-          <h3 className="font-display text-base font-semibold text-on-surface">{template.title}</h3>
-          {template.curator_note ? <p className="mt-2 text-sm leading-6 text-on-surface-variant">{template.curator_note}</p> : null}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {template.style_tags.slice(0, 5).map((tag) => (
-              <span key={tag} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[11px] font-medium text-on-surface-variant">
-                {tag}
-              </span>
-            ))}
-          </div>
+          <h3 className="font-display text-base font-semibold text-on-surface">{template.label}</h3>
+          {template.prompt ? <p className="mt-2 line-clamp-4 text-sm leading-6 text-on-surface-variant">{template.prompt}</p> : null}
         </div>
       </Surface>
     </div>

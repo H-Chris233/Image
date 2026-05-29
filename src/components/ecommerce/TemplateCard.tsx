@@ -1,8 +1,8 @@
 import { Sparkles } from 'lucide-react';
-import type { EcommerceRecommendedPlan, RecommendedTemplate } from '../../api';
+import type { EcommerceRecommendedPlan, InspirationItem, RecommendedTemplate } from '../../api';
 import { Pressable } from '../design-system';
 
-export type TemplateCandidate = (RecommendedTemplate | EcommerceRecommendedPlan) & {
+export type TemplateCandidate = (RecommendedTemplate | EcommerceRecommendedPlan | InspirationItem) & {
   id?: string;
   name?: string;
   title?: string;
