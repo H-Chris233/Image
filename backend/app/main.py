@@ -877,6 +877,7 @@ def create_app(
         smb_categories: str | None = Query(default=None, max_length=200),
         product_categories: str | None = Query(default=None, max_length=400),
         style_tags: str | None = Query(default=None, max_length=400),
+        min_relevance: int | None = Query(default=None, ge=0, le=5),
         viewer: ViewerContext = Depends(_viewer),
         db: Database = Depends(_db),
     ) -> dict[str, Any]:
@@ -891,6 +892,7 @@ def create_app(
                 smb_categories=_csv_query_values(smb_categories),
                 product_categories=_csv_query_values(product_categories),
                 style_tags=_csv_query_values(style_tags),
+                min_relevance=min_relevance,
             )
             total = db.count_inspirations(
                 q=q,
@@ -900,6 +902,7 @@ def create_app(
                 smb_categories=_csv_query_values(smb_categories),
                 product_categories=_csv_query_values(product_categories),
                 style_tags=_csv_query_values(style_tags),
+                min_relevance=min_relevance,
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

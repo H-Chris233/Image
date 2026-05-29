@@ -1203,6 +1203,7 @@ class Database:
         smb_categories: list[str] | None = None,
         product_categories: list[str] | None = None,
         style_tags: list[str] | None = None,
+        min_relevance: int | None = None,
     ) -> list[dict[str, Any]]:
         limit = max(1, min(limit, 200))
         offset = max(0, offset)
@@ -1215,6 +1216,7 @@ class Database:
             smb_categories=smb_categories,
             product_categories=product_categories,
             style_tags=style_tags,
+            min_relevance=min_relevance,
         )
         order_by = "p.created_at DESC, p.synced_at DESC, p.section ASC, p.title ASC"
         with self.connect() as conn:
@@ -1239,6 +1241,7 @@ class Database:
         smb_categories: list[str] | None = None,
         product_categories: list[str] | None = None,
         style_tags: list[str] | None = None,
+        min_relevance: int | None = None,
     ) -> int:
         where, params = self._inspiration_where(
             q=q,
@@ -1249,6 +1252,7 @@ class Database:
             smb_categories=smb_categories,
             product_categories=product_categories,
             style_tags=style_tags,
+            min_relevance=min_relevance,
         )
         with self.connect() as conn:
             row = conn.execute(
@@ -1283,6 +1287,7 @@ class Database:
         smb_categories: list[str] | None = None,
         product_categories: list[str] | None = None,
         style_tags: list[str] | None = None,
+        min_relevance: int | None = None,
     ) -> tuple[str, list[Any]]:
         prefix = f"{table_alias}." if table_alias else ""
         clauses = []
@@ -1323,6 +1328,9 @@ class Database:
                 value_clauses.append(f"{prefix}{column} LIKE ? ESCAPE '\\'")
                 params.append(f'%"{Database._escape_like_value(value)}"%')
             clauses.append(f"({' OR '.join(value_clauses)})")
+        if min_relevance is not None:
+            clauses.append(f"{prefix}relevance >= ?")
+            params.append(int(min_relevance))
         return (f"WHERE {' AND '.join(clauses)}" if clauses else "", params)
 
     @staticmethod
@@ -1494,6 +1502,11 @@ def _image_task_row(row: sqlite3.Row) -> dict[str, Any]:
 def _inspiration_row(row: sqlite3.Row) -> dict[str, Any]:
     data = dict(row)
     data["raw"] = _json_load(data.pop("raw_json"))
+    for field in ("smb_categories", "product_categories", "style_tags"):
+        parsed = _json_load(data.get(field))
+        data[field] = parsed if isinstance(parsed, list) else []
+    relevance = data.get("relevance")
+    data["relevance"] = int(relevance) if isinstance(relevance, (int, float)) else None
     return data
 
 
