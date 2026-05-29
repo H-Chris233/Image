@@ -94,6 +94,8 @@ export type ImageTask = {
   quality: string;
   status: 'queued' | 'running' | 'succeeded' | 'failed';
   error: string | null;
+  input_image_url?: string | null;
+  input_image_path?: string | null;
   items: HistoryItem[];
   result: Record<string, unknown> | null;
   created_at: string;

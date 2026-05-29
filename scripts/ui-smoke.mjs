@@ -477,6 +477,8 @@ function buildMockScript() {
     quality: 'auto',
     status: 'succeeded',
     error: null,
+    input_image_url: imageOne,
+    input_image_path: null,
     result: { series_plan: seriesPlan },
     created_at: '2026-05-18T00:00:00Z',
     updated_at: '2026-05-18T00:00:00Z',
@@ -602,7 +604,7 @@ function buildMockScript() {
       status: 'succeeded',
       image_url: imageUrl,
       image_path: null,
-      input_image_url: null,
+      input_image_url: imageOne,
       input_image_path: null,
       revised_prompt: null,
       usage: null,
@@ -795,8 +797,7 @@ function buildMockScript() {
     }
 
     if (url.pathname === '/api/balance') {
-      const authenticated = smokeAuthenticated();
-      return json({ ok: true, remaining: authenticated ? 12.3456 : 0, raw: null });
+      return json({ ok: true, remaining: 12.3456, raw: null });
     }
 
     if (url.pathname === '/api/config') {
@@ -2664,6 +2665,38 @@ async function runSmokeChecks(page, baseUrl) {
       editCalls[0].body?.n !== 3
     ) {
       throw new Error(`/workspace quick edit variants payload mismatch: ${JSON.stringify(calls)}`);
+    }
+  });
+
+  await runCheck('/workspace template swap opens recommendations and submits in order', async () => {
+    await page.navigate('/workspace/smoke-task?smoke_auth=1', { width: 1280, height: 900 });
+    await page.waitFor(() => /Generated assets are ready/i.test(document.body.innerText) && /First smoke preview image/i.test(document.body.textContent || ''), '/workspace template swap fixture');
+    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
+    await clickMainControl(page, '^换个模板试试$', '/workspace open template swap');
+    await page.waitFor(() => /选择新模板/i.test(document.body.innerText) && /Clean Hero Shot/i.test(document.body.innerText), '/workspace template swap modal');
+    const cardState = await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const dialog = document.querySelector('[role="dialog"]');
+      const controls = Array.from(dialog?.querySelectorAll('button') || [])
+        .filter((element) => isVisible(element))
+        .map((element) => accessibleName(element));
+      return {
+        count:
+          Number(controls.some((name) => /Clean Hero Shot/i.test(name))) +
+          Number(controls.some((name) => /Lifestyle Scene/i.test(name))) +
+          Number(controls.some((name) => /Detail Closeup/i.test(name))),
+        controls
+      };
+    }, domSnapshotHelpers().text);
+    if (cardState.count !== 3) {
+      throw new Error(`/workspace template swap modal must show 3 template cards: ${JSON.stringify(cardState)}`);
+    }
+    await clickMainControl(page, 'Clean Hero Shot', '/workspace choose template card');
+    await page.waitFor(() => window.location.pathname.includes('/workspace/smoke-regenerated-task'), '/workspace template swapped task route');
+    const calls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
+    const orderedTypes = calls.map((call) => call.type).filter((type) => ['ecommerce-analyze', 'prompt-optimize', 'ecommerce-generate'].includes(type));
+    if (orderedTypes.join('>') !== 'ecommerce-analyze>prompt-optimize>ecommerce-generate') {
+      throw new Error(`/workspace template swap must call analyze, optimize, generate in order: ${JSON.stringify(calls)}`);
     }
   });
 
