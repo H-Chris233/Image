@@ -56,7 +56,7 @@ export default function App() {
       </main>
       {studioMode ? null : <BottomTabBar />}
       {studioMode ? null : <AnnouncementModal />}
-      {studioMode ? null : <AuthModal />}
+      <AuthModal />
       {studioMode ? null : <TaskDrawer />}
       {studioMode ? null : <TaskToastStack />}
     </div>

@@ -1,7 +1,6 @@
-import 'tldraw/tldraw.css';
 import { useState } from 'react';
 import { CreateNewWorkbench, type StudioStartPreset } from './create-new/CreateNewWorkbench';
-import { StudioShell } from './StudioShell';
+import { ImageEditorShell } from './image-editor/ImageEditorShell';
 
 export default function StudioPage() {
   const [startPreset, setStartPreset] = useState<StudioStartPreset | null>(null);
@@ -10,5 +9,5 @@ export default function StudioPage() {
     return <CreateNewWorkbench onStart={setStartPreset} />;
   }
 
-  return <StudioShell initialPreset={startPreset} onBackToCreate={() => setStartPreset(null)} />;
+  return <ImageEditorShell initialPreset={startPreset} onBackToCreate={() => setStartPreset(null)} />;
 }
