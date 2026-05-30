@@ -97,8 +97,8 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
 
   return (
     <button
-      ref={ref}
-      type={type}
+      ref={ref as Ref<HTMLButtonElement>}
+      type={type as ButtonHTMLAttributes<HTMLButtonElement>['type']}
       disabled={disabled || loading}
       className={buttonClassName}
       {...(props as ButtonHTMLAttributes<HTMLButtonElement>)}

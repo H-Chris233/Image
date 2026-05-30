@@ -182,7 +182,7 @@ export default function DesignSystem() {
               <h2 className="font-display text-lg font-semibold text-on-surface">Form controls</h2>
               <p className="mt-1 text-sm leading-6 text-on-surface-variant">Compact inputs for production workflows, with visible lime focus.</p>
               <div className="mt-4 grid gap-4">
-                <SegmentedControl
+                <SegmentedControl<'general' | 'commerce'>
                   label="Generation mode"
                   value={mode}
                   onChange={setMode}

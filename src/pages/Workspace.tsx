@@ -335,7 +335,7 @@ const WORKSPACE_COPY = {
   },
 } as const;
 
-type WorkspaceCopy = typeof WORKSPACE_COPY['en-US'];
+type WorkspaceCopy = (typeof WORKSPACE_COPY)[keyof typeof WORKSPACE_COPY];
 
 export default function Workspace() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -1776,14 +1776,14 @@ function WorkspaceConfigPanel({
           </div>
         )}
 
-        <SegmentedControl
+        <SegmentedControl<WorkspaceAspectRatio>
           label={copy.aspectRatioLabel}
           value={aspectRatio}
           options={WORKSPACE_ASPECT_RATIO_OPTIONS.map((value) => ({ value, label: value }))}
           onChange={setAspectRatio}
         />
 
-        <SegmentedControl
+        <SegmentedControl<WorkspaceImageCount>
           label={copy.imageCountLabel}
           value={imageCount}
           options={WORKSPACE_IMAGE_COUNT_OPTIONS.map((value) => ({ value, label: value }))}

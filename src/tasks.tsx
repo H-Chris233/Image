@@ -89,17 +89,15 @@ export function TaskCenterProvider({ children }: { children: ReactNode }) {
     if (!message) {
       return;
     }
-    setToasts((current) => [
-      {
-        type: 'notice',
-        id: `notice:${Date.now()}:${Math.random().toString(36).slice(2)}`,
-        kind: toast.kind || 'info',
-        title: toast.title,
-        message,
-        createdAt: Date.now(),
-      },
-      ...current,
-    ].slice(0, 6));
+    const notice: NoticeToast = {
+      type: 'notice',
+      id: `notice:${Date.now()}:${Math.random().toString(36).slice(2)}`,
+      kind: toast.kind || 'info',
+      title: toast.title,
+      message,
+      createdAt: Date.now(),
+    };
+    setToasts((current) => [notice, ...current].slice(0, 6));
   }, []);
 
   const notifyCompletedTasks = useCallback((previous: ImageTask[], next: ImageTask[]) => {
@@ -116,11 +114,11 @@ export function TaskCenterProvider({ children }: { children: ReactNode }) {
     if (completed.length === 0) {
       return;
     }
-    const newToasts = completed.map((task) => ({
+    const newToasts: TaskStatusToast[] = completed.map((task) => ({
       type: 'task' as const,
       id: `${task.id}:${task.status}:${task.updated_at}`,
       taskId: task.id,
-      status: task.status,
+      status: task.status as TaskStatusToast['status'],
       prompt: task.prompt,
       createdAt: Date.now(),
       error: task.error,
@@ -155,18 +153,16 @@ export function TaskCenterProvider({ children }: { children: ReactNode }) {
     tasksRef.current = merged;
     setTasks(merged);
     if (task.status === 'succeeded' || task.status === 'failed') {
-      setToasts((current) => [
-        {
-          type: 'task',
-          id: `${task.id}:${task.status}:${task.updated_at}`,
-          taskId: task.id,
-          status: task.status,
-          prompt: task.prompt,
-          createdAt: Date.now(),
-          error: task.error,
-        },
-        ...current,
-      ].slice(0, 6));
+      const toast: TaskStatusToast = {
+        type: 'task',
+        id: `${task.id}:${task.status}:${task.updated_at}`,
+        taskId: task.id,
+        status: task.status,
+        prompt: task.prompt,
+        createdAt: Date.now(),
+        error: task.error,
+      };
+      setToasts((current) => [toast, ...current].slice(0, 6));
     }
     setDrawerOpen(true);
   }, []);
