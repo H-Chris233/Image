@@ -4,6 +4,7 @@ import SideNavBar from './components/SideNavBar';
 import BottomTabBar from './components/BottomTabBar';
 import Explore from './pages/Explore';
 import Create from './pages/Create';
+import StudioPage from './studio/StudioPage';
 import Workspace from './pages/Workspace';
 import History from './pages/History';
 import Config from './pages/Config';
@@ -16,6 +17,8 @@ import AuthModal from './components/AuthModal';
 import TaskDrawer from './components/TaskDrawer';
 import TaskToastStack from './components/TaskToastStack';
 import { useAuth } from './auth';
+
+const USE_STUDIO_CREATE = true;
 
 function RootRedirect() {
   const { viewer, loading } = useAuth();
@@ -32,7 +35,8 @@ export default function App() {
         <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/explore" element={<Explore />} />
-            <Route path="/create" element={<Create />} />
+            <Route path="/create" element={USE_STUDIO_CREATE ? <Navigate to="/studio" replace /> : <Create />} />
+            <Route path="/studio" element={<StudioPage />} />
             <Route path="/workspace/:taskId" element={<Workspace />} />
             <Route path="/history" element={<History />} />
             <Route path="/config" element={<Config />} />
