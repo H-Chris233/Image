@@ -1,13 +1,9 @@
 import {
-  BadgePlus,
-  Box,
-  Clapperboard,
   Image,
   Images,
-  Palette,
-  Shirt,
+  PackagePlus,
+  PenLine,
   Sparkles,
-  UserRound,
   WandSparkles,
 } from 'lucide-react';
 import { CUSTOMERS, scenesOf } from '../../components/ecommerce/sceneCatalog';
@@ -26,52 +22,29 @@ type CreateNewWorkbenchProps = {
 
 const creationTypes = [
   {
-    id: 'product-images',
-    title: 'Product Images',
-    kicker: 'Create New',
+    id: 'image2-product',
+    title: 'Image-2 Product Shot',
+    kicker: '商品图生成',
     prompt: templateCatalog[0]?.prompt ?? '',
     image: templateCatalog[1]?.sampleImage,
-    Icon: Images,
+    Icon: PackagePlus,
   },
   {
-    id: 'human-model',
-    title: 'Human Model',
-    kicker: 'On Model',
-    prompt: 'Generate on-model fashion photography with the uploaded product, editorial lighting, clean styling, and a commercial campaign composition.',
-    image: '/scene-samples/cross_border_ecommerce_on_model.jpg',
-    Icon: UserRound,
+    id: 'image2-retouch',
+    title: 'Image-2 Retouch',
+    kicker: '精修增强',
+    prompt:
+      'Enhance the uploaded product into a premium ecommerce product image with cleaner lighting, sharper material detail, realistic color, and a polished commercial finish.',
+    image: '/scene-samples/cross_border_ecommerce_premium_hero.jpg',
+    Icon: Sparkles,
   },
   {
-    id: 'generate-ad',
-    title: 'Generate Ad',
-    kicker: 'Graphic Design',
+    id: 'image2-poster',
+    title: 'Image-2 Poster',
+    kicker: '营销海报',
     prompt: 'Create a polished ecommerce advertising image with the product as hero, bold composition, headline space, and premium campaign lighting.',
     image: '/scene-samples/cross_border_ecommerce_poster.jpg',
-    Icon: BadgePlus,
-  },
-  {
-    id: 'generate-video',
-    title: 'Generate Video',
-    kicker: 'Motion',
-    prompt: 'Create a product-video-ready scene with dynamic camera-friendly composition, layered depth, and clean commercial lighting.',
-    image: '/scene-samples/physical_store_fnb_moments.png',
-    Icon: Clapperboard,
-  },
-  {
-    id: 'generate-image',
-    title: 'Generate Image',
-    kicker: 'Text Prompt',
-    prompt: 'Generate a clean commercial image from a text prompt with strong product focus, refined lighting, and brand-grade composition.',
-    image: '/scene-samples/smb_saas_hero.png',
-    Icon: WandSparkles,
-  },
-  {
-    id: 'canvas-image',
-    title: 'Generate From Canvas',
-    kicker: 'Drag & Drop',
-    prompt: 'Generate from the arranged canvas assets, preserving product identity while improving scene, lighting, and composition.',
-    image: '/scene-samples/domestic_ecommerce_lifestyle.jpg',
-    Icon: Palette,
+    Icon: PenLine,
   },
 ];
 
@@ -104,17 +77,14 @@ export function CreateNewWorkbench({ onStart }: CreateNewWorkbenchProps) {
         <aside className="border-r border-white/[0.08] bg-[#111110] p-3 max-lg:hidden">
           <div className="px-2 pb-4">
             <div className="text-sm font-bold text-lime">AetherGenix</div>
-            <div className="mt-1 text-xs text-on-surface-variant">Studio</div>
+            <div className="mt-1 text-xs text-on-surface-variant">Image-2 Studio</div>
           </div>
           <nav className="space-y-1 text-sm">
             {[
-              ['Create', Sparkles],
-              ['Explore', Image],
-              ['Custom Models', Box],
-              ['Human Builder', UserRound],
-              ['Drag and Drop Canvas', Palette],
-              ['Product Videos', Clapperboard],
-              ['AI Image Editor', WandSparkles],
+              ['Image-2 Create', Sparkles],
+              ['Product Images', Images],
+              ['Retouch', WandSparkles],
+              ['Reference Assets', Image],
               ['All Assets', Images],
             ].map(([label, Icon], index) => {
               const NavIcon = Icon as typeof Sparkles;
@@ -140,9 +110,9 @@ export function CreateNewWorkbench({ onStart }: CreateNewWorkbenchProps) {
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-5 sm:px-6 lg:px-8">
             <header className="flex flex-wrap items-end justify-between gap-4 border-b border-white/[0.08] pb-5">
               <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-lime">Create New Project</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-lime">Image-2 Create</div>
                 <h1 className="mt-2 font-display text-3xl font-bold text-on-surface sm:text-4xl">
-                  What would you like to create?
+                  Choose an image workflow.
                 </h1>
               </div>
               <button
@@ -150,13 +120,13 @@ export function CreateNewWorkbench({ onStart }: CreateNewWorkbenchProps) {
                 className="btn-ghost rounded-md"
                 onClick={() =>
                   startFromPreset({
-                    projectName: 'Blank Canvas',
+                    projectName: 'Image-2 Draft',
                     prompt: '',
                     aspectRatio: '1:1',
                   })
                 }
               >
-                Blank canvas
+                Start with upload
               </button>
             </header>
 
@@ -171,7 +141,7 @@ export function CreateNewWorkbench({ onStart }: CreateNewWorkbenchProps) {
                       startFromPreset({
                         projectName: title,
                         prompt,
-                        aspectRatio: id === 'generate-video' ? '9:16' : '1:1',
+                        aspectRatio: '1:1',
                         templateId: id,
                       })
                     }
@@ -206,7 +176,7 @@ export function CreateNewWorkbench({ onStart }: CreateNewWorkbenchProps) {
             <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
               <div>
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <h2 className="font-display text-lg font-bold text-on-surface">Create Product Images</h2>
+                  <h2 className="font-display text-lg font-bold text-on-surface">Image-2 Product Presets</h2>
                   <span className="text-xs text-on-surface-variant">{productCategories.length} presets</span>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -273,37 +243,25 @@ export function CreateNewWorkbench({ onStart }: CreateNewWorkbenchProps) {
 
                 <section className="rounded-lg border border-lime/25 bg-lime/10 p-4">
                   <div className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-lime text-on-lime">
-                    <Shirt size={18} aria-hidden="true" />
+                    <WandSparkles size={18} aria-hidden="true" />
                   </div>
-                  <h2 className="mt-4 font-display text-lg font-bold text-on-surface">Create New Human</h2>
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      className="h-10 rounded-md bg-white/[0.08] text-sm font-semibold text-on-surface hover:bg-white/[0.12]"
-                      onClick={() =>
-                        startFromPreset({
-                          projectName: 'Human Builder',
-                          prompt:
-                            'Build a studio-ready human model for product photography with clean styling, natural pose, and ecommerce campaign lighting.',
-                          aspectRatio: '4:5',
-                        })
-                      }
-                    >
-                      Build
-                    </button>
+                  <h2 className="mt-4 font-display text-lg font-bold text-on-surface">Image-2 Only</h2>
+                  <p className="mt-2 text-xs leading-5 text-on-surface-variant">
+                    当前版本只开放上传参考图后的图片生成、精修和营销图扩展。
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 gap-2">
                     <button
                       type="button"
                       className="h-10 rounded-md bg-lime text-sm font-bold text-on-lime hover:bg-[#f0ff9c]"
                       onClick={() =>
                         startFromPreset({
-                          projectName: 'Train Human Model',
-                          prompt:
-                            'Train a custom model reference for consistent on-model product photography and campaign-ready images.',
-                          aspectRatio: '4:5',
+                          projectName: 'Image-2 Product Shot',
+                          prompt: templateCatalog[0]?.prompt ?? '',
+                          aspectRatio: '1:1',
                         })
                       }
                     >
-                      Train
+                      Start Image-2
                     </button>
                   </div>
                 </section>
