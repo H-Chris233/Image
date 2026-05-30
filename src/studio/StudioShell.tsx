@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { Editor } from 'tldraw';
-import { FileDown, MousePointer2, Plus, Redo2, Type, Undo2 } from 'lucide-react';
+import { ArrowLeft, FileDown, MousePointer2, Plus, Redo2, Type, Undo2 } from 'lucide-react';
 import { StudioCanvas } from './canvas/StudioCanvas';
 import {
   applyGenerationResult,
@@ -19,13 +19,22 @@ import { TemplatesPanel } from './panels/TemplatesPanel';
 import { createInitialStudioState, createStudioId, studioReducer } from './state/studioReducer';
 import type { StudioAsset, StudioLayer } from './state/studioTypes';
 import { templateCatalog, type StudioTemplate } from './templates/templateCatalog';
+import type { StudioStartPreset } from './create-new/CreateNewWorkbench';
 
 type LeftPanelMode = 'assets' | 'templates';
 
-export function StudioShell() {
+export function StudioShell({
+  initialPreset,
+  onBackToCreate,
+}: {
+  initialPreset?: StudioStartPreset;
+  onBackToCreate?: () => void;
+}) {
   const [state, dispatch] = useReducer(studioReducer, undefined, createInitialStudioState);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [leftPanelMode, setLeftPanelMode] = useState<LeftPanelMode>('assets');
+  const appliedInitialPresetRef = useRef(false);
+  const insertedInitialPromptRef = useRef(false);
   const project = state.project;
   const activeArtboard = useMemo(
     () => project.artboards.find((artboard) => artboard.id === project.activeArtboardId) ?? project.artboards[0],
@@ -37,6 +46,28 @@ export function StudioShell() {
     if (!editor || !activeArtboard) return;
     ensureTldrawPage(editor, activeArtboard);
   }, [activeArtboard, editor]);
+
+  useEffect(() => {
+    if (!initialPreset || appliedInitialPresetRef.current) return;
+    appliedInitialPresetRef.current = true;
+
+    dispatch({ type: 'project.rename', name: initialPreset.projectName });
+    dispatch({
+      type: 'generation.settings.update',
+      settings: {
+        sceneId: initialPreset.templateId ?? null,
+        prompt: initialPreset.prompt,
+        aspectRatio: initialPreset.aspectRatio,
+      },
+    });
+  }, [initialPreset]);
+
+  useEffect(() => {
+    if (!editor || !activeArtboard || !initialPreset?.prompt || insertedInitialPromptRef.current) return;
+    insertedInitialPromptRef.current = true;
+    ensureTldrawPage(editor, activeArtboard);
+    insertPromptBlockOnCanvas(editor, initialPreset.prompt);
+  }, [activeArtboard, editor, initialPreset]);
 
   function registerInsertedAsset(asset: StudioAsset) {
     if (!editor || !activeArtboard) return;
@@ -131,10 +162,20 @@ export function StudioShell() {
   }
 
   return (
-    <div className="h-[calc(100dvh-8rem)] overflow-hidden bg-background text-on-surface lg:h-[calc(100vh-4rem)]">
+    <div className="h-screen overflow-hidden bg-background text-on-surface">
       <div className="grid h-full grid-rows-[48px_minmax(0,1fr)_68px]">
         <header className="flex min-w-0 items-center justify-between gap-2 border-b border-white/[0.08] bg-[#111110] px-3">
           <div className="min-w-0 flex-1">
+            {onBackToCreate ? (
+              <button
+                type="button"
+                title="Back to Create New"
+                className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.08] text-on-surface-variant hover:bg-white/[0.06]"
+                onClick={onBackToCreate}
+              >
+                <ArrowLeft size={16} aria-hidden="true" />
+              </button>
+            ) : null}
             <span className="text-sm font-bold text-lime">AetherGenix</span>
             <span className="ml-2 hidden truncate text-sm text-on-surface-variant sm:inline">/ {project.name}</span>
           </div>

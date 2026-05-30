@@ -1,4 +1,4 @@
-import { Navigate, Routes, Route } from 'react-router-dom';
+import { Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import TopNavBar from './components/TopNavBar';
 import SideNavBar from './components/SideNavBar';
 import BottomTabBar from './components/BottomTabBar';
@@ -27,11 +27,14 @@ function RootRedirect() {
 }
 
 export default function App() {
+  const location = useLocation();
+  const studioMode = location.pathname.startsWith('/studio');
+
   return (
     <div className="min-h-screen bg-background text-on-background overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
-      <TopNavBar />
-      <SideNavBar />
-      <main className="pt-16 lg:pl-60 pb-16 lg:pb-0">
+      {studioMode ? null : <TopNavBar />}
+      {studioMode ? null : <SideNavBar />}
+      <main className={studioMode ? 'min-h-screen' : 'pt-16 lg:pl-60 pb-16 lg:pb-0'}>
         <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/explore" element={<Explore />} />
@@ -51,11 +54,11 @@ export default function App() {
             <Route path="/ecommerce" element={<Navigate to="/create" replace />} />
         </Routes>
       </main>
-      <BottomTabBar />
-      <AnnouncementModal />
-      <AuthModal />
-      <TaskDrawer />
-      <TaskToastStack />
+      {studioMode ? null : <BottomTabBar />}
+      {studioMode ? null : <AnnouncementModal />}
+      {studioMode ? null : <AuthModal />}
+      {studioMode ? null : <TaskDrawer />}
+      {studioMode ? null : <TaskToastStack />}
     </div>
   );
 }
