@@ -19,7 +19,7 @@ import {
   WandSparkles,
   Zap,
 } from 'lucide-react';
-import { generateEcommerceImages, getImageTask, type ImageTask } from '../../api';
+import { generateEcommerceImages, getHistory, getImageTask, type HistoryItem, type ImageTask } from '../../api';
 import { providerImageSize } from '../../imageOptions';
 import type { StudioStartPreset } from '../create-new/CreateNewWorkbench';
 import {
@@ -38,6 +38,15 @@ type GeneratedImage = {
   src: string;
   scenarioTitle: string;
   prompt: string;
+};
+
+type UserImage = {
+  id: string;
+  src: string;
+  title: string;
+  subtitle: string;
+  prompt?: string;
+  source: 'current-result' | 'history-output' | 'history-input';
 };
 
 const scenarioIcons: Record<string, typeof Sparkles> = {
@@ -66,6 +75,63 @@ async function waitForTaskResult(taskId: string) {
   return getImageTask(taskId);
 }
 
+function historyImageUrl(item: HistoryItem) {
+  return item.image_url || item.image_path || '';
+}
+
+function historyInputUrl(item: HistoryItem) {
+  return item.input_image_url || item.input_image_path || '';
+}
+
+function uniqueHistoryImages(items: HistoryItem[]): UserImage[] {
+  const seen = new Set<string>();
+  const images: UserImage[] = [];
+
+  for (const item of items) {
+    const outputUrl = historyImageUrl(item);
+    if (outputUrl && !seen.has(outputUrl)) {
+      seen.add(outputUrl);
+      images.push({
+        id: `history-output-${item.id}`,
+        src: outputUrl,
+        title: item.task_prompt || item.prompt || 'Generated image',
+        subtitle: 'History output',
+        prompt: item.prompt || item.task_prompt || '',
+        source: 'history-output',
+      });
+    }
+
+    const inputUrl = historyInputUrl(item);
+    if (inputUrl && !seen.has(inputUrl)) {
+      seen.add(inputUrl);
+      images.push({
+        id: `history-input-${item.id}`,
+        src: inputUrl,
+        title: 'Input image',
+        subtitle: 'History input',
+        prompt: item.prompt || item.task_prompt || '',
+        source: 'history-input',
+      });
+    }
+  }
+
+  return images.slice(0, 24);
+}
+
+function extensionFromMime(mimeType: string) {
+  if (mimeType.includes('jpeg')) return 'jpg';
+  if (mimeType.includes('webp')) return 'webp';
+  return 'png';
+}
+
+async function fileFromImageUrl(src: string, name: string) {
+  const response = await fetch(src, { credentials: 'include' });
+  if (!response.ok) throw new Error('无法读取历史图片，请重新上传或稍后再试');
+  const blob = await response.blob();
+  const mimeType = blob.type || 'image/png';
+  return new File([blob], `${name}.${extensionFromMime(mimeType)}`, { type: mimeType });
+}
+
 export function ImageEditorShell({
   initialPreset,
   onBackToCreate,
@@ -83,9 +149,27 @@ export function ImageEditorShell({
   const [previewUrl, setPreviewUrl] = useState('');
   const [dragging, setDragging] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [importingImageId, setImportingImageId] = useState('');
   const [error, setError] = useState('');
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
+  const [historyImages, setHistoryImages] = useState<UserImage[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
   const scenarioGroups = useMemo(() => groupedScenarios(), []);
+  const userImages = useMemo<UserImage[]>(
+    () => [
+      ...generatedImages.map((image) => ({
+        id: `current-${image.id}`,
+        src: image.src,
+        title: image.scenarioTitle,
+        subtitle: 'Current result',
+        prompt: image.prompt,
+        source: 'current-result' as const,
+      })),
+      ...historyImages,
+    ],
+    [generatedImages, historyImages],
+  );
 
   useEffect(() => {
     setActiveScenario(initialScenario);
@@ -103,6 +187,31 @@ export function ImageEditorShell({
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [productImage]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHistoryImages() {
+      setHistoryLoading(true);
+      setHistoryError('');
+      try {
+        const response = await getHistory({ limit: 36, ecommerce_only: true });
+        if (!cancelled) setHistoryImages(uniqueHistoryImages(response.items));
+      } catch {
+        if (!cancelled) {
+          setHistoryImages([]);
+          setHistoryError('历史图片暂时不可用');
+        }
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    }
+
+    void loadHistoryImages();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function selectScenario(scenario: Image2Scenario) {
     setActiveScenario(scenario);
@@ -131,6 +240,20 @@ export function ImageEditorShell({
     setDragging(false);
     const file = event.dataTransfer.files[0];
     if (file) applyFile(file);
+  }
+
+  async function useImageAsInput(image: UserImage) {
+    setImportingImageId(image.id);
+    setError('');
+    try {
+      const file = await fileFromImageUrl(image.src, image.title.replace(/[^a-z0-9]+/gi, '-').slice(0, 40) || 'history-image');
+      setProductImage(file);
+      if (image.prompt) setPromptBrief(image.prompt.slice(0, 600));
+    } catch (event) {
+      setError(event instanceof Error ? event.message : '无法使用这张历史图片');
+    } finally {
+      setImportingImageId('');
+    }
   }
 
   async function submitScenario() {
@@ -330,24 +453,37 @@ export function ImageEditorShell({
 
             <section>
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-display text-xl font-bold text-[#8f9bb0]">Your images</h2>
-                {generatedImages.length ? <span className="text-xs text-[#8f897f]">{generatedImages.length} outputs</span> : null}
+                <div>
+                  <h2 className="font-display text-xl font-bold text-[#8f9bb0]">Your images</h2>
+                  <p className="mt-1 text-xs text-[#6f6961]">选择历史图或当前结果作为下一轮输入。</p>
+                </div>
+                {historyLoading ? (
+                  <span className="inline-flex items-center gap-2 text-xs text-[#8f897f]">
+                    <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+                    Loading history
+                  </span>
+                ) : (
+                  <span className="text-xs text-[#8f897f]">{userImages.length} available</span>
+                )}
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {generatedImages.length ? (
-                  generatedImages.slice(0, 5).map((image) => (
-                    <a
+                {userImages.length ? (
+                  userImages.slice(0, 8).map((image) => (
+                    <button
                       key={image.id}
-                      href={image.src}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group relative block aspect-square overflow-hidden rounded-lg border border-white/[0.08] bg-[#171719]"
+                      type="button"
+                      onClick={() => void useImageAsInput(image)}
+                      className="group relative block aspect-square overflow-hidden rounded-lg border border-white/[0.08] bg-[#171719] text-left hover:border-lime/60"
                     >
-                      <img src={image.src} alt={image.scenarioTitle} className="h-full w-full object-cover" />
-                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-xs font-semibold opacity-0 transition group-hover:opacity-100">
-                        {image.scenarioTitle}
+                      <img src={image.src} alt={image.title} className="h-full w-full object-cover" />
+                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-3">
+                        <span className="block truncate text-xs font-semibold text-[#f4f0ea]">{image.title}</span>
+                        <span className="mt-1 flex items-center justify-between gap-2 text-[11px] text-lime">
+                          <span>{image.subtitle}</span>
+                          <span>{importingImageId === image.id ? 'Importing...' : 'Use as input'}</span>
+                        </span>
                       </span>
-                    </a>
+                    </button>
                   ))
                 ) : (
                   <>
@@ -362,6 +498,7 @@ export function ImageEditorShell({
                   </>
                 )}
               </div>
+              {historyError ? <p className="mt-3 text-xs text-[#8f897f]">{historyError}</p> : null}
             </section>
 
             <section>
@@ -388,19 +525,19 @@ export function ImageEditorShell({
             Past Generations
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            {generatedImages.length ? (
+            {userImages.length ? (
               <div className="grid gap-2">
-                {generatedImages.map((image) => (
+                {userImages.map((image) => (
                   <button
                     key={image.id}
                     type="button"
                     className="grid grid-cols-[56px_minmax(0,1fr)] gap-3 rounded-md p-2 text-left hover:bg-white/[0.05]"
-                    onClick={() => setPromptBrief(image.prompt.slice(0, 600))}
+                    onClick={() => void useImageAsInput(image)}
                   >
                     <img src={image.src} alt="" className="h-14 w-14 rounded-md object-cover" />
                     <span className="min-w-0 self-center">
-                      <span className="block truncate text-xs font-semibold">{image.scenarioTitle}</span>
-                      <span className="mt-1 block truncate text-[11px] text-[#8f897f]">Use prompt</span>
+                      <span className="block truncate text-xs font-semibold">{image.title}</span>
+                      <span className="mt-1 block truncate text-[11px] text-[#8f897f]">Use as input</span>
                     </span>
                   </button>
                 ))}
