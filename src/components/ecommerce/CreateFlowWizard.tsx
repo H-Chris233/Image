@@ -253,7 +253,7 @@ function UploadStep({
         <div className="mb-5">
           <h2 className="font-display text-xl font-semibold text-on-surface">上传商品图</h2>
           <p className="mt-1 text-sm leading-6 text-on-surface-variant">
-            {templateTitle ? `已选模板「${templateTitle}」，` : ''}建议上传白底图，主体清晰（v1 暂只支持单图）
+            {templateTitle ? `已选场景「${templateTitle}」，` : ''}建议上传白底图，主体清晰（目前支持单张商品图）
           </p>
         </div>
 
@@ -305,7 +305,7 @@ function UploadStep({
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
           <Button type="button" variant="ghost" iconStart={<ArrowLeft aria-hidden="true" size={14} />} onClick={onBack}>
-            返回选模板
+            返回选场景
           </Button>
           <Button
             type="button"

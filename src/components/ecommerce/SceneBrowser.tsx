@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { ImagePlus } from 'lucide-react';
 import { Pressable, Surface } from '../design-system';
-import { CUSTOMERS, scenesOf, type SceneTemplate } from './sceneCatalog';
+import { CUSTOMERS, POPULAR_CUSTOMER, POPULAR_SCENES, scenesOf, type SceneTemplate } from './sceneCatalog';
 
 interface Props {
   onPick: (scene: SceneTemplate) => void;
 }
 
-// 两级浏览：左栏客户类型 → 右栏该客户【专属】场景卡。点卡即选中该场景，进入上传。
+// 两级浏览：左栏生意类型 → 右栏该类型【专属】场景卡。点卡即选中该场景，进入上传。
 export function SceneBrowser({ onPick }: Props) {
-  const [activeCustomer, setActiveCustomer] = useState<string>(CUSTOMERS[0].key);
-  const scenes = scenesOf(activeCustomer);
+  const navCustomers = [POPULAR_CUSTOMER, ...CUSTOMERS];
+  const [activeCustomer, setActiveCustomer] = useState<string>(POPULAR_CUSTOMER.key);
+  const scenes = activeCustomer === POPULAR_CUSTOMER.key ? POPULAR_SCENES : scenesOf(activeCustomer);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -20,8 +21,8 @@ export function SceneBrowser({ onPick }: Props) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <nav aria-label="客户类型" className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-          {CUSTOMERS.map((customer) => {
+        <nav aria-label="生意类型" className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+          {navCustomers.map((customer) => {
             const active = customer.key === activeCustomer;
             return (
               <button

@@ -114,6 +114,14 @@ export default function Create() {
     void completeRef.current?.(result);
   }, [location.state, navigate]);
 
+  // 进入创作页直接进向导第 1 步（选场景），省掉中间介绍页那一次多余点击。
+  // 携带 Explore 直生成结果时不自动打开（那条路径会直接生成并跳走）。
+  useEffect(() => {
+    const incoming = (location.state as { wizardResult?: WizardResult } | null)?.wizardResult;
+    if (!incoming) setShowWizard(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function runGeneration(result: WizardResult) {
     if (!viewer?.authenticated) {
       openAuthModal('login', '/create', 'generate');
@@ -226,7 +234,7 @@ export default function Create() {
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E3FF74]">Create</p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-[#f0ede8] sm:text-3xl">创建商品图</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">
-            一个向导走完：选类目、传商品图、描述场景，点生成即可，结果实时显示在下方。
+            先选场景，再传商品图，最后微调出图——几步拿到能用的商品图，结果实时显示在下方。
           </p>
         </div>
         {hasRuns ? (
@@ -260,9 +268,9 @@ export default function Create() {
 
 function CreateHero({ loading, hasPrompt, onStart }: { loading: boolean; hasPrompt: boolean; onStart: () => void }) {
   const steps = [
-    { icon: PackagePlus, title: '选择模板', desc: '按客户类型与场景挑专家模板' },
+    { icon: PackagePlus, title: '选择场景', desc: '按生意类型和场景选一个' },
     { icon: CloudUpload, title: '上传商品图', desc: 'PNG / JPEG / WEBP，白底图更稳' },
-    { icon: Wand2, title: '微调并生成', desc: '调比例与数量，按模板风格一键出图' },
+    { icon: Wand2, title: '微调并生成', desc: '调比例与数量，一键出图' },
   ];
 
   return (
@@ -272,9 +280,9 @@ function CreateHero({ loading, hasPrompt, onStart }: { loading: boolean; hasProm
           <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-[#E3FF74]/10 text-[#E3FF74]">
             <Sparkles size={22} />
           </div>
-          <h2 className="mt-6 text-2xl font-bold tracking-tight text-[#f0ede8] sm:text-3xl">用模板风格生成商品图</h2>
+          <h2 className="mt-6 text-2xl font-bold tracking-tight text-[#f0ede8] sm:text-3xl">按场景一键生成商品图</h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-on-surface-variant">
-            先按客户类型和场景挑一个专家模板，再上传商品图，按模板风格直接生成可继续编辑的结果。
+            先按生意类型和场景选一个，再上传商品图，直接生成可继续编辑的结果。
           </p>
           {hasPrompt ? (
             <div className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#E3FF74]/25 bg-[#E3FF74]/[0.06] px-3 py-2 text-xs font-semibold text-[#E3FF74]">

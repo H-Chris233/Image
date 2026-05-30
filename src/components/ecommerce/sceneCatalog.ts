@@ -249,6 +249,24 @@ const NON_ECOMMERCE_SCENES: SceneTemplate[] = [
 
 export const SCENE_CATALOG: SceneTemplate[] = [...ECOMMERCE_SCENES, ...NON_ECOMMERCE_SCENES];
 
+// 兜底入口「最常用」：跨类精选高频场景，给不确定自己属于哪类的用户一个起点（不并入 5 类真实客户，避免影响其它界面）。
+export const POPULAR_CUSTOMER: CustomerDef = { key: 'popular', label: '最常用', tagline: '不确定从这开始就选这里' };
+
+const POPULAR_PICKS: ReadonlyArray<readonly [string, string]> = [
+  ['cross_border_ecommerce', 'white_bg'],
+  ['domestic_ecommerce', 'white_bg'],
+  ['cross_border_ecommerce', 'lifestyle'],
+  ['physical_store_fnb', 'dish_hero'],
+  ['domestic_ecommerce', 'poster'],
+  ['cross_border_ecommerce', 'on_model'],
+];
+
+export const POPULAR_SCENES: SceneTemplate[] = POPULAR_PICKS
+  .map(([customerKey, sceneKey]) =>
+    SCENE_CATALOG.find((scene) => scene.customerKey === customerKey && scene.sceneKey === sceneKey),
+  )
+  .filter((scene): scene is SceneTemplate => Boolean(scene));
+
 export function customerLabel(key: string): string {
   return CUSTOMERS.find((customer) => customer.key === key)?.label ?? key;
 }
