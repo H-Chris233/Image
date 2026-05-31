@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Copy, Download, Heart, ImagePlus, Loader2, RotateCw, Sparkles } from 'lucide-react';
 import { listImageTasks } from '../../api';
 import type { ImageTask } from '../../api';
-import { Button, StatusPill, Surface, SurfaceState } from '../../components/design-system';
+import { Button, SectionHeader, StatusPill, Surface, SurfaceState } from '../../components/design-system';
 import type { StudioLocation } from '../app/studioLocation';
 import { useHistoryImages } from '../history/useHistoryImages';
 import type { UserImage } from '../history/historyTypes';
@@ -117,19 +117,19 @@ export function AssetLibraryWorkspace({
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-4">
       <Surface tone="subtle" padding="md">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="min-w-0">
-            <div className="text-xs font-bold text-on-surface-variant">资产库</div>
-            <h2 className="mt-1 font-display text-xl font-bold text-on-surface">{titleForTab(location.t2)}</h2>
-          </div>
-          <StatusPill tone={loading ? 'running' : error ? 'error' : 'neutral'}>
-            {loading ? '同步中' : error ? '读取失败' : `${visibleAssets.length} 项`}
-          </StatusPill>
-        </div>
+        <SectionHeader
+          eyebrow="资产库"
+          title={titleForTab(location.t2)}
+          status={
+            <StatusPill tone={loading ? 'running' : error ? 'error' : 'neutral'}>
+              {loading ? '同步中' : error ? '读取失败' : `${visibleAssets.length} 项`}
+            </StatusPill>
+          }
+        />
       </Surface>
 
       {visibleAssets.length ? (
-        <div className="grid flex-1 content-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid flex-1 content-start gap-3 @2xl:grid-cols-2 @4xl:grid-cols-3 @6xl:grid-cols-4">
           {visibleAssets.map((asset) => (
             <article key={asset.id} className="ds-motion-card overflow-hidden rounded-lg border border-white/[0.08] bg-surface shadow-[0_8px_32px_rgba(0,0,0,0.24)]">
               <div className="relative aspect-[4/3] bg-black/25">

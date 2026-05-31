@@ -4,7 +4,7 @@ import { AccountInfo, formatBalance, getAccount } from '../../api';
 import { useAuth } from '../../auth';
 import { useAuthModal } from '../../authModal';
 import AvatarBadge from '../../components/AvatarBadge';
-import { Button, SelectControl, SkeletonBlock, StatusPill, Surface, SurfaceState } from '../../components/design-system';
+import { Button, SectionHeader, SelectControl, SkeletonBlock, StatusPill, Surface, SurfaceState } from '../../components/design-system';
 import { CUSTOMERS } from '../../components/ecommerce/sceneCatalog';
 import { CREATE_TEMPLATES } from '../create/createTemplates';
 import { STUDIO_ASPECT_RATIO_OPTIONS, STUDIO_COUNT_OPTIONS, useStudioPreferences } from '../preferences/useStudioPreferences';
@@ -105,7 +105,7 @@ function AccountSummary({
 
   return (
     <Surface tone="lime" padding="md">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-4 @3xl:flex-row @3xl:items-start @3xl:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <AvatarBadge
             className="h-12 w-12 shrink-0"
@@ -123,14 +123,14 @@ function AccountSummary({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
+        <div className="grid gap-3 @md:grid-cols-3 @3xl:min-w-[420px]">
           <AccountMetric label="当前额度" value={balanceValue} icon={<Wallet size={15} />} tone="lime" loading={loading} error={loadError} />
           <AccountMetric label="成功任务" value={account?.stats.succeeded ?? 0} loading={loading} error={loadError} />
           <AccountMetric label="重绘次数" value={account?.stats.edits ?? 0} loading={loading} error={loadError} />
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] pt-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/[0.08] pt-3">
         <StatusPill tone={balanceTone}>
           {loading ? <RefreshCw className="animate-spin" size={13} /> : loadError || !balanceReady ? <AlertCircle size={13} /> : <CheckCircle2 size={13} />}
           余额{balanceStatus}
@@ -199,17 +199,18 @@ function PreferencesPanel() {
 
   return (
     <Surface tone="default" padding="md">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="text-xs font-bold text-on-surface-variant">偏好</div>
-          <h2 className="mt-1 font-display text-xl font-bold text-on-surface">默认生成参数</h2>
-        </div>
-        <Button variant="ghost" size="sm" onClick={resetPreferences}>
-          恢复默认
-        </Button>
-      </div>
+      <SectionHeader
+        className="mb-4"
+        eyebrow="偏好"
+        title="默认生成参数"
+        action={
+          <Button variant="ghost" size="sm" onClick={resetPreferences}>
+            恢复默认
+          </Button>
+        }
+      />
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 @2xl:grid-cols-2">
         <PreferenceSelect label="默认比例" value={preferences.aspectRatio} options={STUDIO_ASPECT_RATIO_OPTIONS} onChange={(value) => updatePreferences({ aspectRatio: value })} />
         <PreferenceSelect label="默认数量" value={String(preferences.count)} options={STUDIO_COUNT_OPTIONS.map(String)} onChange={(value) => updatePreferences({ count: Number(value) })} />
         <PreferenceSelect

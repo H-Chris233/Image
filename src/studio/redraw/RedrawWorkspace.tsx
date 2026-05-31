@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { ArrowUp, CheckCircle2, ImageIcon, Loader2, Sparkles } from 'lucide-react';
 import { generateEcommerceImages } from '../../api';
-import { Button, SelectControl, StatusPill, Surface, SurfaceState, TextareaControl, WorkbenchCard } from '../../components/design-system';
+import { Button, SectionHeader, SelectControl, StatusPill, Surface, SurfaceState, TextareaControl, WorkbenchCard } from '../../components/design-system';
 import { providerImageSize } from '../../imageOptions';
 import { useTasks } from '../../tasks';
 import type { StudioLocation } from '../app/studioLocation';
@@ -212,18 +212,19 @@ export function RedrawWorkspace({
 
   return (
     <section className="grid gap-4 @3xl:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="space-y-4">
+      <div className="@container space-y-4">
         <Surface tone="subtle" padding="md">
-          <div className="mb-3 flex flex-wrap items-center gap-3">
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-on-surface-variant">重绘场景</div>
-              <h2 className="mt-1 font-display text-xl font-bold text-on-surface">{visibleGroup ?? '选择 Image-2 操作'}</h2>
-            </div>
-            <StatusPill tone={status === 'succeeded' ? 'success' : busy ? 'running' : status === 'failed' ? 'error' : 'neutral'}>
-              {status === 'importing' ? '导入中' : status === 'submitting' ? '提交中' : status === 'polling' ? '生成中' : status === 'succeeded' ? '已生成' : status === 'failed' ? '需要处理' : '准备'}
-            </StatusPill>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
+          <SectionHeader
+            className="mb-3"
+            eyebrow="重绘场景"
+            title={visibleGroup ?? '选择 Image-2 操作'}
+            status={
+              <StatusPill tone={status === 'succeeded' ? 'success' : busy ? 'running' : status === 'failed' ? 'error' : 'neutral'}>
+                {status === 'importing' ? '导入中' : status === 'submitting' ? '提交中' : status === 'polling' ? '生成中' : status === 'succeeded' ? '已生成' : status === 'failed' ? '需要处理' : '准备'}
+              </StatusPill>
+            }
+          />
+          <div className="grid gap-3 @xl:grid-cols-2">
             {visibleScenarios.map((scenario, index) => (
               <WorkbenchCard
                 key={scenario.id}
@@ -240,7 +241,7 @@ export function RedrawWorkspace({
         </Surface>
 
         <Surface tone="default" padding="md">
-          <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+          <div className="grid gap-4 @2xl:grid-cols-[260px_minmax(0,1fr)]">
             <ImageDropzone
               label={activeScenario.inputLabel}
               dragging={dragging}
@@ -261,7 +262,7 @@ export function RedrawWorkspace({
                 placeholder={activeScenario.userPromptPlaceholder}
                 onChange={(event) => setPromptBrief(event.target.value.slice(0, 600))}
               />
-              <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+              <div className="grid gap-3 @md:grid-cols-[1fr_1fr_1fr_auto] @md:items-end">
                 <label className="grid gap-1.5">
                   <span className="text-xs font-semibold text-on-surface-variant">比例</span>
                   <SelectControl value={aspectRatio} onChange={(event) => setAspectRatio(event.target.value)}>
@@ -282,13 +283,13 @@ export function RedrawWorkspace({
                 </label>
                 <Button
                   variant="primary"
-                  className="h-11 sm:w-14 sm:px-0"
+                  className="h-11 @md:w-14 @md:px-0"
                   iconStart={busy ? <Loader2 className="animate-spin" size={17} /> : <ArrowUp size={17} />}
                   disabled={busy}
                   onClick={submitScenario}
                   aria-label="生成重绘结果"
                 >
-                  <span className="sm:sr-only">生成</span>
+                  <span className="@md:sr-only">生成</span>
                 </Button>
               </div>
               {error ? <p className="text-sm leading-6 text-error">{error}</p> : null}
@@ -302,7 +303,7 @@ export function RedrawWorkspace({
               <CheckCircle2 size={16} className="text-lime" />
               重绘结果
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 @md:grid-cols-2">
               {resultUrls.map((url, index) => (
                 <button
                   key={url}

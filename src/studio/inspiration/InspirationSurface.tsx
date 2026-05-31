@@ -41,7 +41,7 @@ export function InspirationSurface() {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] overflow-hidden bg-background text-on-surface">
+    <div className="h-[calc(100vh_-_var(--studio-topnav-h))] overflow-hidden bg-background text-on-surface">
       <div className="flex h-full min-h-0">
         <LeftNav location={leftNavLocation} onChange={handleNavChange} />
         <InspirationWorkspace />

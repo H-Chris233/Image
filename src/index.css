@@ -114,6 +114,7 @@
   --ag-lime-dim: #c8e84a;
   --ag-orange: #fe6e00;
   --ag-charcoal: #1a1917;
+  --studio-topnav-h: 4rem;
   --ag-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ag-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ag-glow-lime:   0 0 16px rgba(227,255,116,0.3), 0 0 48px rgba(227,255,116,0.1);
