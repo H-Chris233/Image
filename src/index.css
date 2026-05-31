@@ -137,6 +137,16 @@
   50% { opacity: 1; }
 }
 
+@keyframes ds-stage-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ds-panel-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 /* ─── Components ─── */
 /* btn-* 必须在 components 层，让 h-11/h-12 等 utility 高度类能正确覆盖默认 2.5rem。 */
 @layer components {
@@ -245,6 +255,433 @@
   }
   .animate-glow-breathe {
     animation: glow-breathe 3s ease-in-out infinite;
+  }
+
+  .ds-stage-enter {
+    animation: ds-stage-in 0.28s var(--ag-ease-out);
+  }
+
+  .ds-panel-enter {
+    animation: ds-panel-in 0.24s var(--ag-ease-out);
+  }
+
+  .ds-motion-card {
+    transition:
+      border-color 0.18s var(--ag-ease-out),
+      background-color 0.18s var(--ag-ease-out),
+      box-shadow 0.18s var(--ag-ease-out),
+      transform 0.18s var(--ag-ease-out);
+  }
+
+  .ds-motion-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 48px rgba(0,0,0,0.25);
+  }
+
+  .ds-motion-press {
+    transition:
+      background-color 0.16s var(--ag-ease-out),
+      color 0.16s var(--ag-ease-out),
+      border-color 0.16s var(--ag-ease-out),
+      transform 0.16s var(--ag-ease-out);
+  }
+
+  .ds-motion-press:hover {
+    transform: translateY(-1px);
+  }
+
+  .ds-motion-tree-shell {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012)),
+      #111110;
+  }
+
+  .ds-motion-tree {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .ds-motion-tree-section {
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 0.75rem;
+    background-color: rgba(255,255,255,0.024);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.025) inset;
+    overflow: hidden;
+    transition:
+      border-color 0.22s var(--ag-ease-out),
+      background-color 0.22s var(--ag-ease-out),
+      box-shadow 0.22s var(--ag-ease-out),
+      transform 0.22s var(--ag-ease-out);
+  }
+
+  .ds-motion-tree-section[data-expanded="true"] {
+    border-color: rgba(227,255,116,0.24);
+    background:
+      linear-gradient(180deg, rgba(227,255,116,0.055), rgba(255,255,255,0.018)),
+      rgba(255,255,255,0.026);
+    box-shadow:
+      0 18px 42px rgba(0,0,0,0.22),
+      0 0 0 1px rgba(227,255,116,0.035) inset;
+  }
+
+  .ds-motion-tree-trigger {
+    min-height: 3.125rem;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    color: #aaa49a;
+    transition:
+      color 0.18s var(--ag-ease-out),
+      background-color 0.18s var(--ag-ease-out);
+  }
+
+  .ds-motion-tree-trigger:hover,
+  .ds-motion-tree-trigger[aria-expanded="true"] {
+    color: #f4f0ea;
+  }
+
+  .ds-motion-tree-icon {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background-color: rgba(255,255,255,0.06);
+    color: #aaa49a;
+    transform-origin: center;
+    transition:
+      background-color 0.22s var(--ag-ease-out),
+      color 0.22s var(--ag-ease-out),
+      transform 0.22s var(--ag-ease-out);
+  }
+
+  .ds-motion-tree-trigger[aria-expanded="true"] .ds-motion-tree-icon {
+    background-color: #E3FF74;
+    color: #1a1917;
+    transform: scale(1.04);
+  }
+
+  .ds-motion-tree-chev {
+    color: #6f6961;
+    transition:
+      color 0.2s var(--ag-ease-out),
+      transform 0.2s var(--ag-ease-out);
+  }
+
+  .ds-motion-tree-trigger[aria-expanded="true"] .ds-motion-tree-chev {
+    color: #E3FF74;
+    transform: rotate(180deg);
+  }
+
+  .ds-motion-tree-children {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transform: translateY(-0.25rem);
+    transition:
+      grid-template-rows 0.26s var(--ag-ease-out),
+      opacity 0.18s var(--ag-ease-out),
+      transform 0.24s var(--ag-ease-out),
+      border-color 0.2s var(--ag-ease-out);
+    border-top: 1px solid transparent;
+  }
+
+  .ds-motion-tree-section[data-expanded="true"] .ds-motion-tree-children {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transform: translateY(0);
+    border-top-color: rgba(255,255,255,0.06);
+  }
+
+  .ds-motion-tree-children-inner {
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 0.5rem;
+    transition: padding 0.2s var(--ag-ease-out);
+  }
+
+  .ds-motion-tree-section[data-expanded="true"] .ds-motion-tree-children-inner {
+    padding-block: 0.5rem;
+  }
+
+  .ds-motion-tree-child {
+    width: 100%;
+    display: block;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    color: #8f897f;
+    opacity: 0;
+    transform: translateY(-0.25rem);
+    transition:
+      background-color 0.16s var(--ag-ease-out),
+      color 0.16s var(--ag-ease-out),
+      opacity 0.2s var(--ag-ease-out),
+      transform 0.2s var(--ag-ease-out);
+    transition-delay: 0ms;
+  }
+
+  .ds-motion-tree-section[data-expanded="true"] .ds-motion-tree-child {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: calc(var(--motion-tree-child-index, 0) * 18ms + 70ms);
+  }
+
+  .ds-motion-tree-child:hover {
+    background-color: rgba(255,255,255,0.05);
+    color: #f4f0ea;
+  }
+
+  .ds-motion-tree-child[aria-current="page"] {
+    background-color: rgba(227,255,116,0.11);
+    color: #E3FF74;
+  }
+
+  .ds-motion-tree-child-description {
+    color: #6f6961;
+  }
+
+  .ds-motion-tree-child[aria-current="page"] .ds-motion-tree-child-description {
+    color: rgba(227,255,116,0.58);
+  }
+
+  .ds-workbench-card {
+    min-height: 10rem;
+    display: block;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 0.5rem;
+    background-color: var(--color-surface);
+    padding: 1rem;
+    text-align: left;
+    animation-delay: calc(var(--workbench-card-index, 0) * 35ms);
+  }
+
+  .ds-workbench-card:hover {
+    border-color: rgba(227,255,116,0.6);
+    background-color: var(--color-surface-container);
+  }
+
+  .ds-workbench-card:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(227,255,116,0.35);
+  }
+
+  .ds-workbench-card[data-active="true"] {
+    border-color: rgba(227,255,116,0.7);
+    background-color: rgba(227,255,116,0.1);
+  }
+
+  .ds-workbench-card-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background-color: rgba(227,255,116,0.1);
+    color: var(--color-lime);
+  }
+
+  .ds-workbench-card-title {
+    margin-top: 1.25rem;
+    display: block;
+    color: var(--color-on-surface);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+  }
+
+  .ds-workbench-card-description {
+    margin-top: 0.5rem;
+    display: block;
+    color: var(--color-on-surface-variant);
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+  }
+
+  .ds-workbench-card-action {
+    margin-top: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-on-surface-variant);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 700;
+  }
+
+  .ds-workbench-detail-panel,
+  .ds-workbench-composer-panel {
+    border-radius: 0.5rem;
+    padding: 1rem;
+  }
+
+  .ds-workbench-detail-panel {
+    border: 1px solid rgba(255,255,255,0.08);
+    background-color: var(--color-surface);
+  }
+
+  .ds-workbench-composer-panel {
+    border: 1px solid rgba(227,255,116,0.25);
+    background-color: rgba(227,255,116,0.06);
+  }
+
+  .ds-workbench-composer-panel[data-active="false"] {
+    border-color: rgba(255,255,255,0.08);
+    background-color: var(--color-surface);
+  }
+
+  .ds-workbench-panel-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-lime);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .ds-workbench-detail-title {
+    color: var(--color-on-surface);
+    font-weight: 700;
+  }
+
+  .ds-workbench-detail-description {
+    margin-top: 0.25rem;
+    color: var(--color-on-surface-variant);
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+  }
+
+  .ds-workbench-action-list {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .ds-workbench-action-chip {
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 9999px;
+    padding: 0.25rem 0.5rem;
+    color: var(--color-on-surface-variant);
+    font-size: 11px;
+    line-height: 1rem;
+  }
+
+  .ds-workbench-empty-copy {
+    margin-top: 0.75rem;
+    color: var(--color-on-surface-variant);
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+  }
+
+  .ds-workbench-composer-kind {
+    border-radius: 0.375rem;
+    background-color: rgba(0,0,0,0.2);
+    padding: 0.75rem;
+    color: var(--color-on-surface);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 700;
+  }
+
+  .ds-workbench-composer-payload {
+    max-height: 12rem;
+    overflow: auto;
+    border-radius: 0.375rem;
+    background-color: rgba(0,0,0,0.25);
+    padding: 0.75rem;
+    color: var(--color-on-surface-variant);
+    font-size: 11px;
+    line-height: 1.25rem;
+  }
+
+  .ds-sticky-morph-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background: rgba(13,13,11,0.9);
+    backdrop-filter: blur(18px) saturate(1.15);
+  }
+
+  .ds-sticky-morph-sentinel {
+    height: 1rem;
+  }
+
+  .ds-sticky-morph-nav {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0;
+    padding: 0;
+    transition:
+      max-width 0.28s var(--ag-ease-out),
+      border-color 0.28s var(--ag-ease-out),
+      border-radius 0.28s var(--ag-ease-out),
+      background-color 0.28s var(--ag-ease-out),
+      box-shadow 0.28s var(--ag-ease-out),
+      padding 0.28s var(--ag-ease-out);
+  }
+
+  .ds-sticky-morph-kicker,
+  .ds-sticky-morph-actions {
+    transition:
+      opacity 0.24s var(--ag-ease-out),
+      transform 0.24s var(--ag-ease-out);
+  }
+
+  .ds-sticky-morph-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  @supports (container-type: scroll-state) {
+    .ds-sticky-morph-header {
+      container-name: ds-sticky-morph-header;
+      container-type: scroll-state;
+      border-bottom-color: transparent;
+      background: transparent;
+      backdrop-filter: none;
+    }
+
+    @container ds-sticky-morph-header scroll-state(stuck: top) {
+      .ds-sticky-morph-nav {
+        max-width: 56rem;
+        border-color: rgba(255,255,255,0.12);
+        border-radius: 0.75rem;
+        background-color: rgba(17,17,16,0.86);
+        box-shadow: 0 18px 50px rgba(0,0,0,0.32), 0 0 0 1px rgba(227,255,116,0.08);
+        padding: 0.5rem 0.75rem;
+        backdrop-filter: blur(18px) saturate(1.2);
+      }
+
+      .ds-sticky-morph-kicker {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+
+      .ds-sticky-morph-actions {
+        transform: translateX(-2px);
+      }
+    }
   }
 
   /* ── 暖炭底卡片 ── */
