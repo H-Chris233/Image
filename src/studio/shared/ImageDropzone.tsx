@@ -10,6 +10,7 @@ export function ImageDropzone({
   onDragOver,
   onDragLeave,
   onDrop,
+  className = 'min-h-64',
 }: {
   label: string;
   dragging: boolean;
@@ -19,13 +20,14 @@ export function ImageDropzone({
   onDragOver: (event: DragEvent<HTMLLabelElement>) => void;
   onDragLeave: () => void;
   onDrop: (event: DragEvent<HTMLLabelElement>) => void;
+  className?: string;
 }) {
   return (
     <label
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      className={`flex min-h-64 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed text-center transition ${
+      className={`flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed text-center transition ${className} ${
         dragging ? 'border-lime bg-lime/10' : 'border-white/[0.12] bg-surface-dim hover:border-white/[0.22]'
       }`}
     >
