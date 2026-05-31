@@ -7,12 +7,14 @@ import { useAuthModal } from '../authModal';
 import RechargeGate from '../components/RechargeGate';
 import { CreateFlowWizard, type WizardResult } from '../components/ecommerce/CreateFlowWizard';
 import { CreditEstimate } from '../components/ecommerce/CreditEstimate';
+import { SCENE_CATALOG, type SceneTemplate } from '../components/ecommerce/sceneCatalog';
 import { storeLastProductImage } from '../components/ecommerce/productImageSession';
 import { useNotifier } from '../notifications';
 import { providerImageSize } from '../imageOptions';
 import { useTasks } from '../tasks';
 
 const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
+const SCENE_TRANSFER_KEY = 'aethergenix_pending_scene';
 const FAST_IMAGE_COST = 0.134;
 
 type SubmittedRun = {
@@ -26,6 +28,12 @@ type GenerationRun = {
   sceneName: string;
   count: number;
   task: ImageTask | undefined;
+};
+
+type PendingScenePayload = {
+  customerKey?: unknown;
+  sceneKey?: unknown;
+  prompt?: unknown;
 };
 
 function normalizeCount(value: string | number): number {
@@ -46,6 +54,28 @@ function hasInsufficientCredits(balance: AccountInfo['balance'] | null, expected
   return balance.remaining < expectedCost;
 }
 
+function parsePendingScene(value: string | null): PendingScenePayload | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (parsed && typeof parsed === 'object') {
+      return parsed as PendingScenePayload;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function findPendingSceneTemplate(payload: PendingScenePayload | null): SceneTemplate | null {
+  if (!payload || typeof payload.customerKey !== 'string' || typeof payload.sceneKey !== 'string') {
+    return null;
+  }
+  return SCENE_CATALOG.find((scene) => (
+    scene.customerKey === payload.customerKey && scene.sceneKey === payload.sceneKey
+  )) ?? null;
+}
+
 export default function Create() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -56,6 +86,7 @@ export default function Create() {
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [showWizard, setShowWizard] = useState(false);
   const [initialScene, setInitialScene] = useState('');
+  const [initialSceneTemplate, setInitialSceneTemplate] = useState<SceneTemplate | null>(null);
   const [lastResult, setLastResult] = useState<WizardResult | null>(null);
   const [submitted, setSubmitted] = useState<SubmittedRun[]>([]);
   const [loading, setLoading] = useState(false);
@@ -94,13 +125,28 @@ export default function Create() {
     return () => { cancelled = true; };
   }, [viewer?.authenticated, viewer?.owner_id]);
 
-  // 灵感「复用提示词」带入：登录后自动打开向导，把提示词预填进场景描述。
+  // 灵感「用此场景」带入：登录后自动打开向导，优先保留场景身份，再兼容旧提示词入口。
   // 必须先确认已登录再清空 sessionStorage，否则未登录用户路过本页会把提示词吞掉。
   useEffect(() => {
     if (!viewer?.authenticated) return;
+    const pendingScene = parsePendingScene(window.sessionStorage.getItem(SCENE_TRANSFER_KEY));
+    const pendingTemplate = findPendingSceneTemplate(pendingScene);
+    if (pendingScene) {
+      window.sessionStorage.removeItem(SCENE_TRANSFER_KEY);
+      window.sessionStorage.removeItem(PROMPT_TRANSFER_KEY);
+      const fallbackPrompt = typeof pendingScene.prompt === 'string' ? pendingScene.prompt : '';
+      if (pendingTemplate || fallbackPrompt) {
+        setInitialSceneTemplate(pendingTemplate);
+        setInitialScene(pendingTemplate ? '' : fallbackPrompt);
+        setShowWizard(true);
+        return;
+      }
+    }
+
     const pendingPrompt = window.sessionStorage.getItem(PROMPT_TRANSFER_KEY);
     if (!pendingPrompt) return;
     window.sessionStorage.removeItem(PROMPT_TRANSFER_KEY);
+    setInitialSceneTemplate(null);
     setInitialScene(pendingPrompt);
     setShowWizard(true);
   }, [viewer?.authenticated]);
@@ -162,6 +208,7 @@ export default function Create() {
     setLastResult(result);
     setShowWizard(false);
     setInitialScene('');
+    setInitialSceneTemplate(null);
     await runGeneration(result);
   }
 
@@ -207,8 +254,9 @@ export default function Create() {
       {showWizard ? (
         <CreateFlowWizard
           onComplete={completeAndGenerate}
-          onClose={() => { setShowWizard(false); setInitialScene(''); }}
+          onClose={() => { setShowWizard(false); setInitialScene(''); setInitialSceneTemplate(null); }}
           initialSceneDescription={initialScene || undefined}
+          initialSceneTemplate={initialSceneTemplate}
           balance={account?.balance ?? null}
         />
       ) : null}

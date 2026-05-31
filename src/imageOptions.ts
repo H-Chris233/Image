@@ -6,7 +6,7 @@ export const SIZE_LABELS: Record<string, string> = {
   '2K': '2K (1440p)',
   '4K': '4K (2160p)',
 };
-export const ASPECT_RATIO_OPTIONS = ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4'];
+export const ASPECT_RATIO_OPTIONS = ['1:1', '16:9', '9:16', '3:2', '2:3', '4:3', '3:4', '4:5', '21:9', '2.35:1'];
 export const QUALITY_OPTIONS = ['auto', 'low', 'medium', 'high'];
 export const SIZE_PRESETS: Record<string, Record<string, string>> = {
   FAST: {
@@ -17,6 +17,9 @@ export const SIZE_PRESETS: Record<string, Record<string, string>> = {
     '2:3': '832x1248',
     '4:3': '1184x896',
     '3:4': '896x1184',
+    '4:5': '1088x1360',
+    '21:9': '1344x576',
+    '2.35:1': '1344x576',
   },
   '1K': {
     '1:1': '1088x1088',
@@ -26,6 +29,9 @@ export const SIZE_PRESETS: Record<string, Record<string, string>> = {
     '2:3': '1088x1632',
     '4:3': '1472x1104',
     '3:4': '1104x1472',
+    '4:5': '1152x1440',
+    '21:9': '2688x1152',
+    '2.35:1': '2704x1152',
   },
   '2K': {
     '1:1': '1440x1440',
@@ -35,6 +41,9 @@ export const SIZE_PRESETS: Record<string, Record<string, string>> = {
     '2:3': '1440x2160',
     '4:3': '1920x1440',
     '3:4': '1440x1920',
+    '4:5': '1440x1800',
+    '21:9': '3360x1440',
+    '2.35:1': '3384x1440',
   },
   '4K': {
     '16:9': '3840x2160',
@@ -43,6 +52,9 @@ export const SIZE_PRESETS: Record<string, Record<string, string>> = {
     '2:3': '2560x3840',
     '4:3': '3840x2880',
     '3:4': '2880x3840',
+    '4:5': '2160x2700',
+    '21:9': '5040x2160',
+    '2.35:1': '5076x2160',
   },
 };
 

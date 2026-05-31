@@ -70,6 +70,29 @@ focus:border-lime/45
 
 不要新增 cyan focus、violet focus 或高饱和蓝色 focus。
 
+## Motion
+
+Motion runtime helpers live in `src/index.css` as `--ag-*` easing variables and shared `ds-*` motion classes.
+
+Current reusable motion language:
+
+| role | implementation | use |
+|---|---|---|
+| `--ag-ease-out` | `cubic-bezier(0.16, 1, 0.3, 1)` | default enter, reveal, panel movement |
+| `--ag-ease-spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` | rare small press or icon emphasis |
+| `ds-motion-tree-*` | CSS grid rows + opacity + transform | T1/T2 workspace navigation |
+| `ds-sticky-morph-*` | CSS scroll-state container query | sticky nav morph on scroll |
+| `ds-stage-enter`, `ds-panel-enter` | keyframe enter utilities | page stage and side panel continuity |
+| `ds-motion-card`, `ds-motion-press` | transition utilities | repeated cards and compact pressable actions |
+| `ds-workbench-*` | shared component shell classes | T3 cards, T3 detail panels, T4 composer panels |
+
+Rules:
+
+- JS 可以切换状态，但不计算动画帧。
+- 可复用 motion 必须沉淀为 design-system class 或 primitive。
+- 页面级动画只能作为过渡期例外，不能成为新模式。新 Studio shell 默认使用 `ds-*` motion。
+- 必须保留 `prefers-reduced-motion` 降级路径。
+
 ## Deprecated
 
 以下只能作为历史残留存在，不允许新增：

@@ -1,11 +1,16 @@
-import { Clock3, History, ImageIcon, Loader2, Sparkles, X } from 'lucide-react';
+import { Clock3, History, ImageIcon, Loader2, RefreshCw, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { formatDate } from '../api';
+import { formatDate, generateImage, type ImageTask } from '../api';
+import { humanizeTaskError } from '../studio/generation/errorMessages';
 import ImagePreviewModal from './ImagePreviewModal';
 import RetryImage from './RetryImage';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
+
+function canRetryTask(task: ImageTask): boolean {
+  return task.mode === 'generate' && !task.input_image_url && !task.input_image_path;
+}
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -31,7 +36,8 @@ function statusIcon(status: 'queued' | 'running' | 'succeeded' | 'failed') {
 
 export default function TaskDrawer() {
   const { t } = useSite();
-  const { tasks, drawerOpen, closeDrawer, activeCount } = useTasks();
+  const { tasks, drawerOpen, closeDrawer, activeCount, addTask, notify } = useTasks();
+  const [retryingId, setRetryingId] = useState('');
   const drawerRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
@@ -52,6 +58,25 @@ export default function TaskDrawer() {
     return [...active, ...recentDone];
   }, [tasks]);
   const titleId = 'task-drawer-title';
+
+  async function retryTask(task: ImageTask) {
+    if (retryingId) return;
+    setRetryingId(task.id);
+    try {
+      const next = await generateImage({
+        prompt: task.prompt,
+        size: task.size,
+        aspect_ratio: task.aspect_ratio,
+        quality: task.quality,
+        n: 1,
+      });
+      addTask(next);
+    } catch (event) {
+      notify({ kind: 'error', title: '重试失败', message: humanizeTaskError(event instanceof Error ? event.message : '') });
+    } finally {
+      setRetryingId('');
+    }
+  }
 
   useEffect(() => {
     if (!drawerOpen) return undefined;
@@ -267,7 +292,28 @@ export default function TaskDrawer() {
                             <span>{task.quality}</span>
                             {previewImages.length > 1 ? <span>x{previewImages.length}</span> : null}
                           </div>
-                          {task.error ? <div className="mt-2 break-words text-sm text-[#ff6b6b]">{task.error}</div> : null}
+                          {task.status === 'failed' ? (
+                            <div className="mt-2 space-y-2">
+                              <div className="break-words text-sm text-[#ff6b6b]">{humanizeTaskError(task.error)}</div>
+                              {canRetryTask(task) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void retryTask(task)}
+                                  disabled={Boolean(retryingId)}
+                                  className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.14] bg-white/[0.04] px-2.5 py-1 text-xs font-semibold text-[#f0ede8] transition hover:border-white/[0.26] disabled:opacity-50"
+                                >
+                                  {retryingId === task.id ? (
+                                    <Loader2 aria-hidden="true" size={13} className="animate-spin" />
+                                  ) : (
+                                    <RefreshCw aria-hidden="true" size={13} />
+                                  )}
+                                  {retryingId === task.id ? '重试中…' : '重试'}
+                                </button>
+                              ) : (
+                                <div className="text-xs text-[#8a8680]">请回编辑器重新上传图片后重试。</div>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     </div>

@@ -30,6 +30,14 @@ test('initial state starts on browse', () => {
   assert.equal(state.imageCount, 1);
 });
 
+test('initial state can start with a selected template', () => {
+  const state = createInitialWizardState({ selectedTemplate: template, initialBrief: 'Use this scene' });
+
+  assert.equal(state.step, 'upload');
+  assert.deepEqual(state.selectedTemplate, template);
+  assert.equal(state.brief, 'Use this scene');
+});
+
 test('selecting a template advances from browse to upload', () => {
   const state = wizardReducer(createInitialWizardState(), { type: 'select_template', template });
 

@@ -15,16 +15,23 @@ import {
 import {
   Button,
   IconButton,
+  MotionTreeNav,
+  type MotionTreeNavItem,
   SegmentedControl,
   SelectField,
   SkeletonBlock,
   StatusPill,
+  StickyMorphHeader,
   Surface,
   SurfaceState,
   TextareaField,
   TextInput,
+  WorkbenchCard,
+  WorkbenchComposerPanel,
+  WorkbenchDetailPanel,
 } from '../components/design-system';
 import brandMark from '../../aethergenix.svg';
+import { useDesignSystemReveal } from './useDesignSystemReveal';
 
 const colorTokens = [
   { name: 'background', value: '#111110', usage: 'app canvas' },
@@ -56,14 +63,52 @@ const statusRows = [
   { tone: 'commercial' as const, label: 'commercial' },
 ];
 
+const motionTreeItems: MotionTreeNavItem[] = [
+  {
+    id: 'create',
+    label: '创建',
+    description: '从业务需求生产新资产',
+    icon: <Sparkles size={16} />,
+    children: [
+      { id: 'ecommerce', label: '电商商品', description: '主图、详情图、广告图' },
+      { id: 'content', label: '内容营销', description: '封面、海报、种草图' },
+      { id: 'local-store', label: '本地门店', description: '门店、团购、菜品图' },
+    ],
+  },
+  {
+    id: 'redraw',
+    label: '重绘',
+    description: '从已有图片继续生产新资产',
+    icon: <RefreshCw size={16} />,
+    children: [
+      { id: 'input-source', label: '输入来源', description: '上传、资产库、最近生成、收藏图' },
+      { id: 'replace', label: '局部替换', description: '换背景、改颜色、替换局部物体' },
+      { id: 'extend', label: '画幅扩展', description: '横版广告、竖版海报、内容封面' },
+    ],
+  },
+  {
+    id: 'assets',
+    label: '资产库',
+    description: '管理所有可复用生产资料',
+    icon: <ImagePlus size={16} />,
+    children: [
+      { id: 'uploads', label: '上传原图', description: '商品原图、人像原图、品牌素材' },
+      { id: 'recent-generated', label: '最近生成', description: '创建结果、重绘结果、变体结果' },
+      { id: 'favorites', label: '收藏', description: '收藏图片、prompt 和风格' },
+    ],
+  },
+];
+
 export default function DesignSystem() {
   const [mode, setMode] = useState<'general' | 'commerce'>('general');
+  const [motionTree, setMotionTree] = useState({ itemId: 'assets', childId: 'recent-generated' });
+  const revealScope = useDesignSystemReveal<HTMLDivElement>();
 
   return (
-    <div data-design-system-preview className="min-h-[calc(100vh-64px)] px-4 py-6 text-on-surface sm:py-8 lg:py-10">
+    <div ref={revealScope} data-design-system-preview className="min-h-[calc(100vh-64px)] px-4 py-6 text-on-surface sm:py-8 lg:py-10">
       <div className="mx-auto grid w-full max-w-7xl gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <main className="min-w-0 space-y-6">
-          <header className="grid gap-4 rounded-2xl border border-white/[0.07] bg-[#151411] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.32)] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:p-5">
+        <main className="@container min-w-0 space-y-6">
+          <header data-reveal-header className="grid gap-4 rounded-2xl border border-white/[0.07] bg-[#151411] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.32)] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:p-5">
             <div className="min-w-0">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-lime/20 bg-lime/10 px-3 py-1 text-xs font-medium text-lime">
                 <Sparkles size={13} />
@@ -82,7 +127,7 @@ export default function DesignSystem() {
             </div>
           </header>
 
-          <section className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+          <section data-reveal className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
             <Surface padding="lg" className="min-w-0">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
@@ -140,7 +185,7 @@ export default function DesignSystem() {
             </Surface>
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-2">
+          <section data-reveal className="grid gap-4 lg:grid-cols-2">
             <Surface padding="lg">
               <h2 className="font-display text-lg font-semibold text-on-surface">Actions</h2>
               <p className="mt-1 text-sm leading-6 text-on-surface-variant">Cream for primary work, lime for state, orange for commercial intent.</p>
@@ -177,7 +222,112 @@ export default function DesignSystem() {
             </Surface>
           </section>
 
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <section data-reveal className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+            <Surface padding="none" className="overflow-hidden">
+              <div className="ds-motion-tree-shell p-3">
+                <MotionTreeNav
+                  items={motionTreeItems}
+                  activeItemId={motionTree.itemId}
+                  activeChildId={motionTree.childId}
+                  onItemSelect={(item) => setMotionTree({ itemId: item.id, childId: item.children[0]?.id ?? '' })}
+                  onChildSelect={(item, child) => setMotionTree({ itemId: item.id, childId: child.id })}
+                />
+              </div>
+            </Surface>
+
+            <Surface padding="lg">
+              <h2 className="font-display text-lg font-semibold text-on-surface">MotionTreeNav</h2>
+              <p className="mt-1 text-sm leading-6 text-on-surface-variant">
+                Tree navigation keeps every section mounted and uses CSS grid rows for T2 reveal. Motion expresses hierarchy and continuity instead of page-local decoration.
+              </p>
+              <div className="mt-4 grid gap-2 text-sm">
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+                  <div className="text-xs font-medium text-on-surface-variant">Active item</div>
+                  <div className="mt-1 font-mono text-xs text-on-surface">{motionTree.itemId}</div>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
+                  <div className="text-xs font-medium text-on-surface-variant">Active child</div>
+                  <div className="mt-1 font-mono text-xs text-on-surface">{motionTree.childId}</div>
+                </div>
+              </div>
+            </Surface>
+          </section>
+
+          <section data-reveal className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <Surface padding="none" className="max-h-[320px] overflow-y-auto">
+              <StickyMorphHeader
+                brand={<div className="text-sm font-bold text-lime">AetherGenix</div>}
+                kicker={<span className="text-xs text-on-surface-variant">Sticky morph header</span>}
+                actions={
+                  <>
+                    <Button variant="ghost" size="sm">资产库</Button>
+                    <Button variant="lime" size="sm">继续重绘</Button>
+                  </>
+                }
+              />
+              <div className="grid gap-3 px-4 pb-8 pt-4">
+                {['before stuck', 'scroll state', 'morphed nav', 'reduced motion safe'].map((label) => (
+                  <div key={label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm text-on-surface-variant">
+                    {label}
+                  </div>
+                ))}
+              </div>
+            </Surface>
+
+            <Surface padding="lg">
+              <h2 className="font-display text-lg font-semibold text-on-surface">StickyMorphHeader</h2>
+              <p className="mt-1 text-sm leading-6 text-on-surface-variant">
+                Scroll-state container query primitive for T0 and long workspace surfaces. It morphs only structure and emphasis; page code supplies brand and actions.
+              </p>
+            </Surface>
+          </section>
+
+          <section data-reveal className="grid gap-4 @3xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="space-y-3">
+              <div>
+                <h2 className="font-display text-lg font-semibold text-on-surface">WorkbenchCard</h2>
+                <p className="mt-1 text-sm leading-6 text-on-surface-variant">
+                  Shared T3 card shell for workflow, scenario, asset, and inspiration choices.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <WorkbenchCard
+                  title="白底主图"
+                  description="把商品整理成干净可售卖的平台主图。"
+                  icon={<ImagePlus size={17} />}
+                  active
+                  actionLabel="打开 T4"
+                />
+                <WorkbenchCard
+                  title="场景氛围图"
+                  description="把商品自然放进生活方式场景。"
+                  icon={<Sparkles size={17} />}
+                  actionLabel="打开 T4"
+                  motionIndex={1}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="font-display text-lg font-semibold text-on-surface">WorkbenchDetailPanel / WorkbenchComposerPanel</h2>
+              <WorkbenchDetailPanel
+                eyebrow="T3 Detail"
+                title="白底主图"
+                description="T3 只解释当前场景、资产或灵感，不直接执行生成。"
+                actions={['选择输入图', '补充要求', '生成', '保存到资产库']}
+                emptyDescription="点击中间的 T3 卡片后，这里展示场景详情。"
+              />
+              <WorkbenchComposerPanel
+                active
+                kind="redraw"
+                payload={{ id: 'white-background', t1: 'redraw', t2: 'product' }}
+                emptyDescription="T4 只负责执行。"
+                primaryAction={{ label: '空壳生成按钮' }}
+              />
+            </div>
+          </section>
+
+          <section data-reveal className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <Surface padding="lg">
               <h2 className="font-display text-lg font-semibold text-on-surface">Form controls</h2>
               <p className="mt-1 text-sm leading-6 text-on-surface-variant">Compact inputs for production workflows, with visible lime focus.</p>
@@ -227,7 +377,7 @@ export default function DesignSystem() {
           </section>
         </main>
 
-        <aside className="min-w-0 space-y-4 xl:sticky xl:top-20 xl:self-start">
+        <aside data-reveal className="min-w-0 space-y-4 xl:sticky xl:top-20 xl:self-start">
           <Surface padding="lg">
             <h2 className="font-display text-lg font-semibold text-on-surface">System map</h2>
             <div className="mt-4 grid gap-3">

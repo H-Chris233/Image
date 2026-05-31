@@ -25,10 +25,18 @@ export type WizardAction =
   | { type: 'generate_finish' }
   | { type: 'set_error'; error: string | null };
 
-export function createInitialWizardState(initialBrief = ''): WizardState {
+export type InitialWizardStateConfig = {
+  initialBrief?: string;
+  selectedTemplate?: SceneTemplate | null;
+};
+
+export function createInitialWizardState(initial: string | InitialWizardStateConfig = ''): WizardState {
+  const initialBrief = typeof initial === 'string' ? initial : initial.initialBrief ?? '';
+  const selectedTemplate = typeof initial === 'string' ? null : initial.selectedTemplate ?? null;
+
   return {
-    step: 'browse',
-    selectedTemplate: null,
+    step: selectedTemplate ? 'upload' : 'browse',
+    selectedTemplate,
     productImage: null,
     brief: initialBrief.slice(0, 300),
     aspectRatio: '1:1',

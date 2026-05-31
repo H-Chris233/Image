@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getSiteSettings, SiteSettings } from './api';
 import { useAuth } from './auth';
+import { suppressesAutoAnnouncement } from './studio/app/studioRoutes';
 
 type Locale = 'zh-CN' | 'en-US';
 type TranslationKey = keyof typeof translations['zh-CN'];
@@ -58,7 +59,7 @@ const translations = {
     side_generate: '开始生成',
     home_scan: '系统扫描',
     home_title: 'AetherGenix',
-    explore_home_label: '灵感探索',
+    explore_home_label: '返回首页',
     explore_desc: '从公开灵感案例开始，找到风格、构图和提示词方向，再进入创作工作台生成自己的图像。',
     explore_eyebrow: '灵感探索首页',
     explore_cta: '开始创作',
@@ -529,7 +530,7 @@ const translations = {
     side_generate: 'Generate New',
     home_scan: 'System Scan',
     home_title: 'AetherGenix',
-    explore_home_label: 'Inspiration homepage',
+    explore_home_label: 'Back to home',
     explore_desc: 'Start from a public gallery of styles, compositions, and prompts, then move into the studio to generate your own images.',
     explore_eyebrow: 'Inspiration homepage',
     explore_cta: 'Start creating',
@@ -975,6 +976,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('zh-CN');
   const [announcementOpen, setAnnouncementOpen] = useState(false);
   const suppressAutoAnnouncement =
+    suppressesAutoAnnouncement(location.pathname) ||
     location.pathname === '/account' ||
     location.pathname.startsWith('/account/') ||
     location.pathname === '/recharge' ||
@@ -1004,6 +1006,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (suppressAutoAnnouncement) {
+      setAnnouncementOpen(false);
       return;
     }
     if (!siteSettings?.announcement.enabled || !siteSettings.announcement.updated_at) {

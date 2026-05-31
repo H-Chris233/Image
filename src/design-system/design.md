@@ -185,10 +185,16 @@ Tokens:
 
 - `--ag-ease-out: cubic-bezier(0.16, 1, 0.3, 1)`
 - `--ag-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1)`
+- `ds-motion-tree`: tree navigation motion language for T1/T2 sections.
+- `ds-sticky-morph`: sticky scroll-state header motion for T0 and long workspace surfaces.
+- `ds-stage-enter`, `ds-panel-enter`, `ds-motion-card`, `ds-motion-press`: shared production-workbench motion utilities.
+- `ds-workbench-*`: shared T3 card, T3 detail, and T4 composer shell structure.
 
 Durations:
 
 - Hover feedback: 150-200ms.
+- Tree nav trigger feedback: 160-220ms.
+- Tree nav child reveal: 220-280ms, with 18ms item staggering.
 - Modal and drawer: 250-300ms.
 - Image hover scale: 300-500ms.
 - Page element enter: fade and 8px upward movement.
@@ -198,6 +204,11 @@ Motion rules:
 - Respect reduced-motion preferences.
 - Do not make animation the only way to understand state.
 - Avoid constant full-page glow or decorative movement.
+- Use motion to explain hierarchy, continuity, and cause/effect.
+- Reusable motion belongs in design-system primitives or `ds-*` utilities, not page-local animation classes.
+- Keep tree navigation sections mounted; do not conditionally render children just to animate them.
+- T1/T2 reveal uses CSS grid rows, opacity, and small Y movement; JS may switch state but must not calculate animation frames.
+- Child item reveal may stagger subtly, but must stay short enough for repeated production work.
 
 ### Icons And Imagery
 
@@ -290,6 +301,66 @@ Rules:
 - Inactive uses muted text.
 - Do not replace mode switches with underline tabs.
 - Each segment keeps stable dimensions on mobile.
+
+### MotionTreeNav
+
+Purpose: expandable T1/T2 navigation for production workspaces.
+
+Rules:
+
+- All T1 sections stay mounted.
+- T2 children stay in the DOM and reveal through CSS grid rows.
+- `aria-expanded` is set on the T1 trigger.
+- Active T2 uses `aria-current="page"`.
+- Icon scale, section background, chevron rotation, and child reveal move as one state change.
+- Do not use this component for ordinary dropdown menus or command palettes.
+- Do not add page-local accordion animation when this primitive can express the hierarchy.
+
+### StickyMorphHeader
+
+Purpose: sticky header that reshapes on scroll for inspiration, gallery, and long workspace surfaces.
+
+Rules:
+
+- Uses CSS scroll-state container queries when supported.
+- JS must not listen to scroll or calculate animation frames.
+- Page code supplies brand and actions; the component owns sticky structure and morph motion.
+- Morph only density, border, background, radius, and small supporting text emphasis.
+- Do not use it as a modal header, command palette, or short panel header.
+
+### WorkbenchCard
+
+Purpose: selectable T3 cards inside production workspaces.
+
+Rules:
+
+- Use for scenario, workflow, asset, and inspiration cards that open a T3 detail or T4 composer.
+- Must expose title, description, active state, icon, and action label.
+- Active state uses lime; commercial intent still uses orange elsewhere.
+- Card hover may lift slightly through `ds-motion-card`.
+- Do not create page-local T3 card markup for create, redraw, assets, inspiration, or user workflows.
+
+### WorkbenchDetailPanel
+
+Purpose: side detail panel for the selected T3 item.
+
+Rules:
+
+- Owns eyebrow, title, description, empty state, and compact action chips.
+- It explains current context; it does not execute generation.
+- Keep copy compact enough for repeated production work.
+- Do not use it as a modal, drawer, or long-form help panel.
+
+### WorkbenchComposerPanel
+
+Purpose: T4 execution panel for create, redraw, asset actions, or confirmation handoff.
+
+Rules:
+
+- Owns composer heading, active/empty state, optional structured payload preview, and primary action placement.
+- Primary execution action uses the design-system `Button`.
+- T4 is the only layer that executes generation or asset mutation.
+- Workflow modules pass payload and action handlers; they do not invent their own composer shell.
 
 ### StatusPill
 

@@ -120,6 +120,64 @@ Tones:
 - inactive 使用 muted text。
 - 不使用 underline tab 取代 mode switch。
 
+## `MotionTreeNav`
+
+用途：生产工作台里的 T1/T2 树状导航，例如 Studio 左侧的创建、重绘、资产库、灵感、用户。
+
+规则：
+
+- T1 section 和 T2 children 必须常驻 DOM。
+- 展开/收起通过 CSS grid rows、opacity 和轻微 translate 表达，不用 JS 计算动画。
+- `aria-expanded` 挂在 T1 trigger。
+- 当前 T2 使用 `aria-current="page"`。
+- icon、section background、chevron、children reveal 必须作为同一个状态变化协同，而不是各自动。
+- 子项可以轻微 stagger，但必须短、克制、适合高频生产工具。
+- 不要为某个页面另写 accordion 动画；先复用这个 primitive。
+
+## `StickyMorphHeader`
+
+用途：T0 灵感页、长列表页、长工作台页的 sticky header。组件负责 sticky 结构和滚动后的 morph，页面只传 brand、kicker、actions。
+
+规则：
+
+- 优先使用 CSS `scroll-state` container query。
+- 不用 JS 监听滚动，不用动画库。
+- morph 只改变密度、边框、背景、圆角和辅助文本弱化。
+- 不用于普通 panel header、modal header 或 command palette。
+- 需要跟 `prefers-reduced-motion` 全局降级一起工作。
+
+## `WorkbenchCard`
+
+用途：Studio / 生产工作台中间区域的 T3 卡片。适用于场景、工作流、资产、灵感等“点击后进入详情或执行面板”的项目。
+
+规则：
+
+- 组件拥有 title、description、icon、active、action label 和 hover/focus 状态。
+- active 使用 lime；不要在业务页面里另写选中态。
+- 业务模块只负责传数据和点击行为。
+- 不要在 create、redraw、assets、inspiration、user 工作流里复制一套 T3 card markup。
+
+## `WorkbenchDetailPanel`
+
+用途：T3 详情侧栏。负责解释当前选择的场景、资产或灵感。
+
+规则：
+
+- 组件拥有 eyebrow、title、description、empty state 和 action chips。
+- T3 detail 不执行生成；执行动作交给 T4 composer。
+- 文案保持短，适合工作台快速扫读。
+
+## `WorkbenchComposerPanel`
+
+用途：T4 执行面板。负责创建、重绘、资产动作或确认执行。
+
+规则：
+
+- 组件拥有 active/empty 状态、kind、payload preview 和 primary action 位置。
+- primary action 使用 design-system `Button`。
+- 工作流模块传 payload 和 action handler，不自建 composer shell。
+- 后续真实 image-2/create 接入时，先扩展该组件的 slots/props，再考虑新增组件。
+
 ## Dialog / Drawer Accessibility Contract
 
 适用区域：

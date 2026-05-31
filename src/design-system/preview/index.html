@@ -453,6 +453,82 @@
         color: var(--color-lime);
       }
 
+      .motion-tree {
+        display: grid;
+        gap: 8px;
+      }
+
+      .motion-section {
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.024);
+      }
+
+      .motion-section.active {
+        border-color: rgba(227, 255, 116, 0.24);
+        background: linear-gradient(180deg, rgba(227, 255, 116, 0.055), rgba(255, 255, 255, 0.018));
+      }
+
+      .motion-trigger {
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+        color: var(--color-on-surface);
+      }
+
+      .motion-children {
+        display: grid;
+        grid-template-rows: 1fr;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .motion-children-inner {
+        min-height: 0;
+        overflow: hidden;
+        padding: 8px;
+      }
+
+      .motion-child {
+        display: block;
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        color: var(--color-on-surface-variant);
+      }
+
+      .motion-child.active {
+        background: rgba(227, 255, 116, 0.11);
+        color: var(--color-lime);
+      }
+
+      .sticky-morph-preview {
+        max-height: 210px;
+        overflow-y: auto;
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--color-outline-subtle);
+        background: var(--color-background);
+      }
+
+      .sticky-morph-header {
+        position: sticky;
+        top: 0;
+        padding: 10px;
+        background: rgba(17, 17, 16, 0.9);
+        backdrop-filter: blur(16px);
+      }
+
+      .sticky-morph-nav {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius-md);
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.035);
+      }
+
       .modal-preview {
         position: relative;
         min-height: 240px;
@@ -677,6 +753,50 @@
                 <p class="muted">Overlay and controls support the generated image instead of becoming the composition.</p>
               </div>
             </div>
+            <div class="panel">
+              <div class="section-head">
+                <div>
+                  <h2>Motion Primitives</h2>
+                  <p class="muted">Reusable hierarchy motion belongs to the design system.</p>
+                </div>
+              </div>
+              <div class="motion-tree" aria-label="MotionTreeNav static preview">
+                <div class="motion-section active">
+                  <div class="motion-trigger"><strong>Assets</strong><span>⌄</span></div>
+                  <div class="motion-children">
+                    <div class="motion-children-inner">
+                      <span class="motion-child active">Recent generated</span>
+                      <span class="motion-child">Uploads</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="motion-section">
+                  <div class="motion-trigger"><strong>Redraw</strong><span>›</span></div>
+                </div>
+              </div>
+              <div style="height:12px"></div>
+              <div class="sticky-morph-preview" aria-label="StickyMorphHeader static preview">
+                <div class="sticky-morph-header">
+                  <div class="sticky-morph-nav">
+                    <strong style="color:var(--color-lime)">AetherGenix</strong>
+                    <span class="muted">StickyMorphHeader</span>
+                  </div>
+                </div>
+                <div style="display:grid;gap:10px;padding:12px">
+                  <div class="state">before stuck</div>
+                  <div class="state">scroll state</div>
+                  <div class="state">morphed nav</div>
+                </div>
+              </div>
+              <div style="height:12px"></div>
+              <div class="state" aria-label="Workbench primitives static preview">
+                <h3>WorkbenchCard / WorkbenchDetailPanel / WorkbenchComposerPanel</h3>
+                <p class="muted">T3 cards explain choices. T3 detail explains context. T4 composer owns execution.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid-2">
             <div class="panel">
               <div class="section-head">
                 <div>

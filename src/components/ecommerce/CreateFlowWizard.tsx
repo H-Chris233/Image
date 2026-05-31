@@ -59,6 +59,7 @@ interface Props {
   onComplete: (result: WizardResult) => void | Promise<void>;
   onClose: () => void;
   initialSceneDescription?: string;
+  initialSceneTemplate?: SceneTemplate | null;
   balance?: BalanceInfo | null;
 }
 
@@ -66,8 +67,18 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error || '操作失败，请重试');
 }
 
-export function CreateFlowWizard({ onComplete, onClose, initialSceneDescription, balance = null }: Props) {
-  const [state, dispatch] = useReducer(wizardReducer, initialSceneDescription ?? '', createInitialWizardState);
+export function CreateFlowWizard({
+  onComplete,
+  onClose,
+  initialSceneDescription,
+  initialSceneTemplate = null,
+  balance = null,
+}: Props) {
+  const [state, dispatch] = useReducer(
+    wizardReducer,
+    { initialBrief: initialSceneDescription ?? '', selectedTemplate: initialSceneTemplate },
+    createInitialWizardState,
+  );
   const [dragging, setDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const activeStep = STEP_META[state.step];

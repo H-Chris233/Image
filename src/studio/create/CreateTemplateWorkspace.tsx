@@ -53,30 +53,18 @@ export function CreateTemplateWorkspace({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] p-2">
-        <div className="px-2 text-sm font-bold text-on-surface">开始</div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="ghost" size="sm" iconStart={<ImageIcon size={14} />} onClick={() => selectTemplate(templateById('ecommerce-white-bg') ?? CREATE_TEMPLATES[0])}>
-            从白底图开始
-          </Button>
-          <Button variant="ghost" size="sm" iconStart={<PencilLine size={14} />} onClick={() => selectTemplate(templateById('quick-prompt') ?? CREATE_TEMPLATES[0])}>
-            写提示词
-          </Button>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-white/[0.08] bg-white/[0.025] p-3">
-        <div className="whitespace-nowrap text-sm font-bold text-on-surface">模板画廊</div>
-        <div className="mt-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_150px_130px]">
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
-            <TextInputControl
-              className="pl-9"
-              placeholder="搜索模板"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </label>
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] p-2">
+        <span className="px-1 text-sm font-bold text-on-surface">模板画廊</span>
+        <label className="relative min-w-[12rem] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
+          <TextInputControl
+            className="pl-9"
+            placeholder="搜索模板"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </label>
+        <div className="w-[140px]">
           <SelectControl value={platformFilter} aria-label="平台筛选" onChange={(event) => setPlatformFilter(event.target.value)}>
             <option value="all">全部平台</option>
             {platforms.map((platform) => (
@@ -85,6 +73,8 @@ export function CreateTemplateWorkspace({
               </option>
             ))}
           </SelectControl>
+        </div>
+        <div className="w-[130px]">
           <SelectControl value={ratioFilter} aria-label="尺寸筛选" onChange={(event) => setRatioFilter(event.target.value)}>
             <option value="all">全部尺寸</option>
             {ratios.map((ratio) => (
@@ -94,9 +84,15 @@ export function CreateTemplateWorkspace({
             ))}
           </SelectControl>
         </div>
+        <Button variant="ghost" size="sm" iconStart={<ImageIcon size={14} />} onClick={() => selectTemplate(templateById('ecommerce-white-bg') ?? CREATE_TEMPLATES[0])}>
+          从白底图开始
+        </Button>
+        <Button variant="ghost" size="sm" iconStart={<PencilLine size={14} />} onClick={() => selectTemplate(templateById('quick-prompt') ?? CREATE_TEMPLATES[0])}>
+          写提示词
+        </Button>
       </div>
 
-      <div className="grid flex-1 content-start gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid flex-1 content-start gap-3 grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4">
         {filteredTemplates.map((template, index) => (
           <TemplateCard
             key={template.id}

@@ -23,8 +23,12 @@ export default function TopNavBar() {
   const languageMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    if (!viewer?.authenticated) {
+      setAccount(null);
+      return;
+    }
     getAccount().then(setAccount).catch(() => setAccount(null));
-  }, [viewer?.owner_id]);
+  }, [viewer?.authenticated, viewer?.owner_id]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
