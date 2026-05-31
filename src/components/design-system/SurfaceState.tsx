@@ -68,8 +68,8 @@ export function SurfaceState({
   className,
 }: SurfaceStateProps) {
   return (
-    <Surface tone={kind === 'error' ? 'danger' : 'dashed'} padding="lg" className={cx('min-h-56', className)}>
-      <div className="flex h-full min-h-44 flex-col items-center justify-center text-center">
+    <Surface tone={kind === 'error' ? 'danger' : 'dashed'} padding="lg" className={cx('flex min-h-44 flex-col', className)}>
+      <div className="flex min-h-44 flex-1 flex-col items-center justify-center text-center">
         <div className={cx('mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border', iconClasses[kind])}>
           <StateIcon kind={kind} />
         </div>
