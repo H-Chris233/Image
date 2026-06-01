@@ -97,7 +97,7 @@ test('selected create template renders in the full editor workbench', () => {
   );
 
   assert.match(html, /创建编辑器/);
-  assert.match(html, /历史 \/ 结果/);
+  assert.match(html, /最近结果/);
   assert.match(html, /提示词/);
   assert.match(html, />生成</);
   assert.doesNotMatch(html, /模板画廊/);

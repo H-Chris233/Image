@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { DragEvent } from 'react';
+import type { DragEvent, ReactNode } from 'react';
 import { AlertCircle, CheckCircle2, ImagePlus, Loader2, RefreshCw, Sparkles, UploadCloud } from 'lucide-react';
 import { Button } from '../../components/design-system/Button';
 import { SelectControl, TextareaControl, TextInputControl } from '../../components/design-system/FormField';
@@ -14,9 +14,11 @@ type GenerationState = ReturnType<typeof useTemplateGeneration>;
 export function CreateEditorCenter({
   template,
   generation,
+  historyRail,
 }: {
   template: StudioCreateTemplate;
   generation: GenerationState;
+  historyRail?: ReactNode;
 }) {
   const [dragging, setDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
@@ -200,6 +202,8 @@ export function CreateEditorCenter({
             </label>
           </div>
         </section>
+
+        {historyRail}
 
         {generation.error || generation.validationMessage ? (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-error/25 bg-error-container/10 p-3 text-xs leading-5 text-error">

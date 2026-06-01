@@ -49,6 +49,7 @@ export const STUDIO_NAV: StudioNavItem[] = [
       { id: 'recent-generated', label: '最近生成', description: '创建 / 重绘' },
       { id: 'recent-redraw', label: '最近重绘', description: '改图记录' },
       { id: 'favorites', label: '收藏', description: '图片 / Prompt' },
+      { id: 'in-progress', label: '进行中', description: '排队 / 生成中' },
       { id: 'failed', label: '失败任务', description: '失败 / 重试' },
     ],
   },

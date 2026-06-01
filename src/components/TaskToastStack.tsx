@@ -49,6 +49,18 @@ export default function TaskToastStack() {
                 <div className="text-xs font-semibold text-on-surface">{title}</div>
                 <p className="mt-1 line-clamp-3 break-words text-sm text-on-surface-variant [overflow-wrap:anywhere]">{body}</p>
                 {isTaskToast && toast.error && body !== toast.error ? <div className="mt-2 break-words text-xs text-error [overflow-wrap:anywhere]">{toast.error}</div> : null}
+                {toast.type === 'notice' && toast.action ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toast.action?.run();
+                      dismissToast(toast.id);
+                    }}
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-lime hover:underline"
+                  >
+                    {toast.action.label}
+                  </button>
+                ) : null}
               </div>
               <button
                 aria-label={`${t('modal_close')} ${title}`}

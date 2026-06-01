@@ -1,5 +1,7 @@
 # Studio Rewrite Tldraw Implementation Plan
 
+> ⚠️ **SUPERSEDED** — 此 tldraw 画布方案已废弃，canvas 相关文件已于 commit `a78455d` 删除。当前 `/create` 实现见 `src/studio/create/`（`CreateEditorWorkbench` 三栏，非画布）。交互权威以 `docs/workflow-design-system.md` 为准。本文件仅作历史记录保留。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a new Canva-like `/studio` creation module and stop extending the old `/create` wizard.

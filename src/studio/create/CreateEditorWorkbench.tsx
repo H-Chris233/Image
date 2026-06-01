@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { StudioLocation } from '../app/studioLocation';
 import { fileFromImageUrl } from '../shared/fileFromImageUrl';
+import { studioLocation } from '../app/studioLocation';
+import { useTasks } from '../../tasks';
+import { takeReferenceHandoff } from '../shared/referenceHandoff';
 import type { StudioCreateTemplate } from './createTemplates';
 import { templateToDemoItem } from './templateToDemoItem';
 import { useTemplateGeneration } from './useTemplateGeneration';
@@ -20,6 +23,7 @@ export function CreateEditorWorkbench({
   onClose: () => void;
 }) {
   const generation = useTemplateGeneration(template);
+  const { notify } = useTasks();
   const [importingId, setImportingId] = useState('');
   const primaryInput = template.requiredInputs.find((input) => input.type === 'image' || input.type === 'asset' || input.type === 'optional-image');
 
@@ -42,12 +46,25 @@ export function CreateEditorWorkbench({
 
   async function useImage(image: CreateHistorySelection) {
     if (!primaryInput) return;
+    const previousFile = generation.inputFiles[primaryInput.id] ?? null;
+    const previousPrompt = generation.promptOverride;
     setImportingId(image.id);
     generation.setError('');
     try {
       const file = await fileFromImageUrl(image.src, image.title.replace(/[^a-z0-9]+/gi, '-').slice(0, 40) || 'history-image');
       generation.setInputFile(primaryInput.id, file);
       if (image.prompt) generation.setPromptOverride(image.prompt.slice(0, 1200));
+      notify({
+        kind: 'success',
+        message: '已回填为参考图',
+        action: {
+          label: '撤回',
+          run: () => {
+            generation.setInputFile(primaryInput.id, previousFile);
+            if (image.prompt) generation.setPromptOverride(previousPrompt);
+          },
+        },
+      });
     } catch (event) {
       generation.setError(event instanceof Error ? event.message : '无法使用这张历史图片');
     } finally {
@@ -55,12 +72,28 @@ export function CreateEditorWorkbench({
     }
   }
 
+  useEffect(() => {
+    const handoff = takeReferenceHandoff();
+    if (handoff) void useImage(handoff);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="h-[calc(100vh_-_var(--studio-topnav-h))] overflow-hidden bg-[#0d0d0b] text-on-surface">
-      <div className="grid h-full min-h-0 grid-cols-[300px_minmax(0,1fr)_300px] max-xl:grid-cols-[300px_minmax(0,1fr)] max-lg:block max-lg:overflow-y-auto">
+      <div className="grid h-full min-h-0 grid-cols-[300px_minmax(0,1fr)] max-lg:block max-lg:overflow-y-auto">
         <CreateTemplateRail activeTemplateId={template.id} onSelectTemplate={selectTemplate} onClose={onClose} />
-        <CreateEditorCenter template={template} generation={generation} />
-        <CreateHistoryRail resultUrls={generation.resultUrls} importingId={importingId} onUseImage={(image) => void useImage(image)} />
+        <CreateEditorCenter
+          template={template}
+          generation={generation}
+          historyRail={
+            <CreateHistoryRail
+              resultUrls={generation.resultUrls}
+              importingId={importingId}
+              onUseImage={(image) => void useImage(image)}
+              onOpenAssets={() => onLocationChange(studioLocation('studio', 'assets', 'recent-generated'))}
+            />
+          }
+        />
       </div>
     </div>
   );
