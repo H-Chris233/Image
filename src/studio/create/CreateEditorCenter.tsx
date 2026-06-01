@@ -84,20 +84,22 @@ export function CreateEditorCenter({
         <section className="grid gap-4 @2xl:grid-cols-[minmax(200px,1fr)_minmax(0,3fr)] @2xl:items-start">
           <div className="min-w-0 space-y-3">
             {primaryInput ? (
-              <ImageDropzone
-                className="min-h-44"
-                label={primaryInput.label}
-                dragging={dragging}
-                previewUrl={previewUrl}
-                fileName={generation.primaryImage?.name}
-                onFileChange={(event) => generation.handleFileChange(primaryInput.id, event)}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragging(true);
-                }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={handleDrop}
-              />
+              <div data-testid="create-primary-image-dropzone">
+                <ImageDropzone
+                  className="min-h-44"
+                  label={primaryInput.label}
+                  dragging={dragging}
+                  previewUrl={previewUrl}
+                  fileName={generation.primaryImage?.name}
+                  onFileChange={(event) => generation.handleFileChange(primaryInput.id, event)}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDragging(true);
+                  }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={handleDrop}
+                />
+              </div>
             ) : null}
 
             {secondaryInputs.length ? (

@@ -1851,20 +1851,19 @@ async function runSmokeChecks(page, baseUrl) {
     await assertNoHorizontalOverflow(page, '/explore inspiration catalog desktop');
   });
 
-  await runCheck('/create entry shows the local product wizard on mobile', async () => {
-    await page.navigate('/create', { width: 390, height: 844 });
+  await runCheck('/create entry shows the studio template gallery on mobile', async () => {
+    await page.navigate('/create?demo=create&smoke_auth=1', { width: 390, height: 844 });
+    const routedToCreate = await page.evaluate(() => window.location.pathname.startsWith('/create'));
+    if (!routedToCreate) throw new Error('/create entry did not stay on /create');
+    await page.waitFor(() => /模板画廊/.test(document.body.innerText || ''), '/create template gallery');
     await assertNoUnnamedButtons(page, '/create');
     await assertNoHorizontalOverflow(page, '/create mobile');
-    const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
-    if (!routedToCreate) throw new Error('/create entry did not stay on /create');
-    await page.waitFor(() => /PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create product wizard upload guidance');
-    await assertNamedControlsMinTarget(page, '/create product wizard controls', ['\u5f00\u59cb\u521b\u4f5c']);
-    await assertNoNamedControls(page, '/create no placeholder workflow controls', [
-      '\u8425\u9500\u5e7f\u544a\u56fe',
-      '\u6587\u751f\u56fe',
-      'AI \u6539\u56fe',
-    ]);
-    await assertNoNamedControls(page, '/create no legacy composer controls', [
+    // New studio IA entry controls: gallery quick-start shortcuts + scenario tabs + template cards.
+    await assertNamedControlsMinTarget(page, '/create gallery shortcuts', ['^从白底图开始$', '^写提示词$']);
+    const hasWhiteBgCard = await page.evaluate(() => Boolean(document.querySelector('button[aria-label="白底图"]')));
+    if (!hasWhiteBgCard) throw new Error('/create gallery missing the white-bg template card');
+    await assertNoNamedControls(page, '/create no legacy wizard controls', [
+      '^开始创作$',
       '^Image Generation',
       '^Commerce Image',
       '^Add reference image$',
@@ -1873,79 +1872,69 @@ async function runSmokeChecks(page, baseUrl) {
     ]);
   });
 
-  await runCheck('/create wizard selects a scene and reaches tune step', async () => {
-    await page.navigate('/create?smoke_auth=1', { width: 1100, height: 900 });
-    await assertNoHorizontalOverflow(page, '/create scene entry');
-    const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
-    if (!routedToCreate) throw new Error('/create tablet entry did not stay on /create');
-    await clickMainControl(page, '开始创作', '/create scene entry');
-    await page.waitFor(() => /想做哪种图|选择场景|先选你的生意类型/.test(document.body.innerText || ''), '/create scene browser step');
-    await assertNoHorizontalOverflow(page, '/create scene browser step');
-    await clickMainControl(page, '白底主图', '/create select scene card');
-    await page.waitFor(() => /上传商品图|PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create upload brief step');
-    await assertNoHorizontalOverflow(page, '/create upload brief step');
-    await assertNoUnnamedButtons(page, '/create upload brief step');
-    await assertNamedControlsMinTarget(page, '/create upload brief controls', ['^关闭$', '^下一步$']);
-
+  await runCheck('/create selects a template and reaches the editor workbench', async () => {
+    await page.navigate('/create?demo=create&smoke_auth=1', { width: 1100, height: 900 });
+    await page.waitFor(() => /模板画廊/.test(document.body.innerText || ''), '/create gallery tablet entry');
+    await assertNoHorizontalOverflow(page, '/create gallery entry');
+    // Pick the white-bg template card to enter the editor workbench.
+    await clickMainControl(page, '^白底图$', '/create select template card');
+    await page.waitFor(
+      () => Boolean(document.querySelector('[data-testid="create-primary-image-dropzone"]')),
+      '/create editor workbench dropzone',
+    );
+    await page.waitFor(() => /PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create editor upload guidance');
+    await assertNoUnnamedButtons(page, '/create editor workbench');
+    await assertNoHorizontalOverflow(page, '/create editor workbench');
+    // Drop a product image; the white-bg template auto-builds its prompt from default variables.
     await page.evaluate(() => {
       const file = new File(['smoke image'], 'smoke-product.webp', { type: 'image/webp' });
       const dataTransfer = new DataTransfer();
       dataTransfer.items.add(file);
-      const dropZone = document.querySelector('label[for="wizard-product-image-input"]');
-      if (!dropZone) throw new Error('upload drop zone not found');
-      dropZone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
-      const textarea = document.querySelector('textarea');
-      if (!(textarea instanceof HTMLTextAreaElement)) throw new Error('brief textarea not found');
-      const valueSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
-      if (valueSetter) valueSetter.call(textarea, 'Make the product look premium and clean');
-      else textarea.value = 'Make the product look premium and clean';
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      const dropZone = document.querySelector('[data-testid="create-primary-image-dropzone"]');
+      const fileInput = dropZone && dropZone.querySelector('input[type="file"]');
+      if (!fileInput) throw new Error('upload file input not found');
+      fileInput.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
     });
     await page.waitFor(() => /smoke-product\.webp/i.test(document.body.innerText || ''), '/create uploaded product preview');
-    await clickMainControl(page, '^下一步$', '/create advance to tune');
-    await page.waitFor(() => /用「白底主图」风格生成 1 张/.test(document.body.innerText || ''), '/create tune step');
-    await assertNamedControlsMinTarget(page, '/create tune controls', ['^返回上一步$', '^生成$']);
-    await assertNoHorizontalOverflow(page, '/create tune step');
+    // Generate becomes available once a required image is present and the prompt is built.
+    await assertNamedControlsMinTarget(page, '/create editor controls', ['^生成$']);
   });
 
-  await runCheck('/create generates with the selected scene prompt directly', async () => {
-    await page.navigate('/create?smoke_auth=1', { width: 390, height: 844 });
+  await runCheck('/create generates with the template prompt via the ecommerce endpoint', async () => {
+    await page.navigate('/create?demo=create&smoke_auth=1', { width: 390, height: 844 });
     await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
-    await clickMainControl(page, '开始创作', '/create scene generate entry');
-    await page.waitFor(() => /想做哪种图|选择场景/.test(document.body.innerText || ''), '/create mobile scene browser');
-    await clickMainControl(page, '白底主图', '/create mobile select scene');
-    await page.waitFor(() => /上传商品图|PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create mobile upload step');
+    await page.waitFor(() => /模板画廊/.test(document.body.innerText || ''), '/create mobile gallery');
+    await clickMainControl(page, '^白底图$', '/create mobile select template');
+    await page.waitFor(
+      () => Boolean(document.querySelector('[data-testid="create-primary-image-dropzone"]')),
+      '/create mobile editor dropzone',
+    );
     await page.evaluate(() => {
       const file = new File(['smoke image'], 'mobile-product.png', { type: 'image/png' });
       const dataTransfer = new DataTransfer();
       dataTransfer.items.add(file);
-      const dropZone = document.querySelector('label[for="wizard-product-image-input"]');
-      if (!dropZone) throw new Error('upload drop zone not found');
-      dropZone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
-      const textarea = document.querySelector('textarea');
-      if (!(textarea instanceof HTMLTextAreaElement)) throw new Error('brief textarea not found');
-      const valueSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
-      if (valueSetter) valueSetter.call(textarea, 'Premium marketplace main image');
-      else textarea.value = 'Premium marketplace main image';
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      const dropZone = document.querySelector('[data-testid="create-primary-image-dropzone"]');
+      const fileInput = dropZone && dropZone.querySelector('input[type="file"]');
+      if (!fileInput) throw new Error('upload file input not found');
+      fileInput.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
     });
     await page.waitFor(() => /mobile-product\.png/i.test(document.body.innerText || ''), '/create mobile uploaded preview');
-    await clickMainControl(page, '^下一步$', '/create mobile tune step');
-    await page.waitFor(() => /生成 1 张/.test(document.body.innerText || ''), '/create mobile tune ready');
     await clickMainControl(page, '^生成$', '/create mobile generate');
-    await page.waitFor(() => window.location.pathname.includes('/workspace/smoke-regenerated-task'), '/create navigates to generated workspace');
+    // New flow polls in place and renders into the history rail; it does not navigate routes.
+    await page.waitFor(() => {
+      const calls = JSON.parse(window.localStorage.getItem('aethergenix_smoke_api_calls') || '[]');
+      return calls.some((call) => call.type === 'ecommerce-generate');
+    }, '/create ecommerce generate request');
     const calls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
-    const optimizeCall = calls.find((call) => call.type === 'prompt-optimize');
     const generateCall = calls.find((call) => call.type === 'ecommerce-generate');
     if (
-      optimizeCall ||
       !generateCall ||
       generateCall.path !== '/api/ecommerce/generate' ||
-      !/^Amazon-compliant e-commerce main image/.test(generateCall.body?.style || '') ||
-      generateCall.body?.n !== '1' ||
-      generateCall.body?.image?.name !== 'mobile-product.png'
+      (generateCall.body && generateCall.body.image && generateCall.body.image.name) !== 'mobile-product.png' ||
+      (generateCall.body && generateCall.body.n) !== '1' ||
+      !/电商白底图/.test((generateCall.body && generateCall.body.style) || '')
     ) {
-      throw new Error(`/create scene generate calls mismatch: ${JSON.stringify(calls)}`);
+      throw new Error('/create template generate calls mismatch: ' + JSON.stringify(calls));
     }
   });
 
