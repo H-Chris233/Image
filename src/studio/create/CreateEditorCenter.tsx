@@ -82,19 +82,21 @@ export function CreateEditorCenter({
         <section className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
           <div className="min-w-0 space-y-4">
             {primaryInput ? (
-              <ImageDropzone
-                label={primaryInput.label}
-                dragging={dragging}
-                previewUrl={previewUrl}
-                fileName={generation.primaryImage?.name}
-                onFileChange={(event) => generation.handleFileChange(primaryInput.id, event)}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragging(true);
-                }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={handleDrop}
-              />
+              <div data-testid="create-primary-image-dropzone">
+                <ImageDropzone
+                  label={primaryInput.label}
+                  dragging={dragging}
+                  previewUrl={previewUrl}
+                  fileName={generation.primaryImage?.name}
+                  onFileChange={(event) => generation.handleFileChange(primaryInput.id, event)}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDragging(true);
+                  }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={handleDrop}
+                />
+              </div>
             ) : null}
 
             {secondaryInputs.length ? (
