@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 class Sub2APIAuthClient:
-    def __init__(self, timeout_seconds: float = 60):
-        self.timeout = httpx.Timeout(timeout_seconds, connect=20)
+    def __init__(self, timeout_seconds: float = 8):
+        # 上游 sub2api 偶发抽风/Cloudflare Tunnel 530：宁可快速失败也不让用户干等 20s。
+        self.timeout = httpx.Timeout(timeout_seconds, connect=5)
 
     async def public_settings(self, base_url: str) -> dict[str, Any]:
         return await self._request(base_url, "GET", "/api/v1/settings/public")

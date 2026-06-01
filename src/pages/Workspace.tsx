@@ -1185,7 +1185,7 @@ function TaskProgressPanel({
           <div className="mt-6">
             <SectionLabel icon={<Sparkles size={14} />} label={copy.promptContext} />
             <p className="mt-3 break-words rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-sm leading-6 text-[#f0ede8] [overflow-wrap:anywhere]">
-              {task.prompt || copy.promptFallback}
+              {copy.promptFallback}
             </p>
           </div>
 
@@ -1351,7 +1351,7 @@ function SucceededWorkbench({
                 >
                   <RetryImage
                     src={img.image_url ?? ''}
-                    alt={img.prompt ?? task.prompt}
+                    alt={copy.promptContext}
                     className="h-full min-h-[160px] w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]"
                   />
                   <div className={`absolute inset-x-0 top-0 h-1 bg-[#E3FF74] transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
@@ -1568,15 +1568,9 @@ function FailedTaskPanel({
       <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 p-5 sm:p-6">
           <SectionLabel icon={<AlertCircle size={14} />} label={copy.failureReason} />
-          <div className="mt-3 rounded-xl border border-error/25 bg-error/10 px-4 py-3 text-sm leading-6 text-on-error-container">
-            <p className="break-words [overflow-wrap:anywhere]">{task.error || copy.unknownError}</p>
-          </div>
-
-          <div className="mt-6">
-            <SectionLabel icon={<Sparkles size={14} />} label={copy.promptContext} />
-            <p className="mt-3 break-words rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-sm leading-6 text-[#f0ede8] [overflow-wrap:anywhere]">
-              {task.prompt || copy.promptFallback}
-            </p>
+          <div className="mt-3 rounded-xl border border-error/25 bg-error/10 px-4 py-3 leading-6 text-on-error-container">
+            <p className="text-sm font-semibold">{presentTaskError(task.error).title}</p>
+            <p className="mt-1 break-words text-sm [overflow-wrap:anywhere]">{presentTaskError(task.error).message}</p>
           </div>
 
           <div className="mt-6">
@@ -1652,7 +1646,7 @@ function EmptyResultState({
           </div>
           <h1 className="text-2xl font-bold text-[#f0ede8]">{copy.emptyTitle}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#b9b2a8]">{copy.emptyDescription}</p>
-          <p className="mt-4 break-words text-sm leading-6 text-[#f0ede8] [overflow-wrap:anywhere]">{task.prompt || copy.promptFallback}</p>
+          <p className="mt-4 break-words text-sm leading-6 text-[#f0ede8] [overflow-wrap:anywhere]">{copy.promptFallback}</p>
         </div>
         <div className="w-full shrink-0 lg:w-[340px]">
           <TaskMetaGrid compact copy={copy} expectedCount={expectedCount} task={task} />

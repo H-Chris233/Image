@@ -168,7 +168,7 @@ export function TaskCenterProvider({ children }: { children: ReactNode }) {
         ...current,
       ].slice(0, 6));
     }
-    setDrawerOpen(true);
+    // 不自动弹任务抽屉：结果就地显示在 /create，抽屉只在用户主动点击时打开（SPEC 失败态四件套）。
   }, []);
 
   const activeTaskIds = useMemo(

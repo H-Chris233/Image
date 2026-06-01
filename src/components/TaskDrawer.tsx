@@ -233,14 +233,14 @@ export default function TaskDrawer() {
                                     images: previewImages.map((galleryImage, galleryIndex) => ({
                                       id: galleryImage.id,
                                       url: galleryImage.url,
-                                      prompt: galleryImage.prompt,
+                                      prompt: '',
                                       title: `${task.id}-${galleryIndex + 1}`,
                                     })),
                                     initialIndex: imageIndex,
-                                    prompt: image.prompt,
+                                    prompt: '',
                                   })}
                                 >
-                                  <RetryImage alt={task.prompt} className="h-full w-full object-cover" src={image.url} />
+                                  <RetryImage alt={'生成结果'} className="h-full w-full object-cover" src={image.url} />
                                 </button>
                               ))}
                             </div>
@@ -250,24 +250,24 @@ export default function TaskDrawer() {
                               className="h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
                               type="button"
                               title={t('history_preview')}
-                              onClick={() => setPreviewItem({ imageUrl: previewImage, prompt: task.prompt })}
+                              onClick={() => setPreviewItem({ imageUrl: previewImage, prompt: '' })}
                             >
-                              <RetryImage alt={task.prompt} className="h-full w-full object-contain" src={previewImage} />
+                              <RetryImage alt={'生成结果'} className="h-full w-full object-contain" src={previewImage} />
                             </button>
                           ) : (
                             <ImageIcon aria-hidden="true" size={18} className="text-[#8a8680]" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="line-clamp-3 text-sm text-[#f0ede8]">{task.prompt}</p>
+                          <p className="line-clamp-2 text-sm text-[#f0ede8]">{'商品图'}</p>
                           <div className="mt-2 flex flex-wrap gap-2 text-xs text-[#8a8680]">
-                            <span>{task.model}</span>
                             <span>{task.size}</span>
                             {task.aspect_ratio ? <span>{task.aspect_ratio}</span> : null}
-                            <span>{task.quality}</span>
                             {previewImages.length > 1 ? <span>x{previewImages.length}</span> : null}
                           </div>
-                          {task.error ? <div className="mt-2 break-words text-sm text-[#ff6b6b]">{task.error}</div> : null}
+                          {task.error ? (
+                            <div className="mt-2 text-sm text-[#ff6b6b]">{presentTaskError(task.error).message}</div>
+                          ) : null}
                         </div>
                       </div>
                     </div>

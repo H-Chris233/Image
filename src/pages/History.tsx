@@ -450,7 +450,8 @@ function HistoryCard({
   const deleteCount = group.items.length;
   const previewImage = group.images[0]?.url || item.image_url;
   const issueCount = group.items.filter((historyItem) => historyItem.status === 'failed' || !historyItem.image_url).length;
-  const errorText = group.items.find((historyItem) => historyItem.error)?.error || (issueCount > 0 ? t('history_failed') : '');
+  const rawErrorItem = group.items.find((historyItem) => historyItem.error)?.error;
+  const errorText = rawErrorItem ? presentTaskError(rawErrorItem).message : (issueCount > 0 ? t('history_failed') : '');
   const visibleSlots = isBatch ? group.items.slice(0, 6) : [item];
   const hiddenSlotCount = Math.max(0, group.items.length - visibleSlots.length);
   const downloadHref = isBatch && item.task_id ? taskDownloadUrl(item.task_id) : previewImage || '';

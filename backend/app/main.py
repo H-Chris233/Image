@@ -439,10 +439,12 @@ def create_app(
         dev_mock_enabled=settings.dev_allow_mock_sub2api,
         dev_mock_base_url=settings.dev_mock_sub2api_base_url,
     )
+    # 登录/注册等鉴权调用要快速失败：上游(sub2api)偶发抽风/530，不能让用户干等 request_timeout(默认300s)。
+    auth_timeout = min(settings.request_timeout_seconds, 8.0)
     app.state.auth_client = auth_client or (
-        MockAuthClient(settings.dev_mock_sub2api_base_url, settings.request_timeout_seconds)
+        MockAuthClient(settings.dev_mock_sub2api_base_url, auth_timeout)
         if settings.dev_allow_mock_sub2api
-        else Sub2APIAuthClient(settings.request_timeout_seconds)
+        else Sub2APIAuthClient(auth_timeout)
     )
     app.state.inspiration_task = None
     app.state.image_tasks = {}

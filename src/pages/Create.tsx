@@ -11,6 +11,7 @@ import { storeLastProductImage } from '../components/ecommerce/productImageSessi
 import { useNotifier } from '../notifications';
 import { providerImageSize } from '../imageOptions';
 import { useTasks } from '../tasks';
+import { presentTaskError } from '../lib/presentTaskError';
 
 const PROMPT_TRANSFER_KEY = 'aethergenix_pending_prompt';
 const FAST_IMAGE_COST = 0.134;
@@ -340,7 +341,7 @@ function ResultView({
       <section className="min-w-0 space-y-3">
         {runs.map((run) => (
           <Fragment key={run.taskId}>
-            <TaskResultRow run={run} expectedCount={run.count} />
+            <TaskResultRow run={run} expectedCount={run.count} onRetry={canRegenerate ? onRegenerate : undefined} retrying={loading} />
           </Fragment>
         ))}
       </section>
@@ -382,7 +383,7 @@ function ResultView({
   );
 }
 
-function TaskResultRow({ run, expectedCount }: { run: GenerationRun; expectedCount: number }) {
+function TaskResultRow({ run, expectedCount, onRetry, retrying }: { run: GenerationRun; expectedCount: number; onRetry?: () => void; retrying?: boolean }) {
   const status = run.task?.status ?? 'queued';
   const isActive = status === 'queued' || status === 'running';
   const images = (run.task?.items ?? []).filter((item) => item.status === 'succeeded' && item.image_url);
@@ -407,9 +408,21 @@ function TaskResultRow({ run, expectedCount }: { run: GenerationRun; expectedCou
       </div>
 
       {status === 'failed' ? (
-        <p className="rounded-md border border-error/30 bg-error/5 p-2 text-xs leading-5 text-error/90">
-          {run.task?.error || '生成失败，请重试'}
-        </p>
+        <div className="rounded-md border border-error/30 bg-error/5 p-3">
+          <p className="text-sm font-semibold text-[#f0ede8]">{presentTaskError(run.task?.error).title}</p>
+          <p className="mt-1 text-xs leading-5 text-on-surface-variant">{presentTaskError(run.task?.error).message}</p>
+          {onRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={retrying}
+              className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[#E3FF74] px-4 text-xs font-bold text-[#14120f] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {retrying ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+              重试
+            </button>
+          ) : null}
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {images.length > 0
