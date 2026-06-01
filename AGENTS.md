@@ -15,7 +15,7 @@ docs/design-system/
 
 重要长期约束放入上述位置，是项目架构、决策，以及所有 agent 执行任务的唯一权威。
 
-设计系统权威见 `src/design-system/design.md`；agent skills（issue tracker、triage labels、domain docs）见 `docs/agents/`。
+设计系统权威见 `src/design-system/design.md`，对应静态预览见 `src/design-system/preview/index.html`；agent skills（issue tracker、triage labels、domain docs）见 `docs/agents/`。
 
 ## 本地工作区
 

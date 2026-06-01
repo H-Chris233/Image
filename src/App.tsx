@@ -88,7 +88,7 @@ export default function App() {
       {sideNavHidden ? null : <BottomTabBar />}
       {chromeHidden ? null : <AnnouncementModal />}
       {chromeHidden ? null : <AuthModal />}
-      {chromeHidden || entryMode || workbenchMode ? null : <TaskDrawer />}
+      {chromeHidden ? null : <TaskDrawer />}
       {chromeHidden ? null : <TaskToastStack />}
     </div>
   );
