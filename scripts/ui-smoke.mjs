@@ -6,7 +6,9 @@ import net from 'node:net';
 import path from 'node:path';
 
 const ROOT_DIR = process.cwd();
-const TMP_ROOT = path.join(ROOT_DIR, '.tmp', 'ui-smoke');
+const TMP_ROOT = process.env.UI_SMOKE_TMP_ROOT
+  ? path.resolve(process.env.UI_SMOKE_TMP_ROOT)
+  : path.join(ROOT_DIR, '.tmp', 'ui-smoke');
 const ISSUE_SCREENSHOT_DIR = path.join(ROOT_DIR, '.tmp', 'issue-49');
 const TEMP_DIR = path.join(TMP_ROOT, 'temp');
 const NPM_CACHE_DIR = path.join(TMP_ROOT, 'npm-cache');
@@ -1729,6 +1731,10 @@ async function assertAdminConfigSurface(page, context) {
 }
 
 async function runCheck(name, fn) {
+  const onlyFilter = process.env.UI_SMOKE_ONLY;
+  if (onlyFilter && !new RegExp(onlyFilter).test(name)) {
+    return;
+  }
   process.stdout.write(`- ${name} ... `);
   try {
     await fn();
