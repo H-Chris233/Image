@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { StudioLocation } from '../app/studioLocation';
 import { fileFromImageUrl } from '../shared/fileFromImageUrl';
 import { studioLocation } from '../app/studioLocation';
 import { useTasks } from '../../tasks';
-import { takeReferenceHandoff } from '../shared/referenceHandoff';
+import { REFERENCE_HANDOFF_EVENT, takeReferenceHandoff } from '../shared/referenceHandoff';
 import type { StudioCreateTemplate } from './createTemplates';
 import { templateToDemoItem } from './templateToDemoItem';
 import { useTemplateGeneration } from './useTemplateGeneration';
@@ -72,10 +72,19 @@ export function CreateEditorWorkbench({
     }
   }
 
+  const useImageRef = useRef(useImage);
+  useImageRef.current = useImage;
+
   useEffect(() => {
-    const handoff = takeReferenceHandoff();
-    if (handoff) void useImage(handoff);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const consume = () => {
+      const handoff = takeReferenceHandoff();
+      if (handoff) void useImageRef.current(handoff);
+    };
+    // 跨页跳转：mount 时读取已暂存的 handoff
+    consume();
+    // 同页即时回填：任务中心抽屉在 create 上下文派发事件，无需跳转
+    window.addEventListener(REFERENCE_HANDOFF_EVENT, consume);
+    return () => window.removeEventListener(REFERENCE_HANDOFF_EVENT, consume);
   }, []);
 
   return (

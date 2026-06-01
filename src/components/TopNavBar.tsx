@@ -7,7 +7,6 @@ import { useAuthModal } from '../authModal';
 import { useSite } from '../site';
 import { useTasks } from '../tasks';
 import { Button, IconButton } from './design-system';
-import { isStudioEntryRoute, isStudioShellRoute } from '../studio/app/studioRoutes';
 import aethergenixLogo from '../../aethergenix.svg';
 
 export default function TopNavBar() {
@@ -91,7 +90,6 @@ export default function TopNavBar() {
     : t('top_tasks');
   const homeLabel = t('explore_home_label');
   const showLanguageMenu = location.pathname !== '/config' && !location.pathname.startsWith('/config/');
-  const studioRoute = isStudioEntryRoute(location.pathname) || isStudioShellRoute(location.pathname);
   const localeOptions = [
     { value: 'zh-CN', label: t('lang_zh') },
     { value: 'en-US', label: t('lang_en') },
@@ -177,22 +175,20 @@ export default function TopNavBar() {
           </div>
         )}
 
-        {/* 任务：studio 路由下任务进度走结果区内联 + 资产库进行中分区，不再用浮层抽屉 */}
-        {!studioRoute && (
-          <IconButton
-            className="relative"
-            variant={activeCount > 0 ? 'lime' : 'plain'}
-            icon={<ListTodo aria-hidden="true" size={15} />}
-            label={taskButtonLabel}
-            onClick={openDrawer}
-          >
-            {activeCount > 0 && (
-              <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E3FF74] px-1 text-[9px] font-bold text-[#1a1917]">
-                {activeCount}
-              </span>
-            )}
-          </IconButton>
-        )}
+        {/* 任务中心：全局常驻入口，所有路由（含 studio）都保留（见 docs/workflow-design-system.md 入口与归口规则） */}
+        <IconButton
+          className="relative"
+          variant={activeCount > 0 ? 'lime' : 'plain'}
+          icon={<ListTodo aria-hidden="true" size={15} />}
+          label={taskButtonLabel}
+          onClick={openDrawer}
+        >
+          {activeCount > 0 && (
+            <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E3FF74] px-1 text-[9px] font-bold text-[#1a1917]">
+              {activeCount}
+            </span>
+          )}
+        </IconButton>
 
         {/* 公告 */}
         <IconButton

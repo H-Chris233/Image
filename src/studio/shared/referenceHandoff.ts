@@ -1,11 +1,22 @@
 const REFERENCE_KEY = 'aethergenix_studio_reference_asset';
 
+// Fires after a handoff is staged so an already-mounted create workbench can
+// backfill in place (no route change). Cross-page handoff still works via the
+// sessionStorage read on mount.
+export const REFERENCE_HANDOFF_EVENT = 'studio:reference-handoff';
+
 export type ReferenceHandoff = {
   id: string;
   src: string;
   title: string;
   prompt?: string;
 };
+
+export function emitReferenceHandoff(asset: ReferenceHandoff): void {
+  setReferenceHandoff(asset);
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(REFERENCE_HANDOFF_EVENT));
+}
 
 export function setReferenceHandoff(asset: ReferenceHandoff): void {
   if (typeof window === 'undefined') return;

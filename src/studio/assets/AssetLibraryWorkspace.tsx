@@ -200,28 +200,24 @@ function titleForTab(t2: string | null) {
   if (t2 === 'uploads') return '上传原图与输入图';
   if (t2 === 'recent-redraw') return '最近重绘';
   if (t2 === 'favorites') return '收藏';
-  if (t2 === 'in-progress') return '进行中任务';
   if (t2 === 'failed') return '失败任务';
   return '最近生成';
 }
 
 function emptyTitleForTab(t2: string | null) {
   if (t2 === 'favorites') return '还没有收藏资产';
-  if (t2 === 'in-progress') return '当前没有进行中的任务';
   if (t2 === 'failed') return '没有失败任务';
   return '还没有可用资产';
 }
 
 function emptyDescriptionForTab(t2: string | null) {
   if (t2 === 'favorites') return '在任意资产卡片点击收藏后会出现在这里。';
-  if (t2 === 'in-progress') return '提交生成后，排队和生成中的任务会显示在这里。';
   if (t2 === 'failed') return '失败的生成任务会显示在这里，可检查参数后重试。';
   return '完成一次创建或重绘后，历史图片会自动成为资产。';
 }
 
 function taskStatusesForTab(t2: string | null): ImageTask['status'][] {
   if (t2 === 'failed') return ['failed'];
-  if (t2 === 'in-progress') return ['queued', 'running'];
   return [];
 }
 
