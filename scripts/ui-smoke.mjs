@@ -1556,7 +1556,7 @@ async function assertExploreEntryIsBrandOnly(page, context) {
     const brandLinks = exploreLinks.filter((link) => link.testId === 'brand-home-link');
     const nonBrandLinks = exploreLinks.filter((link) => link.testId !== 'brand-home-link');
     const brand = brandLinks[0];
-    const labelPattern = /^(Inspiration homepage|灵感探索)$/i;
+    const labelPattern = /^(Back to home|返回首页)$/i;
     const errors = [];
     if (brandLinks.length !== 1) {
       errors.push(`expected one visible brand /explore link, found ${brandLinks.length}`);
@@ -1826,66 +1826,29 @@ async function runSmokeChecks(page, baseUrl) {
     await assertAdminConfigSurface(page, '/config admin');
   });
 
-  await runCheck('/explore empty state has named buttons and no mobile overflow', async () => {
-    await page.navigate('/explore?smoke_state=empty', { width: 390, height: 844 });
-    await page.waitFor(() => /No cases available yet|暂时|鏆傛椂/.test(document.body.innerText), '/explore empty state');
-    await assertNoUnnamedButtons(page, '/explore empty');
-    await assertNoHorizontalOverflow(page, '/explore empty mobile');
-  });
-
-  await runCheck('/explore long error wraps without mobile overflow', async () => {
-    await page.navigate('/explore?smoke_state=long-error', { width: 390, height: 844 });
-    await page.waitFor(() => document.body.innerText.includes('AetherGenix smoke long error'), '/explore long error state');
-    await assertNoUnnamedButtons(page, '/explore long error');
-    await assertNoHorizontalOverflow(page, '/explore long error mobile');
-  });
-
-  await runCheck('/explore public feed excludes benchmark templates', async () => {
-    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
-    await page.navigate('/explore?smoke_auth=1&smoke_state=filled', { width: 390, height: 844 });
+  // /explore now renders the InspirationSurface marketing catalog (static
+  // SCENE_CATALOG) instead of the legacy Explore.tsx API feed. The previous
+  // empty / long-error / benchmark-feed / detail-modal cases exercised feed
+  // behaviour that no longer exists on this route, so they are replaced by
+  // marketing-surface checks below.
+  await runCheck('/explore inspiration catalog renders named controls without mobile overflow', async () => {
+    await page.navigate('/explore', { width: 390, height: 844 });
     await page.waitFor(
-      () => Boolean(document.querySelector('button[aria-label*="Smoke inspiration case"]')),
-      '/explore public feed fixture card',
+      () => /上传白底图/.test(document.body.innerText || ''),
+      '/explore inspiration catalog heading',
     );
-    const result = await page.evaluate((key) => {
-      const calls = JSON.parse(window.localStorage.getItem(key) || '[]')
-        .filter((call) => call.type === 'inspiration-list');
-      return {
-        calls,
-        text: document.body.innerText || '',
-      };
-    }, API_CALL_STORAGE_KEY);
-    if (!result.calls.length) {
-      throw new Error('Explore did not request /api/inspirations');
-    }
-    const unfilteredCall = result.calls.find((call) => call.exclude_template_types !== 'benchmark');
-    if (unfilteredCall) {
-      throw new Error(`Explore requested inspirations without excluding benchmark: ${JSON.stringify(result.calls)}`);
-    }
-    if (/Benchmark template prompt should stay hidden/i.test(result.text)) {
-      throw new Error('Explore rendered a benchmark template fixture');
-    }
-    await assertNoUnnamedButtons(page, '/explore public filtered feed');
-    await assertNoHorizontalOverflow(page, '/explore public filtered feed mobile');
+    await assertNoUnnamedButtons(page, '/explore inspiration catalog');
+    await assertNoHorizontalOverflow(page, '/explore inspiration catalog mobile');
   });
 
-  await runCheck('/explore detail modal keeps 44px close and action targets', async () => {
-    await page.navigate('/explore?smoke_auth=1&smoke_state=filled', { width: 390, height: 844 });
+  await runCheck('/explore inspiration catalog shows scene cards without overflow', async () => {
+    await page.navigate('/explore', { width: 1100, height: 900 });
     await page.waitFor(
-      () => Boolean(document.querySelector('button[aria-label*="Smoke inspiration case"]')),
-      '/explore filled fixture card',
+      () => Boolean(document.querySelector('button[aria-label^="复制"][aria-label$="提示词"]')),
+      '/explore inspiration scene card copy action',
     );
-    await clickMainControl(page, '^Preview Smoke inspiration case$', '/explore detail open');
-    await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), '/explore detail dialog');
-    await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'explore-detail-mobile.png'));
-    await assertDialogSemantics(page, 'Explore detail modal');
-    await assertNoHorizontalOverflow(page, 'Explore detail modal mobile');
-    await assertNamedControlsMinTarget(page, 'Explore detail modal actions', [
-      '^Close$',
-      '^Clone Prompt Create$',
-      '^Copy Smoke inspiration case$',
-    ]);
-    await assertEscClosesDialog(page, 'Explore detail modal');
+    await assertNoUnnamedButtons(page, '/explore inspiration catalog desktop');
+    await assertNoHorizontalOverflow(page, '/explore inspiration catalog desktop');
   });
 
   await runCheck('/create entry shows the local product wizard on mobile', async () => {
@@ -1989,11 +1952,14 @@ async function runSmokeChecks(page, baseUrl) {
   await runCheck('shell icon controls keep 44px tap targets', async () => {
     await page.navigate('/explore?smoke_state=empty', { width: 1280, height: 900, waitTimeoutMs: LOAD_TIMEOUT_MS * 3 });
     await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'shell-desktop.png'));
-    await assertNamedControlsMinTarget(page, 'desktop shell', ['^Inspiration homepage$|^灵感探索$', '^Language$', '^Tasks$', '^Announcement$']);
+    await assertNamedControlsMinTarget(page, 'desktop shell', ['^Back to home$|^返回首页$', '^Language$', '^Tasks$', '^Announcement$']);
     await assertExploreEntryIsBrandOnly(page, 'desktop shell');
+    // /explore now surfaces the studio LeftNav (创建/重绘/资产库/灵感/用户) as the
+    // primary navigation; the legacy SideNavBar Create/Task Center entries are
+    // hidden on entry routes.
     await assertNamedControlsMinTarget(page, 'desktop primary navigation', [
-      '^Create$|^创作$',
-      '^Task Center$|^任务中心$',
+      '^创建$',
+      '^灵感$',
     ]);
     const languageMenuOpened = await page.evaluate((helpersText) => {
       eval(helpersText);
@@ -2087,8 +2053,8 @@ async function runSmokeChecks(page, baseUrl) {
       eval(helpersText);
       const brandLink = document.querySelector('[data-testid="brand-home-link"]');
       if (!(brandLink instanceof HTMLElement) || !isVisible(brandLink)) return false;
-      if (!/^(Inspiration homepage|灵感探索)$/i.test(accessibleName(brandLink))) return false;
-      if (!/^(Inspiration homepage|灵感探索)$/i.test(normalize(brandLink.getAttribute('title')))) return false;
+      if (!/^(Back to home|返回首页)$/i.test(accessibleName(brandLink))) return false;
+      if (!/^(Back to home|返回首页)$/i.test(normalize(brandLink.getAttribute('title')))) return false;
       brandLink.click();
       return true;
     }, domSnapshotHelpers().text);
@@ -2142,17 +2108,27 @@ async function runSmokeChecks(page, baseUrl) {
     await assertEscClosesDialog(page, 'TaskDrawer active');
     await page.navigate('/explore?smoke_state=empty', { width: 390, height: 844 });
     await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'shell-mobile.png'));
-    await assertNamedControlsMinTarget(page, 'mobile shell', ['^Inspiration homepage$|^灵感探索$', '^Language$', '^Tasks$', '^Announcement$']);
+    await assertNamedControlsMinTarget(page, 'mobile shell', ['^Back to home$|^返回首页$', '^Language$', '^Tasks$', '^Announcement$']);
     await assertExploreEntryIsBrandOnly(page, 'mobile shell');
-    await assertNamedControlsMinTarget(page, 'mobile primary navigation', [
-      '^Create$|^创作$',
-      '^Tasks$|^任务$',
-      '^Me$|^我的$',
-    ]);
+    // Mobile /explore no longer renders business primary navigation: the studio
+    // LeftNav is hidden (max-md:hidden) and the legacy BottomTabBar is suppressed
+    // on entry routes. Only the TopNavBar shell icons remain (asserted above).
   });
 
   await runCheck('AnnouncementModal has dialog semantics, focus management, Esc close, and 44px close controls', async () => {
+    // /explore uses manual-only announcements (STUDIO_ROUTE_POLICY): the modal
+    // does not auto-open, so open it from the shell Announcement trigger.
     await page.navigate('/explore?smoke_state=empty&smoke_announcement=1', { width: 1280, height: 900 });
+    const openedAnnouncementDesktop = await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const announcementButton = Array.from(document.querySelectorAll('button'))
+        .filter((element) => isVisible(element))
+        .find((element) => /^Announcement$/i.test(accessibleName(element)));
+      if (!announcementButton) return false;
+      announcementButton.click();
+      return true;
+    }, domSnapshotHelpers().text);
+    if (!openedAnnouncementDesktop) throw new Error('could not open AnnouncementModal from shell trigger (desktop)');
     await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), 'AnnouncementModal dialog desktop');
     await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'announcement-desktop.png'));
     await assertDialogSemantics(page, 'AnnouncementModal');
@@ -2183,6 +2159,16 @@ async function runSmokeChecks(page, baseUrl) {
     if (!returnedToTrigger) throw new Error('focus did not return to announcement trigger after Escape');
 
     await page.navigate('/explore?smoke_state=empty&smoke_announcement=1', { width: 390, height: 844 });
+    const openedAnnouncementMobile = await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const announcementButton = Array.from(document.querySelectorAll('button'))
+        .filter((element) => isVisible(element))
+        .find((element) => /^Announcement$/i.test(accessibleName(element)));
+      if (!announcementButton) return false;
+      announcementButton.click();
+      return true;
+    }, domSnapshotHelpers().text);
+    if (!openedAnnouncementMobile) throw new Error('could not open AnnouncementModal from shell trigger (mobile)');
     await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), 'AnnouncementModal dialog mobile');
     await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'announcement-mobile.png'));
     await assertNoHorizontalOverflow(page, 'AnnouncementModal mobile');
@@ -2216,15 +2202,28 @@ async function runSmokeChecks(page, baseUrl) {
   await runCheck('AuthModal register verification controls keep 44px targets', async () => {
     await page.navigate('/explore?smoke_verify=1', { width: 390, height: 844 });
     await clickMainControl(page, '^Start creating$|^开始创作$', 'open AuthModal from Explore create entry');
-    await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), 'AuthModal register dialog');
+    await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), 'AuthModal login dialog');
+    // The Explore create entry opens AuthModal in login mode; switch to the
+    // register tab to reach the email-verification controls.
+    const switchedToRegister = await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const registerTab = Array.from(document.querySelectorAll('[role="dialog"] button'))
+        .filter((element) => isVisible(element))
+        .find((element) => /^(Register|注册)$/.test(accessibleName(element)));
+      if (!registerTab) return false;
+      registerTab.click();
+      return true;
+    }, domSnapshotHelpers().text);
+    if (!switchedToRegister) throw new Error('could not switch AuthModal to register tab');
+    await page.waitFor(() => Boolean(document.querySelector('#auth-register-verify-code')), 'AuthModal register verify-code field');
     await assertDialogSemantics(page, 'AuthModal register', { checkInputs: true });
     await assertNoHorizontalOverflow(page, 'AuthModal register mobile');
     await assertFormControlsMinTarget(page, 'AuthModal register fields', [
       '^Email$',
       '^Password$',
-      '^Verify Code$',
+      '^Verify Code$|^验证码$',
     ]);
-    await assertNamedControlsMinTarget(page, 'AuthModal register send-code action', ['^Send Code$']);
+    await assertNamedControlsMinTarget(page, 'AuthModal register send-code action', ['^Send Code$|^发送验证码$']);
     await assertEscClosesDialog(page, 'AuthModal register');
   });
 
