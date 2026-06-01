@@ -153,8 +153,6 @@ const activeSourceFiles = [
   'src/components/design-system/SurfaceState.tsx',
   'src/pages/Account.tsx',
   'src/pages/Config.tsx',
-  'src/pages/Create.tsx',
-  'src/pages/Explore.tsx',
   'src/pages/History.tsx',
   'src/pages/Tasks.tsx',
   'src/pages/Workspace.tsx',
