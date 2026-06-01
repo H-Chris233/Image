@@ -4,6 +4,14 @@ Source slice: local docs state for the `feat/frontend-dev` UI smoke effort.
 
 Last updated: 2026-05-19
 
+> **Superseded (2026-06-01).** The studio rewrite (#159) changed the IA: `/explore`
+> is now the InspirationSurface marketing catalog, `/create` is the StudioPage
+> template gallery, and primary navigation moved to the studio LeftNav. The
+> "UI Smoke Coverage" table below — especially the `/explore`, `/create`, and
+> `/favorites` rows — describes the pre-rewrite surfaces and is no longer
+> accurate. Treat `scripts/ui-smoke.mjs` as the source of truth for current
+> coverage; this file is retained only as historical context for issue #24.
+
 ## Current Status
 
 The latest Lead integration status after the parallel agent pass is green:
