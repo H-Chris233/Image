@@ -31,3 +31,21 @@ session 本身是持久的：文件型 SQLite + `SESSION_TTL_SECONDS=2592000`（
 
 把 `.env` 的 `DATABASE_PATH` 设为**绝对路径**，所有目录指向同一个库文件，多后端共享 session。
 代价：① 不同分支 schema 可能不一致；② SQLite 并发写有锁风险。优先用“多前端 + 单后端”，避免走这条。
+
+## 本地跑 UI smoke（`npm run smoke:ui`）
+
+CI 的 UI smoke gate 在 Windows 本地复现要点：
+
+- **用 PowerShell，别用 Git-bash**：Git-bash 会把 `/` 开头的环境变量值当路径转换（`/explore` 被转成 Windows 路径），过滤器会静默匹配不到、0 用例跑。
+- **temp 必须落在非系统盘**：脚本拒绝 temp 落在 `C:`。worktree 在 C 盘时用 `$env:UI_SMOKE_TMP_ROOT` 指到非系统盘（CI 在 ubuntu 不触发此护栏）；多实例并行用不同子目录避免缓存争用。
+- **按组跑**：`$env:UI_SMOKE_ONLY='<正则>'` 只跑名字匹配的用例（如 `/explore`、`shell icon controls`），快速迭代；CI 不设此 env 跑全量。
+- **全量调大超时**：`$env:UI_SMOKE_TIMEOUT_MS='540000'`（全量约 41 项，默认 240s 会超时）。
+- smoke 用 vite dev server（端口/CDP 自动避让、profile 带 pid），不需要 build，可并行多实例。
+
+示例（只跑 explore 组）：
+
+```powershell
+$env:UI_SMOKE_TMP_ROOT='D:\path\to\smoke-tmp\explore'; $env:UI_SMOKE_ONLY='/explore'; $env:UI_SMOKE_TIMEOUT_MS='180000'; npm run smoke:ui
+```
+
+> smoke 用例须跟随 studio IA 演进同步：`/explore` = InspirationSurface 营销页、`/create` = StudioPage 模板画廊、主导航 = studio LeftNav。删页面时记得同步 `scripts/design-system-smoke.mjs` 的 `activeSourceFiles` 清单，否则 design-system smoke 报 ENOENT。
