@@ -1,5 +1,7 @@
 # Studio Rewrite
 
+> **状态（2026-05-31）：** 本文件是 Flair 式架构骨架/方向参考。其中 Source Tree 的 `create/` 文件名已与现实脱节（已更新如下）；`Ownership` 等小节的组件名（CreatePanel/CreateComposer 等）仍是旧命名，仅作意图参考。交互权威以 `docs/workflow-design-system.md` 为准。`assets` 模块只承接**低频资产归档**（uploaded / generated results / redraw results / favorites）；**进行中任务与完整历史的归宿是「任务中心」全局入口，不在 `assets`**（见 workflow-design-system「入口与归口规则」，上一版把任务入口下沉到 `/assets` 已作废）。
+
 ## Goal
 
 ```text
@@ -121,11 +123,17 @@ src/studio/
 │  ├─ inspirationCatalog.ts
 │  └─ useInspirationActions.ts
 ├─ create/
-│  ├─ CreatePanel.tsx
-│  ├─ CreateComposer.tsx
-│  ├─ smbWorkflows.ts
-│  ├─ sceneCatalogAdapter.ts
-│  └─ createTypes.ts
+│  ├─ CreateTemplateWorkspace.tsx
+│  ├─ CreateTemplateRail.tsx
+│  ├─ CreateEditorWorkbench.tsx
+│  ├─ CreateEditorCenter.tsx
+│  ├─ CreateHistoryRail.tsx
+│  ├─ TemplateCard.tsx
+│  ├─ useTemplateGeneration.ts
+│  ├─ createTemplates.ts
+│  ├─ createTemplateResolver.ts
+│  ├─ templateToDemoItem.ts
+│  └─ templateQuickEditValidation.ts
 ├─ user/
 │  ├─ UserPanel.tsx
 │  ├─ AccountSummary.tsx

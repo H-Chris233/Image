@@ -1,8 +1,10 @@
-import { Clock3, History, ImageIcon, Loader2, RefreshCw, Sparkles, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Clock3, History, ImageIcon, Loader2, RefreshCw, Sparkles, Wand2, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatDate, generateImage, type ImageTask } from '../api';
 import { humanizeTaskError } from '../studio/generation/errorMessages';
+import { CREATE_ROUTE, isCreateRoute } from '../studio/app/studioRoutes';
+import { emitReferenceHandoff, setReferenceHandoff } from '../studio/shared/referenceHandoff';
 import ImagePreviewModal from './ImagePreviewModal';
 import RetryImage from './RetryImage';
 import { useSite } from '../site';
@@ -37,6 +39,8 @@ function statusIcon(status: 'queued' | 'running' | 'succeeded' | 'failed') {
 export default function TaskDrawer() {
   const { t } = useSite();
   const { tasks, drawerOpen, closeDrawer, activeCount, addTask, notify } = useTasks();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [retryingId, setRetryingId] = useState('');
   const drawerRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -58,6 +62,23 @@ export default function TaskDrawer() {
     return [...active, ...recentDone];
   }, [tasks]);
   const titleId = 'task-drawer-title';
+
+  // 复用提示词 + 参考图：在 create 上下文即时回填（不跳转），否则暂存后跳转到创建页。
+  function reuseTask(task: ImageTask, src: string) {
+    const selection = {
+      id: task.id,
+      src,
+      title: task.prompt.slice(0, 40) || task.id,
+      prompt: task.prompt,
+    };
+    if (isCreateRoute(location.pathname)) {
+      emitReferenceHandoff(selection);
+    } else {
+      setReferenceHandoff(selection);
+      navigate(CREATE_ROUTE);
+    }
+    closeDrawer();
+  }
 
   async function retryTask(task: ImageTask) {
     if (retryingId) return;
@@ -292,6 +313,16 @@ export default function TaskDrawer() {
                             <span>{task.quality}</span>
                             {previewImages.length > 1 ? <span>x{previewImages.length}</span> : null}
                           </div>
+                          {previewImage ? (
+                            <button
+                              type="button"
+                              onClick={() => reuseTask(task, previewImage)}
+                              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-white/[0.14] bg-white/[0.04] px-2.5 py-1 text-xs font-semibold text-[#f0ede8] transition hover:border-white/[0.26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E3FF74]/35"
+                            >
+                              <Wand2 aria-hidden="true" size={13} />
+                              复用提示词
+                            </button>
+                          ) : null}
                           {task.status === 'failed' ? (
                             <div className="mt-2 space-y-2">
                               <div className="break-words text-sm text-[#ff6b6b]">{humanizeTaskError(task.error)}</div>

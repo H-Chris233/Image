@@ -1,48 +1,62 @@
-# Project Agent Instructions
+# AGENTS.md
 
-## Frontend design system
+## 约束文件
 
-The canonical AetherGenix frontend design system is:
-
-```text
-src/design-system/design.md
-```
-
-The canonical static preview is:
+根目录或 `docs/` 的文档是唯一权威，按需创建，包括但不限于：
 
 ```text
-src/design-system/preview/index.html
+ARCHITECTURE.md
+CONTEXT.md
+docs/adr/
+docs/contracts/
+docs/migrations/
+docs/design-system/
 ```
 
-The React execution layer is:
+重要长期约束放入上述位置，是项目架构、决策，以及所有 agent 执行任务的唯一权威。
+
+设计系统权威见 `src/design-system/design.md`，对应静态预览见 `src/design-system/preview/index.html`；agent skills（issue tracker、triage labels、domain docs）见 `docs/agents/`。
+
+## 本地工作区
+
+所有不是长期约束的内容和临时产物，只放入：
 
 ```text
-src/components/design-system/
+.scratch/
+.temp/
+.draft/
 ```
 
-Before developing or changing frontend UI, read `src/design-system/design.md` and inspect the existing React primitives. Build pages from the existing design-system components and layout patterns first.
+不得提交：
 
-Hard rules:
+```text
+.scratch/
+.temp/
+.draft/
+```
 
-- The static spec in `src/design-system/design.md` is the source of truth; React components, `/design-system`, and docs references must conform to it.
-- Active production routes must use `src/components/design-system/` primitives for reusable buttons, icon buttons, fields, surfaces, dialogs, drawers, status pills, and surface states before launch.
-- Reusable UI belongs in `src/components/design-system/`, not hidden inside one page.
-- If an existing component is close, extend it with props, variants, slots, or class hooks before creating a similar component.
-- Create a new component only when no existing component can reasonably cover the responsibility and the pattern will recur.
-- Do not duplicate page-level Button, Card, Form, Navigation, Toolbar, Table, Status, Modal, Drawer, or Layout styling inside feature pages.
-- Any new reusable token, component, or layout pattern must be added to `src/design-system/design.md` and represented in the static preview.
-- One-off CSS is allowed only as page layout glue, not as a hidden second design system.
+不得在根目录或 `docs/` 放临时产物。
 
-## Agent skills
+临时内容不作为项目事实保留。需要进入项目的内容，必须改成正式文件修改，并走 GitHub 工作流。
 
-### Issue tracker
+## 正式开发
 
-Issues and PRDs are tracked in GitHub Issues for `H-Chris233/Image`. See `docs/agents/issue-tracker.md`.
+`source code` 修改只能通过 GitHub issue / branch / PR 进入项目事实区域。
 
-### Triage labels
+自行创建分支。
 
-Use the default Matt Pocock triage label vocabulary. See `docs/agents/triage-labels.md`.
+branch 命名：
 
-### Domain docs
+```text
+codex/<issue-number>-<short-topic>
+```
 
-Use a single-context domain documentation layout. See `docs/agents/domain.md`.
+无 issue 且已明确授权的小修：
+
+```text
+codex/no-issue-<short-topic>
+```
+
+## 验证
+
+不得声称未实际运行的验证已通过。

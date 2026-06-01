@@ -175,7 +175,7 @@ export default function TopNavBar() {
           </div>
         )}
 
-        {/* 任务 */}
+        {/* 任务中心：全局常驻入口，所有路由（含 studio）都保留（见 docs/workflow-design-system.md 入口与归口规则） */}
         <IconButton
           className="relative"
           variant={activeCount > 0 ? 'lime' : 'plain'}

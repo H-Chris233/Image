@@ -20,3 +20,11 @@ benchmark/
 # Ralph 循环：本地权限白名单与运行日志不进库（PROMPT.md / ralph.ps1 入库以便审阅）
 .claude/settings.local.json
 .ralph/run.log
+
+# Playwright MCP 临时产物（快照/截图/控制台日志），不进库
+.playwright-mcp/
+
+# 本地工作区：临时产物，永不进库（见 AGENTS.md §1）
+.scratch/
+.temp/
+.draft/

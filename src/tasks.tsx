@@ -13,12 +13,18 @@ export type TaskStatusToast = {
   error: string | null;
 };
 
+export type ToastAction = {
+  label: string;
+  run: () => void;
+};
+
 export type NoticeToast = {
   type: 'notice';
   id: string;
   kind: 'success' | 'error' | 'info';
   title?: string;
   message: string;
+  action?: ToastAction;
   createdAt: number;
 };
 
@@ -28,6 +34,7 @@ export type NotifyInput = {
   kind?: NoticeToast['kind'];
   title?: string;
   message: string;
+  action?: ToastAction;
 };
 
 type TaskCenterValue = {
@@ -95,6 +102,7 @@ export function TaskCenterProvider({ children }: { children: ReactNode }) {
       kind: toast.kind || 'info',
       title: toast.title,
       message,
+      action: toast.action,
       createdAt: Date.now(),
     };
     setToasts((current) => [notice, ...current].slice(0, 6));

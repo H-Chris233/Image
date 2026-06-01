@@ -7,13 +7,13 @@ import type { StudioLocation } from '../app/studioLocation';
 import { useHistoryImages } from '../history/useHistoryImages';
 import type { UserImage } from '../history/historyTypes';
 import type { StudioAssetInput } from './assetTypes';
+import { setReferenceHandoff } from '../shared/referenceHandoff';
 
 const FAVORITES_KEY = 'aethergenix_studio_asset_favorites';
-const REFERENCE_KEY = 'aethergenix_studio_reference_asset';
 
 type AssetLibraryItem = StudioAssetInput & {
   subtitle: string;
-  source: UserImage['source'] | 'failed-task';
+  source: UserImage['source'] | 'task';
   status?: ImageTask['status'];
 };
 
@@ -28,7 +28,9 @@ export function AssetLibraryWorkspace({
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => readFavoriteIds());
   const [copiedId, setCopiedId] = useState('');
   const [referenceId, setReferenceId] = useState('');
-  const failedTasks = useFailedTasks(location.t2 === 'failed');
+  const taskStatuses = useMemo(() => taskStatusesForTab(location.t2), [location.t2]);
+  const taskQuery = useTaskAssets(taskStatuses);
+  const isTaskTab = taskStatuses.length > 0;
 
   useEffect(() => {
     writeFavoriteIds(favoriteIds);
@@ -46,25 +48,25 @@ export function AssetLibraryWorkspace({
     [history.images],
   );
 
-  const failedAssets = useMemo<AssetLibraryItem[]>(
-    () => failedTasks.tasks.map((task) => ({
+  const taskAssets = useMemo<AssetLibraryItem[]>(
+    () => taskQuery.tasks.map((task) => ({
       id: task.id,
       src: task.input_image_url || task.input_image_path || '',
-      title: task.prompt || '失败任务',
-      subtitle: task.error || '可检查参数后重试',
+      title: task.prompt || (task.status === 'failed' ? '失败任务' : '生成任务'),
+      subtitle: subtitleForTask(task),
       prompt: task.prompt,
-      source: 'failed-task' as const,
+      source: 'task' as const,
       status: task.status,
-    })).filter((item) => item.src),
-    [failedTasks.tasks],
+    })),
+    [taskQuery.tasks],
   );
 
   const visibleAssets = useMemo(() => {
+    if (isTaskTab) return taskAssets;
     if (location.t2 === 'favorites') return allAssets.filter((asset) => favoriteIds.includes(asset.id));
-    if (location.t2 === 'failed') return failedAssets;
     if (location.t2 === 'recent-redraw') return allAssets.filter((asset) => asset.source === 'history-output' || asset.source === 'history-input');
     return allAssets;
-  }, [allAssets, failedAssets, favoriteIds, location.t2]);
+  }, [allAssets, taskAssets, isTaskTab, favoriteIds, location.t2]);
 
   function startRedraw(asset: StudioAssetInput) {
     onLocationChange({
@@ -104,15 +106,11 @@ export function AssetLibraryWorkspace({
 
   function setReference(asset: StudioAssetInput) {
     setReferenceId(asset.id);
-    try {
-      window.sessionStorage.setItem(REFERENCE_KEY, JSON.stringify(asset));
-    } catch {
-      // Session storage is a convenience handoff, not a required persistence layer.
-    }
+    setReferenceHandoff(asset);
   }
 
-  const loading = history.loading || failedTasks.loading;
-  const error = location.t2 === 'failed' ? failedTasks.error : history.error;
+  const loading = isTaskTab ? taskQuery.loading : history.loading;
+  const error = isTaskTab ? taskQuery.error : history.error;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-4">
@@ -130,48 +128,67 @@ export function AssetLibraryWorkspace({
 
       {visibleAssets.length ? (
         <div className="grid flex-1 content-start gap-3 @2xl:grid-cols-2 @4xl:grid-cols-3 @6xl:grid-cols-4">
-          {visibleAssets.map((asset) => (
-            <article key={asset.id} className="ds-motion-card overflow-hidden rounded-lg border border-white/[0.08] bg-surface shadow-[0_8px_32px_rgba(0,0,0,0.24)]">
-              <div className="relative aspect-[4/3] bg-black/25">
-                <img src={asset.src} alt={asset.title} className="h-full w-full object-cover" />
-                <div className="absolute left-2 top-2">
-                  <StatusPill tone={asset.status === 'failed' ? 'error' : 'neutral'} size="sm">
-                    {asset.subtitle}
-                  </StatusPill>
+          {visibleAssets.map((asset) => {
+            const pending = asset.status === 'queued' || asset.status === 'running';
+            return (
+              <article key={asset.id} className="ds-motion-card overflow-hidden rounded-lg border border-white/[0.08] bg-surface shadow-[0_8px_32px_rgba(0,0,0,0.24)]">
+                <div className="relative aspect-[4/3] bg-black/25">
+                  {asset.src ? (
+                    <img src={asset.src} alt={asset.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Loader2 className="animate-spin text-on-surface-variant" size={24} aria-label="生成中" />
+                    </div>
+                  )}
+                  <div className="absolute left-2 top-2">
+                    <StatusPill tone={asset.status === 'failed' ? 'error' : pending ? 'running' : 'neutral'} size="sm">
+                      {asset.subtitle}
+                    </StatusPill>
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-3 p-3">
-                <div className="min-w-0">
-                  <h3 className="truncate text-sm font-bold text-on-surface">{asset.title}</h3>
-                  {asset.prompt ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-on-surface-variant">{asset.prompt}</p> : null}
+                <div className="space-y-3 p-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-bold text-on-surface">{asset.title}</h3>
+                    {asset.prompt ? <p className="mt-1 line-clamp-2 text-xs leading-5 text-on-surface-variant">{asset.prompt}</p> : null}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {pending ? (
+                      <Button variant="ghost" size="sm" iconStart={<Copy size={14} />} disabled={!asset.prompt} onClick={() => void copyPrompt(asset)}>
+                        {copiedId === asset.id ? '已复制' : 'Prompt'}
+                      </Button>
+                    ) : (
+                      <>
+                        <Button variant="primary" size="sm" iconStart={<RotateCw size={14} />} onClick={() => startRedraw(asset)}>
+                          {asset.status === 'failed' ? '重试' : '重绘'}
+                        </Button>
+                        <Button variant="ghost" size="sm" iconStart={<Sparkles size={14} />} onClick={() => setReference(asset)}>
+                          {referenceId === asset.id ? '已参考' : '参考'}
+                        </Button>
+                        <Button variant="ghost" size="sm" iconStart={<Copy size={14} />} disabled={!asset.prompt} onClick={() => void copyPrompt(asset)}>
+                          {copiedId === asset.id ? '已复制' : 'Prompt'}
+                        </Button>
+                        {asset.src ? (
+                          <Button as="a" variant="plain" size="sm" iconStart={<Download size={14} />} href={asset.src} download>
+                            下载
+                          </Button>
+                        ) : null}
+                        <Button variant={favoriteIds.includes(asset.id) ? 'lime' : 'plain'} size="sm" iconStart={<Heart size={14} />} onClick={() => toggleFavorite(asset)}>
+                          收藏
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="primary" size="sm" iconStart={<RotateCw size={14} />} onClick={() => startRedraw(asset)}>
-                    重绘
-                  </Button>
-                  <Button variant="ghost" size="sm" iconStart={<Sparkles size={14} />} onClick={() => setReference(asset)}>
-                    {referenceId === asset.id ? '已参考' : '参考'}
-                  </Button>
-                  <Button variant="ghost" size="sm" iconStart={<Copy size={14} />} disabled={!asset.prompt} onClick={() => void copyPrompt(asset)}>
-                    {copiedId === asset.id ? '已复制' : 'Prompt'}
-                  </Button>
-                  <Button as="a" variant="plain" size="sm" iconStart={<Download size={14} />} href={asset.src} download>
-                    下载
-                  </Button>
-                  <Button variant={favoriteIds.includes(asset.id) ? 'lime' : 'plain'} size="sm" iconStart={<Heart size={14} />} onClick={() => toggleFavorite(asset)}>
-                    收藏
-                  </Button>
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       ) : (
         <SurfaceState
           className="flex-1"
           kind={loading ? 'loading' : error ? 'error' : 'empty'}
-          title={loading ? '正在读取资产' : location.t2 === 'favorites' ? '还没有收藏资产' : '还没有可用资产'}
-          description={error || (location.t2 === 'favorites' ? '在任意资产卡片点击收藏后会出现在这里。' : '完成一次创建或重绘后，历史图片会自动成为资产。')}
+          title={loading ? '正在读取资产' : emptyTitleForTab(location.t2)}
+          description={error || emptyDescriptionForTab(location.t2)}
           action={location.t2 === 'favorites' ? { label: '查看最近生成', iconStart: <ImagePlus size={14} />, onClick: () => onLocationChange({ ...location, t2: 'recent-generated' }) } : undefined}
         />
       )}
@@ -185,6 +202,30 @@ function titleForTab(t2: string | null) {
   if (t2 === 'favorites') return '收藏';
   if (t2 === 'failed') return '失败任务';
   return '最近生成';
+}
+
+function emptyTitleForTab(t2: string | null) {
+  if (t2 === 'favorites') return '还没有收藏资产';
+  if (t2 === 'failed') return '没有失败任务';
+  return '还没有可用资产';
+}
+
+function emptyDescriptionForTab(t2: string | null) {
+  if (t2 === 'favorites') return '在任意资产卡片点击收藏后会出现在这里。';
+  if (t2 === 'failed') return '失败的生成任务会显示在这里，可检查参数后重试。';
+  return '完成一次创建或重绘后，历史图片会自动成为资产。';
+}
+
+function taskStatusesForTab(t2: string | null): ImageTask['status'][] {
+  if (t2 === 'failed') return ['failed'];
+  return [];
+}
+
+function subtitleForTask(task: ImageTask): string {
+  if (task.status === 'failed') return task.error || '可检查参数后重试';
+  if (task.status === 'running') return '生成中…';
+  if (task.status === 'queued') return '排队中…';
+  return task.error || '';
 }
 
 function readFavoriteIds() {
@@ -207,24 +248,27 @@ function writeFavoriteIds(ids: string[]) {
   }
 }
 
-function useFailedTasks(enabled: boolean) {
+function useTaskAssets(statuses: ImageTask['status'][]) {
   const [tasks, setTasks] = useState<ImageTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!enabled) return undefined;
+    if (statuses.length === 0) {
+      setTasks([]);
+      return undefined;
+    }
     let cancelled = false;
     setLoading(true);
     setError('');
-    listImageTasks({ limit: 24, status: ['failed'] })
+    listImageTasks({ limit: 24, status: statuses })
       .then((response) => {
         if (!cancelled) setTasks(response.items);
       })
       .catch(() => {
         if (!cancelled) {
           setTasks([]);
-          setError('失败任务暂时不可用');
+          setError('任务列表暂时不可用');
         }
       })
       .finally(() => {
@@ -233,7 +277,7 @@ function useFailedTasks(enabled: boolean) {
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
+  }, [statuses]);
 
   return { tasks, loading, error };
 }

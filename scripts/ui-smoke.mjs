@@ -6,7 +6,9 @@ import net from 'node:net';
 import path from 'node:path';
 
 const ROOT_DIR = process.cwd();
-const TMP_ROOT = path.join(ROOT_DIR, '.tmp', 'ui-smoke');
+const TMP_ROOT = process.env.UI_SMOKE_TMP_ROOT
+  ? path.resolve(process.env.UI_SMOKE_TMP_ROOT)
+  : path.join(ROOT_DIR, '.tmp', 'ui-smoke');
 const ISSUE_SCREENSHOT_DIR = path.join(ROOT_DIR, '.tmp', 'issue-49');
 const TEMP_DIR = path.join(TMP_ROOT, 'temp');
 const NPM_CACHE_DIR = path.join(TMP_ROOT, 'npm-cache');
@@ -1554,7 +1556,7 @@ async function assertExploreEntryIsBrandOnly(page, context) {
     const brandLinks = exploreLinks.filter((link) => link.testId === 'brand-home-link');
     const nonBrandLinks = exploreLinks.filter((link) => link.testId !== 'brand-home-link');
     const brand = brandLinks[0];
-    const labelPattern = /^(Inspiration homepage|灵感探索)$/i;
+    const labelPattern = /^(Back to home|返回首页)$/i;
     const errors = [];
     if (brandLinks.length !== 1) {
       errors.push(`expected one visible brand /explore link, found ${brandLinks.length}`);
@@ -1729,6 +1731,10 @@ async function assertAdminConfigSurface(page, context) {
 }
 
 async function runCheck(name, fn) {
+  const onlyFilter = process.env.UI_SMOKE_ONLY;
+  if (onlyFilter && !new RegExp(onlyFilter).test(name)) {
+    return;
+  }
   process.stdout.write(`- ${name} ... `);
   try {
     await fn();
@@ -1820,82 +1826,44 @@ async function runSmokeChecks(page, baseUrl) {
     await assertAdminConfigSurface(page, '/config admin');
   });
 
-  await runCheck('/explore empty state has named buttons and no mobile overflow', async () => {
-    await page.navigate('/explore?smoke_state=empty', { width: 390, height: 844 });
-    await page.waitFor(() => /No cases available yet|暂时|鏆傛椂/.test(document.body.innerText), '/explore empty state');
-    await assertNoUnnamedButtons(page, '/explore empty');
-    await assertNoHorizontalOverflow(page, '/explore empty mobile');
-  });
-
-  await runCheck('/explore long error wraps without mobile overflow', async () => {
-    await page.navigate('/explore?smoke_state=long-error', { width: 390, height: 844 });
-    await page.waitFor(() => document.body.innerText.includes('AetherGenix smoke long error'), '/explore long error state');
-    await assertNoUnnamedButtons(page, '/explore long error');
-    await assertNoHorizontalOverflow(page, '/explore long error mobile');
-  });
-
-  await runCheck('/explore public feed excludes benchmark templates', async () => {
-    await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
-    await page.navigate('/explore?smoke_auth=1&smoke_state=filled', { width: 390, height: 844 });
+  // /explore now renders the InspirationSurface marketing catalog (static
+  // SCENE_CATALOG) instead of the legacy Explore.tsx API feed. The previous
+  // empty / long-error / benchmark-feed / detail-modal cases exercised feed
+  // behaviour that no longer exists on this route, so they are replaced by
+  // marketing-surface checks below.
+  await runCheck('/explore inspiration catalog renders named controls without mobile overflow', async () => {
+    await page.navigate('/explore', { width: 390, height: 844 });
     await page.waitFor(
-      () => Boolean(document.querySelector('button[aria-label*="Smoke inspiration case"]')),
-      '/explore public feed fixture card',
+      () => /上传白底图/.test(document.body.innerText || ''),
+      '/explore inspiration catalog heading',
     );
-    const result = await page.evaluate((key) => {
-      const calls = JSON.parse(window.localStorage.getItem(key) || '[]')
-        .filter((call) => call.type === 'inspiration-list');
-      return {
-        calls,
-        text: document.body.innerText || '',
-      };
-    }, API_CALL_STORAGE_KEY);
-    if (!result.calls.length) {
-      throw new Error('Explore did not request /api/inspirations');
-    }
-    const unfilteredCall = result.calls.find((call) => call.exclude_template_types !== 'benchmark');
-    if (unfilteredCall) {
-      throw new Error(`Explore requested inspirations without excluding benchmark: ${JSON.stringify(result.calls)}`);
-    }
-    if (/Benchmark template prompt should stay hidden/i.test(result.text)) {
-      throw new Error('Explore rendered a benchmark template fixture');
-    }
-    await assertNoUnnamedButtons(page, '/explore public filtered feed');
-    await assertNoHorizontalOverflow(page, '/explore public filtered feed mobile');
+    await assertNoUnnamedButtons(page, '/explore inspiration catalog');
+    await assertNoHorizontalOverflow(page, '/explore inspiration catalog mobile');
   });
 
-  await runCheck('/explore detail modal keeps 44px close and action targets', async () => {
-    await page.navigate('/explore?smoke_auth=1&smoke_state=filled', { width: 390, height: 844 });
+  await runCheck('/explore inspiration catalog shows scene cards without overflow', async () => {
+    await page.navigate('/explore', { width: 1100, height: 900 });
     await page.waitFor(
-      () => Boolean(document.querySelector('button[aria-label*="Smoke inspiration case"]')),
-      '/explore filled fixture card',
+      () => Boolean(document.querySelector('button[aria-label^="复制"][aria-label$="提示词"]')),
+      '/explore inspiration scene card copy action',
     );
-    await clickMainControl(page, '^Preview Smoke inspiration case$', '/explore detail open');
-    await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), '/explore detail dialog');
-    await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'explore-detail-mobile.png'));
-    await assertDialogSemantics(page, 'Explore detail modal');
-    await assertNoHorizontalOverflow(page, 'Explore detail modal mobile');
-    await assertNamedControlsMinTarget(page, 'Explore detail modal actions', [
-      '^Close$',
-      '^Clone Prompt Create$',
-      '^Copy Smoke inspiration case$',
-    ]);
-    await assertEscClosesDialog(page, 'Explore detail modal');
+    await assertNoUnnamedButtons(page, '/explore inspiration catalog desktop');
+    await assertNoHorizontalOverflow(page, '/explore inspiration catalog desktop');
   });
 
-  await runCheck('/create entry shows the local product wizard on mobile', async () => {
-    await page.navigate('/create', { width: 390, height: 844 });
+  await runCheck('/create entry shows the studio template gallery on mobile', async () => {
+    await page.navigate('/create?demo=create&smoke_auth=1', { width: 390, height: 844 });
+    const routedToCreate = await page.evaluate(() => window.location.pathname.startsWith('/create'));
+    if (!routedToCreate) throw new Error('/create entry did not stay on /create');
+    await page.waitFor(() => /模板画廊/.test(document.body.innerText || ''), '/create template gallery');
     await assertNoUnnamedButtons(page, '/create');
     await assertNoHorizontalOverflow(page, '/create mobile');
-    const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
-    if (!routedToCreate) throw new Error('/create entry did not stay on /create');
-    await page.waitFor(() => /PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create product wizard upload guidance');
-    await assertNamedControlsMinTarget(page, '/create product wizard controls', ['\u5f00\u59cb\u521b\u4f5c']);
-    await assertNoNamedControls(page, '/create no placeholder workflow controls', [
-      '\u8425\u9500\u5e7f\u544a\u56fe',
-      '\u6587\u751f\u56fe',
-      'AI \u6539\u56fe',
-    ]);
-    await assertNoNamedControls(page, '/create no legacy composer controls', [
+    // New studio IA entry controls: gallery quick-start shortcuts + scenario tabs + template cards.
+    await assertNamedControlsMinTarget(page, '/create gallery shortcuts', ['^从白底图开始$', '^写提示词$']);
+    const hasWhiteBgCard = await page.evaluate(() => Boolean(document.querySelector('button[aria-label="白底图"]')));
+    if (!hasWhiteBgCard) throw new Error('/create gallery missing the white-bg template card');
+    await assertNoNamedControls(page, '/create no legacy wizard controls', [
+      '^开始创作$',
       '^Image Generation',
       '^Commerce Image',
       '^Add reference image$',
@@ -1904,90 +1872,83 @@ async function runSmokeChecks(page, baseUrl) {
     ]);
   });
 
-  await runCheck('/create wizard selects a scene and reaches tune step', async () => {
-    await page.navigate('/create?smoke_auth=1', { width: 1100, height: 900 });
-    await assertNoHorizontalOverflow(page, '/create scene entry');
-    const routedToCreate = await page.evaluate(() => window.location.pathname === '/create');
-    if (!routedToCreate) throw new Error('/create tablet entry did not stay on /create');
-    await clickMainControl(page, '开始创作', '/create scene entry');
-    await page.waitFor(() => /想做哪种图|选择场景|先选你的生意类型/.test(document.body.innerText || ''), '/create scene browser step');
-    await assertNoHorizontalOverflow(page, '/create scene browser step');
-    await clickMainControl(page, '白底主图', '/create select scene card');
-    await page.waitFor(() => /上传商品图|PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create upload brief step');
-    await assertNoHorizontalOverflow(page, '/create upload brief step');
-    await assertNoUnnamedButtons(page, '/create upload brief step');
-    await assertNamedControlsMinTarget(page, '/create upload brief controls', ['^关闭$', '^下一步$']);
-
+  await runCheck('/create selects a template and reaches the editor workbench', async () => {
+    await page.navigate('/create?demo=create&smoke_auth=1', { width: 1100, height: 900 });
+    await page.waitFor(() => /模板画廊/.test(document.body.innerText || ''), '/create gallery tablet entry');
+    await assertNoHorizontalOverflow(page, '/create gallery entry');
+    // Pick the white-bg template card to enter the editor workbench.
+    await clickMainControl(page, '^白底图$', '/create select template card');
+    await page.waitFor(
+      () => Boolean(document.querySelector('[data-testid="create-primary-image-dropzone"]')),
+      '/create editor workbench dropzone',
+    );
+    await page.waitFor(() => /PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create editor upload guidance');
+    await assertNoUnnamedButtons(page, '/create editor workbench');
+    await assertNoHorizontalOverflow(page, '/create editor workbench');
+    // Drop a product image; the white-bg template auto-builds its prompt from default variables.
     await page.evaluate(() => {
       const file = new File(['smoke image'], 'smoke-product.webp', { type: 'image/webp' });
       const dataTransfer = new DataTransfer();
       dataTransfer.items.add(file);
-      const dropZone = document.querySelector('label[for="wizard-product-image-input"]');
-      if (!dropZone) throw new Error('upload drop zone not found');
-      dropZone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
-      const textarea = document.querySelector('textarea');
-      if (!(textarea instanceof HTMLTextAreaElement)) throw new Error('brief textarea not found');
-      const valueSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
-      if (valueSetter) valueSetter.call(textarea, 'Make the product look premium and clean');
-      else textarea.value = 'Make the product look premium and clean';
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      const dropZone = document.querySelector('[data-testid="create-primary-image-dropzone"]');
+      const fileInput = dropZone && dropZone.querySelector('input[type="file"]');
+      if (!fileInput) throw new Error('upload file input not found');
+      fileInput.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
     });
     await page.waitFor(() => /smoke-product\.webp/i.test(document.body.innerText || ''), '/create uploaded product preview');
-    await clickMainControl(page, '^下一步$', '/create advance to tune');
-    await page.waitFor(() => /用「白底主图」风格生成 1 张/.test(document.body.innerText || ''), '/create tune step');
-    await assertNamedControlsMinTarget(page, '/create tune controls', ['^返回上一步$', '^生成$']);
-    await assertNoHorizontalOverflow(page, '/create tune step');
+    // Generate becomes available once a required image is present and the prompt is built.
+    await assertNamedControlsMinTarget(page, '/create editor controls', ['^生成$']);
   });
 
-  await runCheck('/create generates with the selected scene prompt directly', async () => {
-    await page.navigate('/create?smoke_auth=1', { width: 390, height: 844 });
+  await runCheck('/create generates with the template prompt via the ecommerce endpoint', async () => {
+    await page.navigate('/create?demo=create&smoke_auth=1', { width: 390, height: 844 });
     await page.evaluate((key) => window.localStorage.setItem(key, '[]'), API_CALL_STORAGE_KEY);
-    await clickMainControl(page, '开始创作', '/create scene generate entry');
-    await page.waitFor(() => /想做哪种图|选择场景/.test(document.body.innerText || ''), '/create mobile scene browser');
-    await clickMainControl(page, '白底主图', '/create mobile select scene');
-    await page.waitFor(() => /上传商品图|PNG\s*\/\s*JPEG\s*\/\s*WEBP/i.test(document.body.innerText || ''), '/create mobile upload step');
+    await page.waitFor(() => /模板画廊/.test(document.body.innerText || ''), '/create mobile gallery');
+    await clickMainControl(page, '^白底图$', '/create mobile select template');
+    await page.waitFor(
+      () => Boolean(document.querySelector('[data-testid="create-primary-image-dropzone"]')),
+      '/create mobile editor dropzone',
+    );
     await page.evaluate(() => {
       const file = new File(['smoke image'], 'mobile-product.png', { type: 'image/png' });
       const dataTransfer = new DataTransfer();
       dataTransfer.items.add(file);
-      const dropZone = document.querySelector('label[for="wizard-product-image-input"]');
-      if (!dropZone) throw new Error('upload drop zone not found');
-      dropZone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
-      const textarea = document.querySelector('textarea');
-      if (!(textarea instanceof HTMLTextAreaElement)) throw new Error('brief textarea not found');
-      const valueSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
-      if (valueSetter) valueSetter.call(textarea, 'Premium marketplace main image');
-      else textarea.value = 'Premium marketplace main image';
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      const dropZone = document.querySelector('[data-testid="create-primary-image-dropzone"]');
+      const fileInput = dropZone && dropZone.querySelector('input[type="file"]');
+      if (!fileInput) throw new Error('upload file input not found');
+      fileInput.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
     });
     await page.waitFor(() => /mobile-product\.png/i.test(document.body.innerText || ''), '/create mobile uploaded preview');
-    await clickMainControl(page, '^下一步$', '/create mobile tune step');
-    await page.waitFor(() => /生成 1 张/.test(document.body.innerText || ''), '/create mobile tune ready');
     await clickMainControl(page, '^生成$', '/create mobile generate');
-    await page.waitFor(() => window.location.pathname.includes('/workspace/smoke-regenerated-task'), '/create navigates to generated workspace');
+    // New flow polls in place and renders into the history rail; it does not navigate routes.
+    await page.waitFor(() => {
+      const calls = JSON.parse(window.localStorage.getItem('aethergenix_smoke_api_calls') || '[]');
+      return calls.some((call) => call.type === 'ecommerce-generate');
+    }, '/create ecommerce generate request');
     const calls = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) || '[]'), API_CALL_STORAGE_KEY);
-    const optimizeCall = calls.find((call) => call.type === 'prompt-optimize');
     const generateCall = calls.find((call) => call.type === 'ecommerce-generate');
     if (
-      optimizeCall ||
       !generateCall ||
       generateCall.path !== '/api/ecommerce/generate' ||
-      !/^Amazon-compliant e-commerce main image/.test(generateCall.body?.style || '') ||
-      generateCall.body?.n !== '1' ||
-      generateCall.body?.image?.name !== 'mobile-product.png'
+      (generateCall.body && generateCall.body.image && generateCall.body.image.name) !== 'mobile-product.png' ||
+      (generateCall.body && generateCall.body.n) !== '1' ||
+      !/电商白底图/.test((generateCall.body && generateCall.body.style) || '')
     ) {
-      throw new Error(`/create scene generate calls mismatch: ${JSON.stringify(calls)}`);
+      throw new Error('/create template generate calls mismatch: ' + JSON.stringify(calls));
     }
   });
 
   await runCheck('shell icon controls keep 44px tap targets', async () => {
     await page.navigate('/explore?smoke_state=empty', { width: 1280, height: 900, waitTimeoutMs: LOAD_TIMEOUT_MS * 3 });
     await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'shell-desktop.png'));
-    await assertNamedControlsMinTarget(page, 'desktop shell', ['^Inspiration homepage$|^灵感探索$', '^Language$', '^Tasks$', '^Announcement$']);
+    await assertNamedControlsMinTarget(page, 'desktop shell', ['^Back to home$|^返回首页$', '^Language$', '^Tasks$', '^Announcement$']);
     await assertExploreEntryIsBrandOnly(page, 'desktop shell');
+    // /explore now surfaces the studio LeftNav (创建/重绘/资产库/灵感/用户) as the
+    // primary navigation; the legacy SideNavBar Create/Task Center entries are
+    // hidden on entry routes.
     await assertNamedControlsMinTarget(page, 'desktop primary navigation', [
-      '^Create$|^创作$',
-      '^Task Center$|^任务中心$',
+      '^创建$',
+      '^灵感$',
     ]);
     const languageMenuOpened = await page.evaluate((helpersText) => {
       eval(helpersText);
@@ -2081,8 +2042,8 @@ async function runSmokeChecks(page, baseUrl) {
       eval(helpersText);
       const brandLink = document.querySelector('[data-testid="brand-home-link"]');
       if (!(brandLink instanceof HTMLElement) || !isVisible(brandLink)) return false;
-      if (!/^(Inspiration homepage|灵感探索)$/i.test(accessibleName(brandLink))) return false;
-      if (!/^(Inspiration homepage|灵感探索)$/i.test(normalize(brandLink.getAttribute('title')))) return false;
+      if (!/^(Back to home|返回首页)$/i.test(accessibleName(brandLink))) return false;
+      if (!/^(Back to home|返回首页)$/i.test(normalize(brandLink.getAttribute('title')))) return false;
       brandLink.click();
       return true;
     }, domSnapshotHelpers().text);
@@ -2136,17 +2097,27 @@ async function runSmokeChecks(page, baseUrl) {
     await assertEscClosesDialog(page, 'TaskDrawer active');
     await page.navigate('/explore?smoke_state=empty', { width: 390, height: 844 });
     await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'shell-mobile.png'));
-    await assertNamedControlsMinTarget(page, 'mobile shell', ['^Inspiration homepage$|^灵感探索$', '^Language$', '^Tasks$', '^Announcement$']);
+    await assertNamedControlsMinTarget(page, 'mobile shell', ['^Back to home$|^返回首页$', '^Language$', '^Tasks$', '^Announcement$']);
     await assertExploreEntryIsBrandOnly(page, 'mobile shell');
-    await assertNamedControlsMinTarget(page, 'mobile primary navigation', [
-      '^Create$|^创作$',
-      '^Tasks$|^任务$',
-      '^Me$|^我的$',
-    ]);
+    // Mobile /explore no longer renders business primary navigation: the studio
+    // LeftNav is hidden (max-md:hidden) and the legacy BottomTabBar is suppressed
+    // on entry routes. Only the TopNavBar shell icons remain (asserted above).
   });
 
   await runCheck('AnnouncementModal has dialog semantics, focus management, Esc close, and 44px close controls', async () => {
+    // /explore uses manual-only announcements (STUDIO_ROUTE_POLICY): the modal
+    // does not auto-open, so open it from the shell Announcement trigger.
     await page.navigate('/explore?smoke_state=empty&smoke_announcement=1', { width: 1280, height: 900 });
+    const openedAnnouncementDesktop = await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const announcementButton = Array.from(document.querySelectorAll('button'))
+        .filter((element) => isVisible(element))
+        .find((element) => /^Announcement$/i.test(accessibleName(element)));
+      if (!announcementButton) return false;
+      announcementButton.click();
+      return true;
+    }, domSnapshotHelpers().text);
+    if (!openedAnnouncementDesktop) throw new Error('could not open AnnouncementModal from shell trigger (desktop)');
     await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), 'AnnouncementModal dialog desktop');
     await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'announcement-desktop.png'));
     await assertDialogSemantics(page, 'AnnouncementModal');
@@ -2177,6 +2148,16 @@ async function runSmokeChecks(page, baseUrl) {
     if (!returnedToTrigger) throw new Error('focus did not return to announcement trigger after Escape');
 
     await page.navigate('/explore?smoke_state=empty&smoke_announcement=1', { width: 390, height: 844 });
+    const openedAnnouncementMobile = await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const announcementButton = Array.from(document.querySelectorAll('button'))
+        .filter((element) => isVisible(element))
+        .find((element) => /^Announcement$/i.test(accessibleName(element)));
+      if (!announcementButton) return false;
+      announcementButton.click();
+      return true;
+    }, domSnapshotHelpers().text);
+    if (!openedAnnouncementMobile) throw new Error('could not open AnnouncementModal from shell trigger (mobile)');
     await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), 'AnnouncementModal dialog mobile');
     await page.screenshot(path.join(ISSUE_SCREENSHOT_DIR, 'announcement-mobile.png'));
     await assertNoHorizontalOverflow(page, 'AnnouncementModal mobile');
@@ -2210,15 +2191,28 @@ async function runSmokeChecks(page, baseUrl) {
   await runCheck('AuthModal register verification controls keep 44px targets', async () => {
     await page.navigate('/explore?smoke_verify=1', { width: 390, height: 844 });
     await clickMainControl(page, '^Start creating$|^开始创作$', 'open AuthModal from Explore create entry');
-    await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), 'AuthModal register dialog');
+    await page.waitFor(() => Boolean(document.querySelector('[role="dialog"]')), 'AuthModal login dialog');
+    // The Explore create entry opens AuthModal in login mode; switch to the
+    // register tab to reach the email-verification controls.
+    const switchedToRegister = await page.evaluate((helpersText) => {
+      eval(helpersText);
+      const registerTab = Array.from(document.querySelectorAll('[role="dialog"] button'))
+        .filter((element) => isVisible(element))
+        .find((element) => /^(Register|注册)$/.test(accessibleName(element)));
+      if (!registerTab) return false;
+      registerTab.click();
+      return true;
+    }, domSnapshotHelpers().text);
+    if (!switchedToRegister) throw new Error('could not switch AuthModal to register tab');
+    await page.waitFor(() => Boolean(document.querySelector('#auth-register-verify-code')), 'AuthModal register verify-code field');
     await assertDialogSemantics(page, 'AuthModal register', { checkInputs: true });
     await assertNoHorizontalOverflow(page, 'AuthModal register mobile');
     await assertFormControlsMinTarget(page, 'AuthModal register fields', [
       '^Email$',
       '^Password$',
-      '^Verify Code$',
+      '^Verify Code$|^验证码$',
     ]);
-    await assertNamedControlsMinTarget(page, 'AuthModal register send-code action', ['^Send Code$']);
+    await assertNamedControlsMinTarget(page, 'AuthModal register send-code action', ['^Send Code$|^发送验证码$']);
     await assertEscClosesDialog(page, 'AuthModal register');
   });
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { DragEvent } from 'react';
-import { AlertCircle, CheckCircle2, ChevronDown, ImagePlus, Loader2, RefreshCw, Sparkles, UploadCloud } from 'lucide-react';
+import type { DragEvent, ReactNode } from 'react';
+import { AlertCircle, CheckCircle2, ImagePlus, Loader2, RefreshCw, Sparkles, UploadCloud } from 'lucide-react';
 import { Button } from '../../components/design-system/Button';
 import { SelectControl, TextareaControl, TextInputControl } from '../../components/design-system/FormField';
 import { StatusPill } from '../../components/design-system/StatusPill';
@@ -14,9 +14,11 @@ type GenerationState = ReturnType<typeof useTemplateGeneration>;
 export function CreateEditorCenter({
   template,
   generation,
+  historyRail,
 }: {
   template: StudioCreateTemplate;
   generation: GenerationState;
+  historyRail?: ReactNode;
 }) {
   const [dragging, setDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
@@ -54,7 +56,7 @@ export function CreateEditorCenter({
         : 'neutral';
 
   return (
-    <main className="min-h-0 overflow-y-auto bg-[#0f0f0d]">
+    <main className="@container min-h-0 overflow-y-auto bg-[#0f0f0d]">
       <div className="mx-auto flex min-h-full max-w-6xl flex-col gap-4 px-4 py-4 lg:px-5">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-white/[0.08] pb-4">
           <div className="min-w-0">
@@ -79,22 +81,25 @@ export function CreateEditorCenter({
           </Button>
         </header>
 
-        <section className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-          <div className="min-w-0 space-y-4">
+        <section className="grid gap-4 @2xl:grid-cols-[minmax(200px,1fr)_minmax(0,3fr)] @2xl:items-start">
+          <div className="min-w-0 space-y-3">
             {primaryInput ? (
-              <ImageDropzone
-                label={primaryInput.label}
-                dragging={dragging}
-                previewUrl={previewUrl}
-                fileName={generation.primaryImage?.name}
-                onFileChange={(event) => generation.handleFileChange(primaryInput.id, event)}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragging(true);
-                }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={handleDrop}
-              />
+              <div data-testid="create-primary-image-dropzone">
+                <ImageDropzone
+                  className="min-h-44"
+                  label={primaryInput.label}
+                  dragging={dragging}
+                  previewUrl={previewUrl}
+                  fileName={generation.primaryImage?.name}
+                  onFileChange={(event) => generation.handleFileChange(primaryInput.id, event)}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDragging(true);
+                  }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={handleDrop}
+                />
+              </div>
             ) : null}
 
             {secondaryInputs.length ? (
@@ -116,89 +121,91 @@ export function CreateEditorCenter({
                 ))}
               </div>
             ) : null}
-          </div>
 
-          <div className="min-w-0 space-y-4">
             <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-black/30">
-              <div className="grid min-h-[min(58vh,620px)] place-items-center p-3">
-                <img src={heroImage} alt="" className="max-h-[68vh] w-full object-contain" />
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] px-3 py-2">
-                <span className="flex min-w-0 items-center gap-2 text-xs font-semibold text-on-surface-variant">
-                  {showingResults ? <CheckCircle2 size={14} className="text-lime" /> : <ImagePlus size={14} />}
-                  <span className="truncate">{showingResults ? '生成结果已就绪' : generation.primaryImage ? '已接入参考图' : '模板预览'}</span>
-                </span>
-                {generation.resultUrls.length > 1 ? <span className="text-xs text-on-surface-variant">{generation.resultUrls.length} 张结果</span> : null}
+              {showingResults ? (
+                <a href={heroImage} target="_blank" rel="noreferrer" className="ds-motion-press grid aspect-square place-items-center p-2">
+                  <img src={heroImage} alt="生成结果主图" className="max-h-full max-w-full object-contain" />
+                </a>
+              ) : (
+                <div className="grid aspect-square place-items-center p-2">
+                  <img src={heroImage} alt="模板预览" className="max-h-full max-w-full object-contain" />
+                </div>
+              )}
+              <div className="flex items-center gap-2 border-t border-white/[0.08] px-3 py-2 text-xs font-semibold text-on-surface-variant">
+                {showingResults ? <CheckCircle2 size={14} className="shrink-0 text-lime" /> : <ImagePlus size={14} className="shrink-0" />}
+                <span className="truncate">{showingResults ? '生成结果已就绪' : generation.primaryImage ? '已接入参考图' : '模板预览'}</span>
               </div>
             </div>
 
             {generation.resultUrls.length > 1 ? (
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2">
                 {generation.resultUrls.slice(1).map((url, index) => (
-                  <img key={url} src={url} alt={`生成结果 ${index + 2}`} className="aspect-square rounded-lg border border-white/[0.08] bg-black/20 object-contain" />
+                  <a key={url} href={url} target="_blank" rel="noreferrer" className="ds-motion-press block overflow-hidden rounded-lg border border-white/[0.08] bg-black/20">
+                    <img src={url} alt={`生成结果 ${index + 2}`} className="aspect-square w-full object-contain" />
+                  </a>
                 ))}
               </div>
             ) : null}
           </div>
-        </section>
 
-        <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(280px,420px)]">
-          <div className="grid gap-3 md:grid-cols-2">
-            {textInputs.map((input) => (
-              <label key={input.id} className="grid gap-1.5">
-                <span className="text-xs font-semibold text-on-surface-variant">{input.label}</span>
-                <TextInputControl
-                  value={generation.inputValues[input.id] ?? ''}
-                  placeholder={`填写${input.label}`}
-                  onChange={(event) => generation.setInputValues((current) => ({ ...current, [input.id]: event.target.value }))}
+          <div className="min-w-0 space-y-4">
+            <div className="grid gap-3 @md:grid-cols-2">
+              {textInputs.map((input) => (
+                <label key={input.id} className="grid gap-1.5">
+                  <span className="text-xs font-semibold text-on-surface-variant">{input.label}</span>
+                  <TextInputControl
+                    value={generation.inputValues[input.id] ?? ''}
+                    placeholder={`填写${input.label}`}
+                    onChange={(event) => generation.setInputValues((current) => ({ ...current, [input.id]: event.target.value }))}
+                  />
+                </label>
+              ))}
+              {template.variables.map((variable) => (
+                <VariableControl
+                  key={variable.id}
+                  variable={variable}
+                  value={generation.variableValues[variable.id] ?? variable.defaultValue}
+                  onChange={(value) => generation.setVariableValues((current) => ({ ...current, [variable.id]: value }))}
                 />
+              ))}
+              <label className="grid gap-1.5">
+                <span className="text-xs font-semibold text-on-surface-variant">尺寸</span>
+                <SelectControl value={generation.aspectRatio} onChange={(event) => generation.setAspectRatio(event.target.value)}>
+                  {template.aspectRatios.map((ratio) => (
+                    <option key={ratio} value={ratio}>
+                      {ratio}
+                    </option>
+                  ))}
+                </SelectControl>
               </label>
-            ))}
-            {template.variables.map((variable) => (
-              <VariableControl
-                key={variable.id}
-                variable={variable}
-                value={generation.variableValues[variable.id] ?? variable.defaultValue}
-                onChange={(value) => generation.setVariableValues((current) => ({ ...current, [variable.id]: value }))}
-              />
-            ))}
-            <label className="grid gap-1.5">
-              <span className="text-xs font-semibold text-on-surface-variant">尺寸</span>
-              <SelectControl value={generation.aspectRatio} onChange={(event) => generation.setAspectRatio(event.target.value)}>
-                {template.aspectRatios.map((ratio) => (
-                  <option key={ratio} value={ratio}>
-                    {ratio}
-                  </option>
-                ))}
-              </SelectControl>
-            </label>
-            <label className="grid gap-1.5">
-              <span className="text-xs font-semibold text-on-surface-variant">数量</span>
-              <SelectControl value={String(generation.count)} onChange={(event) => generation.setCount(Number(event.target.value))}>
-                {generation.countOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </SelectControl>
-            </label>
-          </div>
+              <label className="grid gap-1.5">
+                <span className="text-xs font-semibold text-on-surface-variant">数量</span>
+                <SelectControl value={String(generation.count)} onChange={(event) => generation.setCount(Number(event.target.value))}>
+                  {generation.countOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </SelectControl>
+              </label>
+            </div>
 
-          <details className="group rounded-lg border border-white/[0.08] bg-white/[0.03] p-3">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-on-surface">
-              <span className="flex items-center gap-2">
-                <Sparkles size={15} className="text-lime" />
+            <label className="grid gap-1.5">
+              <span className="flex items-center gap-2 text-xs font-semibold text-on-surface-variant">
+                <Sparkles size={14} className="text-lime" />
                 提示词
               </span>
-              <ChevronDown size={16} className="transition group-open:rotate-180" />
-            </summary>
-            <TextareaControl
-              className="mt-3 min-h-32"
-              value={generation.promptOverride || generation.templatePrompt}
-              onChange={(event) => generation.setPromptOverride(event.target.value)}
-            />
-          </details>
+              <TextareaControl
+                className="min-h-44"
+                value={generation.promptOverride || generation.templatePrompt}
+                onChange={(event) => generation.setPromptOverride(event.target.value)}
+              />
+            </label>
+          </div>
         </section>
+
+        {historyRail}
 
         {generation.error || generation.validationMessage ? (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-error/25 bg-error-container/10 p-3 text-xs leading-5 text-error">
